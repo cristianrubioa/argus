@@ -46,6 +46,7 @@ def render(request: Request, session: Session, name: str, context: dict):
         "language_names": LANGUAGE_NAMES,
         "supported_languages": SUPPORTED_LANGUAGES,
         "theme": profiles.get_theme(session),
+        "font_size": profiles.get_font_size(session),
     }
     return templates.TemplateResponse(request, name, full_context)
 
@@ -341,4 +342,16 @@ def update_theme(
 ):
     if theme in ("light", "dark"):
         profiles.set_theme(session, theme)
+    return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/ajustes/font-size")
+def update_font_size(
+    request: Request,
+    font_size: str = Form(...),
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    if font_size in ("md", "lg"):
+        profiles.set_font_size(session, font_size)
     return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)

@@ -37,7 +37,7 @@ def test_dashboard_renders_dark_class_by_default(logged_in_client, session):
     response = logged_in_client.get("/")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert '<html lang="en" class="dark">' in response.text
+    assert '<html lang="en" class="dark" data-font-size="md">' in response.text
 
 
 def test_dashboard_omits_dark_class_when_theme_is_light(logged_in_client, session):
@@ -47,7 +47,7 @@ def test_dashboard_omits_dark_class_when_theme_is_light(logged_in_client, sessio
     response = logged_in_client.get("/")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert '<html lang="en" class="">' in response.text
+    assert '<html lang="en" class="" data-font-size="md">' in response.text
 
 
 def test_all_pages_render_without_error_in_both_themes(logged_in_client, session):

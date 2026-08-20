@@ -46,6 +46,17 @@
   <noscript><button type="submit" class="mt-2 bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('action_save') }}</button></noscript>
 </form>
 
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_accessibility_heading') }}</h1>
+<form method="post" action="/ajustes/font-size" class="max-w-md">
+  <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_font_size_label') }}</label>
+  <select name="font_size" onchange="this.form.submit()"
+    class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+    <option value="md" {% if font_size == 'md' %}selected{% endif %}>{{ t('font_size_md') }}</option>
+    <option value="lg" {% if font_size == 'lg' %}selected{% endif %}>{{ t('font_size_lg') }}</option>
+  </select>
+  <noscript><button type="submit" class="mt-2 bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('action_save') }}</button></noscript>
+</form>
+
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_account_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('signed_in_as') }} <span class="text-gray-900 dark:text-gray-200">{{ admin }}</span></p>
 

@@ -42,6 +42,7 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE settings ADD COLUMN mqtt_last_publish_ok BOOLEAN",
     "ALTER TABLE settings ADD COLUMN mqtt_last_error VARCHAR(255)",
     "ALTER TABLE settings ADD COLUMN theme TEXT DEFAULT 'dark'",
+    "ALTER TABLE settings ADD COLUMN font_size TEXT DEFAULT 'md'",
 )
 
 _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = ("ALTER TABLE devices ADD COLUMN custom_name VARCHAR(255)",)

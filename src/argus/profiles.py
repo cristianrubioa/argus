@@ -58,6 +58,17 @@ def set_theme(session: Session, theme: str) -> Settings:
     return settings
 
 
+def get_font_size(session: Session) -> str:
+    return get_settings(session).font_size
+
+
+def set_font_size(session: Session, font_size: str) -> Settings:
+    settings = get_settings(session)
+    settings.font_size = font_size
+    session.commit()
+    return settings
+
+
 def reconcile_profile(session: Session) -> None:
     """Called from argus-agent's poll loop; applies a pending profile change to USBGuard."""
     settings = get_settings(session)

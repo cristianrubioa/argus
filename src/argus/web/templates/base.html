@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ language|default('en') }}" class="{{ 'dark' if theme == 'dark' else '' }}">
+<html lang="{{ language|default('en') }}" class="{{ 'dark' if theme == 'dark' else '' }}" data-font-size="{{ font_size|default('md') }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,6 +15,7 @@
   <script src="https://unpkg.com/htmx.org@2.0.3"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <style>
+    html[data-font-size="lg"] { font-size: 112.5%; }
     /* Flatpickr dark theme override, scoped to <html class="dark"> — light mode uses flatpickr's own default look */
     .dark .flatpickr-calendar { background: #020a18; border-color: #0f2040; box-shadow: 0 4px 24px rgba(0,0,0,.6); }
     .dark .flatpickr-months .flatpickr-month,
