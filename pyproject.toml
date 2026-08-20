@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "argus"
+version = "0.1.0"
+description = "USB device monitoring and control for home lab and workstation environments"
+authors = ["Cristian Rubio <cristianrubioa@gmail.com>"]
+readme = "README.md"
+packages = [{include = "argus", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115"
+uvicorn = {version = "^0.32", extras = ["standard"]}
+jinja2 = "^3.1"
+python-multipart = "^0.0.12"
+itsdangerous = "^2.2"
+sqlalchemy = "^2.0"
+paho-mqtt = "^2.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.9"
+pytest = "^8.3"
+httpx = "^0.28"
+factory-boy = "^3.3.3"
+
+[tool.poetry.scripts]
+argus-agent = "argus.agent.main:main"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 124
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

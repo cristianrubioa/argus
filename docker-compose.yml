@@ -1,0 +1,16 @@
+services:
+  argus-web:
+    build:
+      context: .
+    environment:
+      ARGUS_DB_PATH: /data/argus.db
+      ARGUS_SESSION_SECRET: ${ARGUS_SESSION_SECRET:?}
+      ARGUS_ADMIN_USERNAME: ${ARGUS_ADMIN_USERNAME:?}
+      ARGUS_ADMIN_PASSWORD: ${ARGUS_ADMIN_PASSWORD:?}
+      ARGUS_MQTT_HOST: ${ARGUS_MQTT_HOST:-}
+      ARGUS_MQTT_PORT: ${ARGUS_MQTT_PORT:-1883}
+      ARGUS_MQTT_TOPIC_PREFIX: ${ARGUS_MQTT_TOPIC_PREFIX:-argus}
+    volumes:
+      - ./data:/data
+    expose:
+      - "8000"

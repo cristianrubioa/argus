@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="flex flex-col min-h-screen">
+
+  <header class="border-b border-gray-800 px-6 flex items-center gap-3 shrink-0" style="height: var(--header-h)">
+    <i class="fa-solid fa-eye text-2xl text-blue-400"></i>
+    <span class="font-semibold tracking-wide leading-none" style="font-size: var(--app-name-size)">Argus</span>
+    <span class="text-sm text-gray-500 font-normal">USB Device Monitor</span>
+    <a class="crubio-home-link" href="https://crubio.fyi">crubio.fyi</a>
+  </header>
+
+  <div class="flex flex-1 min-h-0">
+
+    <aside class="flex flex-col shrink-0 border-r border-gray-800 bg-gray-900" style="width: var(--panel-w)">
+      <nav class="flex-1 p-4 space-y-1">
+        {% set nav_items = [
+          ("/", "fa-gauge", "Dashboard", "dashboard"),
+          ("/dispositivos", "fa-usb", "Dispositivos", "dispositivos"),
+          ("/whitelist", "fa-shield-halved", "Whitelist", "whitelist"),
+          ("/logs", "fa-list", "Logs", "logs"),
+          ("/ajustes", "fa-gear", "Ajustes", "ajustes"),
+        ] %}
+        {% for href, icon, label, key in nav_items %}
+        <a href="{{ href }}"
+           class="flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors
+             {% if active == key %}bg-blue-900/40 text-blue-300{% else %}text-gray-300 hover:bg-gray-800{% endif %}">
+          <i class="fa-solid {{ icon }} w-4 text-center"></i> {{ label }}
+        </a>
+        {% endfor %}
+      </nav>
+      <div class="mt-auto border-t border-gray-800 px-4 text-center text-gray-400"
+           style="font-size: var(--footer-size); padding-top: var(--footer-padding-y); padding-bottom: var(--footer-padding-y)">
+        Made with <span class="text-red-400">&hearts;</span> by
+        <a href="https://github.com/cristianrubioa" target="_blank" rel="noopener noreferrer" class="hover:text-gray-300 transition-colors">@cristianrubioa</a>
+      </div>
+    </aside>
+
+    <main class="flex-1 min-w-0 overflow-y-auto p-6">
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+{% endblock %}

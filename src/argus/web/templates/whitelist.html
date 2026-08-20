@@ -1,0 +1,34 @@
+{% extends "_shell.html" %}
+{% block title %}Argus — Whitelist{% endblock %}
+{% block content %}
+<h1 class="crubio-section-label text-blue-300 mb-4">Whitelist</h1>
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left text-gray-500 border-b border-gray-800">
+      <th class="py-2 pr-4">Name</th>
+      <th class="py-2 pr-4">VID:PID</th>
+      <th class="py-2 pr-4">Added</th>
+      <th class="py-2 pr-4">Added by</th>
+      <th class="py-2 pr-4"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in entries %}
+    <tr class="border-b border-gray-900">
+      <td class="py-2 pr-4">{{ entry.device.name }}</td>
+      <td class="py-2 pr-4 text-gray-400">{{ entry.device.vid_pid }}</td>
+      <td class="py-2 pr-4 text-gray-400">{{ entry.added_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4 text-gray-400">{{ entry.added_by }}</td>
+      <td class="py-2 pr-4 text-right">
+        <form method="post" action="/whitelist/revoke/{{ entry.device_id }}">
+          <button type="submit" class="text-xs text-red-400 hover:text-red-300">Revoke</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="py-4 text-center text-gray-500">Whitelist is empty</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="text-xs text-gray-500 mt-4">To authorize a new device, find it on the Dispositivos page once it has connected.</p>
+{% endblock %}

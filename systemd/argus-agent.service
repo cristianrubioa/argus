@@ -1,0 +1,16 @@
+[Unit]
+Description=Argus USB event capture agent
+Wants=usbguard.service
+After=usbguard.service
+Documentation=https://github.com/cristianrubioa/argus
+
+[Service]
+Type=simple
+User=argus-agent
+Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
+EnvironmentFile=-/etc/argus/agent.env
+ExecStart=/usr/local/bin/argus-agent
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

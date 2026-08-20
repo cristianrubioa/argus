@@ -1,0 +1,31 @@
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left text-gray-500 border-b border-gray-800">
+      <th class="py-2 pr-4">Device</th>
+      <th class="py-2 pr-4">VID:PID</th>
+      <th class="py-2 pr-4">Decision</th>
+      <th class="py-2 pr-4">Profile</th>
+      <th class="py-2 pr-4">When</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for event in events %}
+    <tr class="border-b border-gray-900">
+      <td class="py-2 pr-4">{{ event.device.name }}</td>
+      <td class="py-2 pr-4 text-gray-400">{{ event.device.vid_pid }}</td>
+      <td class="py-2 pr-4">
+        <span class="px-1.5 py-0.5 rounded text-xs
+          {% if event.decision.value == 'authorized' %}bg-green-900/40 text-green-300
+          {% elif event.decision.value == 'blocked' %}bg-red-900/40 text-red-300
+          {% else %}bg-yellow-900/40 text-yellow-300{% endif %}">
+          {{ event.decision.value }}
+        </span>
+      </td>
+      <td class="py-2 pr-4 text-gray-400">{{ event.profile.value }}</td>
+      <td class="py-2 pr-4 text-gray-400">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="py-4 text-center text-gray-500">No events yet</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

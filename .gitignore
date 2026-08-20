@@ -1,0 +1,30 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Poetry / tooling caches
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# SQLite data (bind-mounted, host/container shared state — never committed)
+data/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
+
+# OpenSpec
+openspec/
+
+# OS
+.DS_Store

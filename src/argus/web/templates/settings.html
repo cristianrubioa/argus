@@ -1,0 +1,35 @@
+{% extends "_shell.html" %}
+{% block title %}Argus — Ajustes{% endblock %}
+{% block content %}
+<h1 class="crubio-section-label text-blue-300 mb-4">Perfil de Seguridad</h1>
+<form method="post" action="/ajustes/profile" class="space-y-3 max-w-md">
+  <label class="flex items-start gap-3 p-3 border border-gray-800 rounded cursor-pointer">
+    <input type="radio" name="profile" value="monitor" class="mt-1" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
+    <span>
+      <span class="block font-medium">Monitor</span>
+      <span class="block text-sm text-gray-400">Logs every device but never blocks. Unrecognized devices are flagged only.</span>
+    </span>
+  </label>
+  <label class="flex items-start gap-3 p-3 border border-gray-800 rounded cursor-pointer">
+    <input type="radio" name="profile" value="enforce" class="mt-1" {% if settings.profile.value == 'enforce' %}checked{% endif %}>
+    <span>
+      <span class="block font-medium">Enforce</span>
+      <span class="block text-sm text-gray-400">Blocks anything not on the whitelist at the kernel level.</span>
+    </span>
+  </label>
+  <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">
+    Save
+  </button>
+</form>
+<p class="text-xs text-gray-500 mt-3">
+  Applied profile: {{ settings.applied_profile.value if settings.applied_profile else "pending — argus-agent will reconcile shortly" }}
+</p>
+
+<h1 class="crubio-section-label text-blue-300 mb-4 mt-8">Cuenta</h1>
+<p class="text-sm text-gray-400">Signed in as <span class="text-gray-200">{{ admin }}</span></p>
+
+<h1 class="crubio-section-label text-blue-300 mb-4 mt-8">Automatización (MQTT)</h1>
+<p class="text-sm text-gray-400">
+  Configured via <code class="text-gray-300">ARGUS_MQTT_HOST</code> and related environment variables — see <code class="text-gray-300">.env.example</code>. Optional: leave unset to disable.
+</p>
+{% endblock %}
