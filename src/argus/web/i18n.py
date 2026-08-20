@@ -72,6 +72,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "login_username": "Username",
         "login_password": "Password",
         "login_submit": "Sign in",
+        "login_title": "Login",
     },
     "es": {
         "nav_dashboard": "Panel",
@@ -138,6 +139,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "login_username": "Usuario",
         "login_password": "Contraseña",
         "login_submit": "Iniciar sesión",
+        "login_title": "Iniciar sesión",
     },
     "pt": {
         "nav_dashboard": "Painel",
@@ -204,6 +206,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "login_username": "Usuário",
         "login_password": "Senha",
         "login_submit": "Entrar",
+        "login_title": "Login",
     },
     "fr": {
         "nav_dashboard": "Tableau de bord",
@@ -270,6 +273,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "login_username": "Nom d'utilisateur",
         "login_password": "Mot de passe",
         "login_submit": "Se connecter",
+        "login_title": "Connexion",
     },
     "de": {
         "nav_dashboard": "Übersicht",
@@ -336,6 +340,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "login_username": "Benutzername",
         "login_password": "Passwort",
         "login_submit": "Anmelden",
+        "login_title": "Anmeldung",
     },
 }
 
