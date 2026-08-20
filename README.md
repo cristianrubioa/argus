@@ -14,7 +14,7 @@ Shared SQLite file via bind mount.
 ```
 cp .env.example .env   # fill in admin creds + session secret
 make install-agent     # USBGuard + argus-agent user + IPC grant + own venv + systemd unit, starts argus-agent
-make prod               # argus-web, in Docker
+make run                # argus-web, in Docker
 ```
 
 Log in, pick a profile (Monitor/Enforce) under Ajustes.
@@ -23,10 +23,11 @@ Log in, pick a profile (Monitor/Enforce) under Ajustes.
 
 ```
 poetry install
-make dev     # docker compose up, live reload
 make test    # pytest
 make check   # ruff check + format --check
 ```
+
+`make run` bind-mounts `./src` with `--reload`, so code edits take effect without a rebuild.
 
 ## Testing the MQTT bridge locally
 

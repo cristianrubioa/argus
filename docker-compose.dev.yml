@@ -1,8 +1,0 @@
-services:
-  argus-web:
-    command: ["uvicorn", "argus.web.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-    ports:
-      - "8420:8000"
-    volumes:
-      - ./src:/app/src
-      - /var/lib/argus:/data

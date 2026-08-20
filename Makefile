@@ -2,10 +2,8 @@
 
 help:
 	@echo "Available commands:"
-	@echo "  make dev              Start development environment (argus-web on port 8420)"
-	@echo "  make dev-down         Stop dev environment"
-	@echo "  make prod             Start production stack"
-	@echo "  make prod-down        Stop production stack"
+	@echo "  make run              Start argus-web, in Docker (port 8420, live reload)"
+	@echo "  make down             Stop argus-web"
 	@echo "  make build            Build Docker image"
 	@echo "  make logs             View argus-web container logs"
 	@echo "  make install-agent    Install argus-agent on this host (needs sudo)"
@@ -20,17 +18,11 @@ help:
 	@echo "  make test             Run tests with pytest"
 	@echo "  make clean            Remove __pycache__ and .pyc files"
 
-dev:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+run:
+	docker compose up --build -d
 
-dev-down:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml down
-
-prod:
-	docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
-
-prod-down:
-	docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+down:
+	docker compose down
 
 build:
 	poetry lock

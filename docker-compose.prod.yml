@@ -1,5 +1,0 @@
-services:
-  argus-web:
-    restart: unless-stopped
-    ports:
-      - "8420:8000"
