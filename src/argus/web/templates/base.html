@@ -1,15 +1,38 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-gray-950 text-gray-200">
+<html lang="{{ language|default('en') }}" class="{{ 'dark' if theme == 'dark' else '' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Argus{% endblock %}</title>
-  <link rel="stylesheet" href="https://cristianrubioa.github.io/crubio-ui/app/tokens.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://crubio.fyi/crubio-ui/app/tokens.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" crossorigin="anonymous">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
   <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <style>
+    /* Flatpickr dark theme override, scoped to <html class="dark"> — light mode uses flatpickr's own default look */
+    .dark .flatpickr-calendar { background: #020a18; border-color: #0f2040; box-shadow: 0 4px 24px rgba(0,0,0,.6); }
+    .dark .flatpickr-months .flatpickr-month,
+    .dark .flatpickr-weekdays,
+    .dark span.flatpickr-weekday,
+    .dark .flatpickr-time { background: #020a18; }
+    .dark .flatpickr-day { color: #e2e8f0; border-color: transparent; }
+    .dark .flatpickr-day:hover, .dark .flatpickr-day:focus { background: #0f2040; border-color: #0f2040; }
+    .dark .flatpickr-day.selected, .dark .flatpickr-day.selected:hover, .dark .flatpickr-day.inRange { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .dark .flatpickr-day.flatpickr-disabled, .dark .flatpickr-day.prevMonthDay, .dark .flatpickr-day.nextMonthDay { color: #4a5568; }
+    .dark .flatpickr-time input, .dark .flatpickr-time .flatpickr-time-separator { color: #e2e8f0; }
+    .dark .flatpickr-time input:hover, .dark .flatpickr-time input:focus { background: #0f2040; }
+    .dark .numInputWrapper:hover { background: #0a1628; }
+    .dark .flatpickr-current-month .flatpickr-monthDropdown-months { background: #020a18; color: #e2e8f0; }
+    .dark .flatpickr-months .flatpickr-prev-month svg, .dark .flatpickr-months .flatpickr-next-month svg { fill: #93c5fd; }
+    .dark .flatpickr-months .flatpickr-prev-month:hover svg, .dark .flatpickr-months .flatpickr-next-month:hover svg { fill: #fff; }
+  </style>
 </head>
-<body class="min-h-screen bg-gray-950 text-gray-200 font-sans">
+<body class="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-200 font-sans">
   {% block body %}{% endblock %}
 </body>
 </html>

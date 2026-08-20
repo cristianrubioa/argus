@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% block title %}Argus — Dashboard{% endblock %}
 {% block content %}
-<h1 class="crubio-section-label text-blue-300 mb-4">Recent Activity</h1>
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('dashboard_heading') }}</h1>
 <div id="events-table" hx-get="/dashboard/partial" hx-trigger="every 2s" hx-swap="innerHTML">
   {% include "_events_table.html" %}
 </div>

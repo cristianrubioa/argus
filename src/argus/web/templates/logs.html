@@ -1,8 +1,87 @@
 {% extends "_shell.html" %}
 {% block title %}Argus — Logs{% endblock %}
 {% block content %}
-<h1 class="crubio-section-label text-blue-300 mb-4">Event Log</h1>
-<div id="events-table" hx-get="/logs/partial" hx-trigger="every 2s" hx-swap="innerHTML">
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('logs_heading') }}</h1>
+
+<form id="logs-filter-form" method="get" action="/logs" class="flex flex-wrap gap-3 items-end mb-4">
+  <div class="flex-1 min-w-[16rem]">
+    <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">{{ t('logs_search_label') }}</label>
+    <input type="text" name="q" value="{{ q }}" onchange="this.form.submit()"
+      placeholder="{{ t('logs_search_placeholder') }}"
+      class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+  </div>
+  <div>
+    <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">{{ t('logs_date_range_label') }}</label>
+    <input type="text" id="date-range" readonly
+      class="bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm w-56 cursor-pointer focus:outline-none focus:border-blue-400">
+    <input type="hidden" name="from" id="date-from" value="{{ date_from.strftime('%Y-%m-%dT%H:%M') }}">
+    <input type="hidden" name="to" id="date-to" value="{{ date_to.strftime('%Y-%m-%dT%H:%M') }}">
+  </div>
+  <details class="relative">
+    <summary class="list-none cursor-pointer inline-flex items-center gap-2 border border-gray-300 dark:border-gray-700 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300">
+      <i class="fa-solid fa-filter"></i> {{ t('logs_filter_button') }}
+    </summary>
+    <div class="absolute right-0 z-10 mt-2 w-64 p-3 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded shadow-lg space-y-3">
+      <div>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1.5">{{ t('table_decision') }}</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for value, colors in (
+            ('authorized', 'has-[:checked]:bg-green-100 has-[:checked]:text-green-700 dark:has-[:checked]:bg-green-900/40 dark:has-[:checked]:text-green-300'),
+            ('blocked', 'has-[:checked]:bg-red-100 has-[:checked]:text-red-700 dark:has-[:checked]:bg-red-900/40 dark:has-[:checked]:text-red-300'),
+            ('unrecognized', 'has-[:checked]:bg-yellow-100 has-[:checked]:text-yellow-700 dark:has-[:checked]:bg-yellow-900/40 dark:has-[:checked]:text-yellow-300'),
+          ) %}
+          {% set is_checked = not selected_decisions or value in selected_decisions %}
+          <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent {{ colors }}">
+            <input type="checkbox" name="decision" value="{{ value }}" class="peer hidden" {% if is_checked %}checked{% endif %}>
+            <i class="fa-solid fa-check text-[10px] mr-1 hidden peer-checked:inline"></i>{{ t('decision_' + value) }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1.5">{{ t('table_profile') }}</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for value, colors in (
+            ('monitor', 'has-[:checked]:bg-sky-100 has-[:checked]:text-sky-700 dark:has-[:checked]:bg-sky-900/40 dark:has-[:checked]:text-sky-300'),
+            ('enforce', 'has-[:checked]:bg-amber-100 has-[:checked]:text-amber-700 dark:has-[:checked]:bg-amber-900/40 dark:has-[:checked]:text-amber-300'),
+          ) %}
+          {% set is_checked = not selected_profiles or value in selected_profiles %}
+          <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent {{ colors }}">
+            <input type="checkbox" name="profile" value="{{ value }}" class="peer hidden" {% if is_checked %}checked{% endif %}>
+            <i class="fa-solid fa-check text-[10px] mr-1 hidden peer-checked:inline"></i>{{ value }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <button type="submit" class="w-full bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-3 py-1.5 transition">
+        {{ t('logs_filter_apply') }}
+      </button>
+    </div>
+  </details>
+</form>
+
+<div id="events-table" hx-get="/logs/partial" hx-trigger="every 2s" hx-include="#logs-filter-form" hx-swap="innerHTML">
   {% include "_events_table.html" %}
 </div>
+
+<script>
+  (function () {
+    const fromEl = document.getElementById("date-from");
+    const toEl = document.getElementById("date-to");
+    flatpickr("#date-range", {
+      mode: "range",
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d H:i",
+      defaultDate: [new Date(fromEl.value + "Z"), new Date(toEl.value + "Z")],
+      onClose(selectedDates) {
+        if (selectedDates.length === 2) {
+          fromEl.value = selectedDates[0].toISOString().slice(0, 16);
+          toEl.value = selectedDates[1].toISOString().slice(0, 16);
+          document.getElementById("logs-filter-form").submit();
+        }
+      }
+    });
+  })();
+</script>
 {% endblock %}

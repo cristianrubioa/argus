@@ -36,6 +36,28 @@ def request_profile(session: Session, profile: Profile) -> Settings:
     return settings
 
 
+def get_language(session: Session) -> str:
+    return get_settings(session).language
+
+
+def set_language(session: Session, language: str) -> Settings:
+    settings = get_settings(session)
+    settings.language = language
+    session.commit()
+    return settings
+
+
+def get_theme(session: Session) -> str:
+    return get_settings(session).theme
+
+
+def set_theme(session: Session, theme: str) -> Settings:
+    settings = get_settings(session)
+    settings.theme = theme
+    session.commit()
+    return settings
+
+
 def reconcile_profile(session: Session) -> None:
     """Called from argus-agent's poll loop; applies a pending profile change to USBGuard."""
     settings = get_settings(session)

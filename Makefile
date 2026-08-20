@@ -10,6 +10,8 @@ help:
 	@echo "  make logs             View argus-web container logs"
 	@echo "  make install-agent    Install argus-agent on this host (needs sudo)"
 	@echo "  make monitor-mode     Force USBGuard to stop blocking, right now (needs sudo)"
+	@echo "  make mqtt-broker      Start a throwaway local Mosquitto broker for testing"
+	@echo "  make mqtt-watch       Watch messages on the local test broker"
 	@echo ""
 	@echo "  make lint             Check style with ruff"
 	@echo "  make format           Format code with ruff"
@@ -44,6 +46,12 @@ install-agent:
 
 monitor-mode:
 	sudo usbguard set-parameter ImplicitPolicyTarget allow
+
+mqtt-broker:
+	docker run --rm -d --name argus-test-mosquitto -p 1883:1883 eclipse-mosquitto
+
+mqtt-watch:
+	docker run --rm --network host eclipse-mosquitto mosquitto_sub -h localhost -t 'argus/#' -v
 
 lint:
 	ruff check .

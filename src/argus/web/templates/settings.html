@@ -1,35 +1,63 @@
 {% extends "_shell.html" %}
 {% block title %}Argus — Ajustes{% endblock %}
 {% block content %}
-<h1 class="crubio-section-label text-blue-300 mb-4">Perfil de Seguridad</h1>
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_security_heading') }}</h1>
 <form method="post" action="/ajustes/profile" class="space-y-3 max-w-md">
-  <label class="flex items-start gap-3 p-3 border border-gray-800 rounded cursor-pointer">
+  <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
     <input type="radio" name="profile" value="monitor" class="mt-1" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
     <span>
       <span class="block font-medium">Monitor</span>
-      <span class="block text-sm text-gray-400">Logs every device but never blocks. Unrecognized devices are flagged only.</span>
+      <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_monitor_desc') }}</span>
     </span>
   </label>
-  <label class="flex items-start gap-3 p-3 border border-gray-800 rounded cursor-pointer">
+  <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
     <input type="radio" name="profile" value="enforce" class="mt-1" {% if settings.profile.value == 'enforce' %}checked{% endif %}>
     <span>
       <span class="block font-medium">Enforce</span>
-      <span class="block text-sm text-gray-400">Blocks anything not on the whitelist at the kernel level.</span>
+      <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_enforce_desc') }}</span>
     </span>
   </label>
   <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">
-    Save
+    {{ t('action_save') }}
   </button>
 </form>
 <p class="text-xs text-gray-500 mt-3">
-  Applied profile: {{ settings.applied_profile.value if settings.applied_profile else "pending — argus-agent will reconcile shortly" }}
+  {{ t('applied_profile_label') }} {{ settings.applied_profile.value if settings.applied_profile else t('applied_profile_pending') }}
 </p>
 
-<h1 class="crubio-section-label text-blue-300 mb-4 mt-8">Cuenta</h1>
-<p class="text-sm text-gray-400">Signed in as <span class="text-gray-200">{{ admin }}</span></p>
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_language_heading') }}</h1>
+<form method="post" action="/ajustes/language" class="max-w-md">
+  <select name="language" onchange="this.form.submit()"
+    class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+    {% for code in supported_languages %}
+    <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ language_names[code] }}</option>
+    {% endfor %}
+  </select>
+  <noscript><button type="submit" class="mt-2 bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('action_save') }}</button></noscript>
+</form>
 
-<h1 class="crubio-section-label text-blue-300 mb-4 mt-8">Automatización (MQTT)</h1>
-<p class="text-sm text-gray-400">
-  Configured via <code class="text-gray-300">ARGUS_MQTT_HOST</code> and related environment variables — see <code class="text-gray-300">.env.example</code>. Optional: leave unset to disable.
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_theme_heading') }}</h1>
+<form method="post" action="/ajustes/theme" class="max-w-md">
+  <select name="theme" onchange="this.form.submit()"
+    class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+    <option value="dark" {% if theme == 'dark' %}selected{% endif %}>{{ t('theme_dark') }}</option>
+    <option value="light" {% if theme == 'light' %}selected{% endif %}>{{ t('theme_light') }}</option>
+  </select>
+  <noscript><button type="submit" class="mt-2 bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('action_save') }}</button></noscript>
+</form>
+
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_account_heading') }}</h1>
+<p class="text-sm text-gray-600 dark:text-gray-400">{{ t('signed_in_as') }} <span class="text-gray-900 dark:text-gray-200">{{ admin }}</span></p>
+
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_automation_heading') }}</h1>
+<p class="text-sm text-gray-600 dark:text-gray-400">{{ t('mqtt_config_note') }}</p>
+<p class="text-xs text-gray-500 mt-2">
+  {% if settings.mqtt_last_publish_at is none %}
+    {{ t('mqtt_status_never') }}
+  {% elif settings.mqtt_last_publish_ok %}
+    {{ t('mqtt_status_ok_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }}
+  {% else %}
+    {{ t('mqtt_status_failed_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }} — {{ settings.mqtt_last_error }}
+  {% endif %}
 </p>
 {% endblock %}

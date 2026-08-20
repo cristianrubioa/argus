@@ -108,3 +108,8 @@ class Settings(Base):
     profile: Mapped[Profile] = mapped_column(Enum(Profile), default=Profile.MONITOR)
     applied_profile: Mapped[Profile | None] = mapped_column(Enum(Profile), nullable=True)
     enforce_bootstrapped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    language: Mapped[str] = mapped_column(String(2), default="en")
+    mqtt_last_publish_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    mqtt_last_publish_ok: Mapped[bool | None] = mapped_column(nullable=True)
+    mqtt_last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    theme: Mapped[str] = mapped_column(String(5), default="dark")

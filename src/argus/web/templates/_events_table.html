@@ -1,31 +1,37 @@
 <table class="w-full text-sm">
   <thead>
-    <tr class="text-left text-gray-500 border-b border-gray-800">
-      <th class="py-2 pr-4">Device</th>
+    <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
+      <th class="py-2 pr-4">{{ t('table_device') }}</th>
       <th class="py-2 pr-4">VID:PID</th>
-      <th class="py-2 pr-4">Decision</th>
-      <th class="py-2 pr-4">Profile</th>
-      <th class="py-2 pr-4">When</th>
+      <th class="py-2 pr-4">{{ t('table_decision') }}</th>
+      <th class="py-2 pr-4">{{ t('table_profile') }}</th>
+      <th class="py-2 pr-4">{{ t('table_when') }}</th>
     </tr>
   </thead>
   <tbody>
     {% for event in events %}
-    <tr class="border-b border-gray-900">
+    <tr class="border-b border-gray-100 dark:border-gray-900">
       <td class="py-2 pr-4">{{ event.device.name }}</td>
-      <td class="py-2 pr-4 text-gray-400">{{ event.device.vid_pid }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.device.vid_pid }}</td>
       <td class="py-2 pr-4">
         <span class="px-1.5 py-0.5 rounded text-xs
-          {% if event.decision.value == 'authorized' %}bg-green-900/40 text-green-300
-          {% elif event.decision.value == 'blocked' %}bg-red-900/40 text-red-300
-          {% else %}bg-yellow-900/40 text-yellow-300{% endif %}">
-          {{ event.decision.value }}
+          {% if event.decision.value == 'authorized' %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
+          {% elif event.decision.value == 'blocked' %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300
+          {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300{% endif %}">
+          {{ t('decision_' + event.decision.value) }}
         </span>
       </td>
-      <td class="py-2 pr-4 text-gray-400">{{ event.profile.value }}</td>
-      <td class="py-2 pr-4 text-gray-400">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4">
+        <span class="px-1.5 py-0.5 rounded text-xs
+          {% if event.profile.value == 'enforce' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+          {% else %}bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300{% endif %}">
+          {{ event.profile.value }}
+        </span>
+      </td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="py-4 text-center text-gray-500">No events yet</td></tr>
+    <tr><td colspan="5" class="py-4 text-center text-gray-500">{{ t('logs_empty') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>

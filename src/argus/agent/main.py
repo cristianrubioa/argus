@@ -67,7 +67,7 @@ def handle_event(session: Session, block: str) -> None:
 
     event = _record_event(session, device, decision)
     session.commit()
-    publish_event(device, event.decision)
+    publish_event(event, session)
 
 
 def _recently_recorded(session: Session, device: Device) -> bool:

@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy import event
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import sessionmaker
 
@@ -29,7 +31,28 @@ SessionLocal = sessionmaker(bind=engine)
 
 
 def init_db(bind_engine=None):
-    Base.metadata.create_all(bind=bind_engine or engine)
+    target = bind_engine or engine
+    Base.metadata.create_all(bind=target)
+    _add_missing_columns(target)
+
+
+_SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
+    "ALTER TABLE settings ADD COLUMN language TEXT DEFAULT 'en'",
+    "ALTER TABLE settings ADD COLUMN mqtt_last_publish_at DATETIME",
+    "ALTER TABLE settings ADD COLUMN mqtt_last_publish_ok BOOLEAN",
+    "ALTER TABLE settings ADD COLUMN mqtt_last_error VARCHAR(255)",
+    "ALTER TABLE settings ADD COLUMN theme TEXT DEFAULT 'dark'",
+)
+
+
+def _add_missing_columns(target):
+    """Guard for schema changes on a pre-existing database — no migration tool yet (add-ui-localization/design.md)."""
+    for statement in _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA:
+        try:
+            with target.begin() as conn:
+                conn.execute(text(statement))
+        except OperationalError:
+            pass
 
 
 def get_session():

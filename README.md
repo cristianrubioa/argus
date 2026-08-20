@@ -1,6 +1,6 @@
 # Argus
 
-USB device monitoring and control, built on [USBGuard](https://usbguard.github.io/). Full design in `openspec/changes/add-argus-mvp/`.
+USB device monitoring and control, built on [USBGuard](https://usbguard.github.io/). Full design in `openspec/specs/` and `openspec/changes/archive/`.
 
 ## Layout
 
@@ -27,3 +27,12 @@ make dev     # docker compose up, live reload
 make test    # pytest
 make check   # ruff check + format --check
 ```
+
+## Testing the MQTT bridge locally
+
+```
+make mqtt-broker                        # throwaway Mosquitto on localhost:1883
+# set ARGUS_MQTT_HOST=localhost in .env, redeploy argus-agent
+make mqtt-watch                         # prints every message as it arrives
+```
+Connect a device — the payload includes device identity, decision, profile, and timestamp.
