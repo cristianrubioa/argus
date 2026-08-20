@@ -2,7 +2,7 @@
 {% block body %}
 <div class="flex flex-col min-h-screen">
 
-  <header class="border-b border-gray-200 dark:border-gray-800 px-6 flex items-center gap-3 shrink-0" style="height: var(--header-h)">
+  <header class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-6 flex items-center gap-3 shrink-0" style="height: var(--header-h)">
     <i class="fa-solid fa-eye text-2xl text-blue-500 dark:text-blue-400"></i>
     <span class="font-semibold tracking-wide leading-none" style="font-size: var(--app-name-size)">Argus</span>
     <span class="text-sm text-gray-600 dark:text-gray-500 font-normal">USB Device Monitor</span>
@@ -28,9 +28,9 @@
         </a>
         {% endfor %}
       </nav>
-      <div class="mt-auto border-t border-gray-200 dark:border-gray-800 px-4 text-center text-gray-600 dark:text-gray-400"
-           style="font-size: var(--footer-size); padding-top: var(--footer-padding-y); padding-bottom: var(--footer-padding-y)">
-        {{ t('footer_made_with') }} <span class="text-red-400">&hearts;</span> by
+      <div class="mt-auto border-t border-gray-200 dark:border-gray-800 px-4 text-center text-sm text-gray-600 dark:text-gray-400"
+           style="padding-top: var(--footer-padding-y); padding-bottom: var(--footer-padding-y)">
+        {{ t('footer_made_with') }} <span class="text-red-400 text-base">♥</span> by
         <a href="https://github.com/cristianrubioa" target="_blank" rel="noopener noreferrer" class="hover:text-gray-900 dark:hover:text-gray-300 transition-colors">@cristianrubioa</a>
       </div>
     </aside>
