@@ -44,10 +44,12 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE settings ADD COLUMN theme TEXT DEFAULT 'dark'",
 )
 
+_DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = ("ALTER TABLE devices ADD COLUMN custom_name VARCHAR(255)",)
+
 
 def _add_missing_columns(target):
     """Guard for schema changes on a pre-existing database — no migration tool yet (add-ui-localization/design.md)."""
-    for statement in _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA:
+    for statement in _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA + _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA:
         try:
             with target.begin() as conn:
                 conn.execute(text(statement))

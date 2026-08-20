@@ -16,6 +16,8 @@
       class="bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm w-56 cursor-pointer focus:outline-none focus:border-blue-400">
     <input type="hidden" name="from" id="date-from" value="{{ date_from.strftime('%Y-%m-%dT%H:%M') }}">
     <input type="hidden" name="to" id="date-to" value="{{ date_to.strftime('%Y-%m-%dT%H:%M') }}">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
   </div>
   <details class="relative">
     <summary class="list-none cursor-pointer inline-flex items-center gap-2 border border-gray-300 dark:border-gray-700 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300">
@@ -60,7 +62,7 @@
   </details>
 </form>
 
-<div id="events-table" hx-get="/logs/partial" hx-trigger="every 2s" hx-include="#logs-filter-form" hx-swap="innerHTML">
+<div id="events-table" hx-get="/logs/partial?page={{ page }}" hx-trigger="every 2s" hx-include="#logs-filter-form" hx-swap="innerHTML">
   {% include "_events_table.html" %}
 </div>
 

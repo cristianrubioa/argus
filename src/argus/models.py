@@ -41,6 +41,7 @@ class Device(Base):
     pid: Mapped[str] = mapped_column(String(4))
     name: Mapped[str] = mapped_column(String(255))
     serial: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    custom_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
@@ -50,6 +51,10 @@ class Device(Base):
     @property
     def vid_pid(self) -> str:
         return f"{self.vid}:{self.pid}"
+
+    @property
+    def display_name(self) -> str:
+        return self.custom_name or self.name
 
 
 class DeviceEvent(Base):

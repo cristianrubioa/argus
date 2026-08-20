@@ -1,17 +1,23 @@
 <table class="w-full text-sm">
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
-      <th class="py-2 pr-4">{{ t('table_device') }}</th>
-      <th class="py-2 pr-4">VID:PID</th>
-      <th class="py-2 pr-4">{{ t('table_decision') }}</th>
-      <th class="py-2 pr-4">{{ t('table_profile') }}</th>
-      <th class="py-2 pr-4">{{ t('table_when') }}</th>
+      {% for column, label in (('name', t('table_device')), ('vid_pid', 'VID:PID'), ('decision', t('table_decision')), ('profile', t('table_profile')), ('occurred_at', t('table_when'))) %}
+      <th class="py-2 pr-4">
+        {% if sort_links is defined %}
+        <a href="{{ sort_links[column] }}" class="hover:text-gray-900 dark:hover:text-gray-200">
+          {{ label }}{% if sort == column %} <i class="fa-solid fa-arrow-{{ 'up' if dir == 'asc' else 'down' }} text-xs"></i>{% endif %}
+        </a>
+        {% else %}
+        {{ label }}
+        {% endif %}
+      </th>
+      {% endfor %}
     </tr>
   </thead>
   <tbody>
     {% for event in events %}
     <tr class="border-b border-gray-100 dark:border-gray-900">
-      <td class="py-2 pr-4">{{ event.device.name }}</td>
+      <td class="py-2 pr-4">{{ event.device.display_name }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.device.vid_pid }}</td>
       <td class="py-2 pr-4">
         <span class="px-1.5 py-0.5 rounded text-xs
@@ -35,3 +41,16 @@
     {% endfor %}
   </tbody>
 </table>
+{% if total_pages is defined %}
+<div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+  <span>{{ t('logs_pagination_showing') }} {{ range_start }}–{{ range_end }} {{ t('logs_pagination_of') }} {{ total_count }}</span>
+  <div class="flex gap-2">
+    <a href="{{ prev_page_link }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page <= 1 else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      <i class="fa-solid fa-chevron-left text-xs mr-1.5"></i>{{ t('logs_pagination_prev') }}
+    </a>
+    <a href="{{ next_page_link }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page >= total_pages else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      {{ t('logs_pagination_next') }}<i class="fa-solid fa-chevron-right text-xs ml-1.5"></i>
+    </a>
+  </div>
+</div>
+{% endif %}

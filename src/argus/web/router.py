@@ -2,6 +2,7 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 from pathlib import Path
+from urllib.parse import urlencode
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -138,6 +139,20 @@ def revoke_device(device_id: int, admin: str = Depends(require_admin), session: 
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
+@router.post("/whitelist/rename/{device_id}")
+def rename_device(
+    device_id: int,
+    custom_name: str = Form(""),
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    device = session.get(Device, device_id)
+    if device is not None and device.whitelist_entry is not None:
+        device.custom_name = custom_name.strip() or None
+        session.commit()
+    return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
+
+
 # --- Logs ---
 
 
@@ -154,6 +169,16 @@ def _effective_logs_range(date_from: str | None, date_to: str | None) -> tuple[d
     return parsed_from or now - timedelta(days=_LOGS_DEFAULT_RANGE_DAYS), parsed_to or now
 
 
+_LOGS_SORT_COLUMNS = {
+    "name": Device.name,
+    "vid_pid": Device.vid.op("||")(":").op("||")(Device.pid),
+    "decision": DeviceEvent.decision,
+    "profile": DeviceEvent.profile,
+    "occurred_at": DeviceEvent.occurred_at,
+}
+_LOGS_DEFAULT_SORT = "occurred_at"
+
+
 def _filtered_events(
     session: Session,
     q: str,
@@ -161,7 +186,10 @@ def _filtered_events(
     event_profiles: list[str],
     date_from: datetime,
     date_to: datetime,
-) -> list[DeviceEvent]:
+    sort: str,
+    direction: str,
+    page: int,
+) -> tuple[list[DeviceEvent], int]:
     query = session.query(DeviceEvent).join(Device)
     if q:
         like = f"%{q}%"
@@ -172,7 +200,29 @@ def _filtered_events(
     if event_profiles:
         query = query.filter(DeviceEvent.profile.in_(event_profiles))
     query = query.filter(DeviceEvent.occurred_at >= date_from, DeviceEvent.occurred_at <= date_to)
-    return query.order_by(DeviceEvent.occurred_at.desc()).all()
+    total = query.count()
+    column = _LOGS_SORT_COLUMNS[sort]
+    ordered = column.asc() if direction == "asc" else column.desc()
+    events = query.order_by(ordered).offset((page - 1) * _RECENT_EVENTS_LIMIT).limit(_RECENT_EVENTS_LIMIT).all()
+    return events, total
+
+
+def _logs_filter_query_string(
+    q: str, decision: list[str], profile: list[str], date_from: datetime, date_to: datetime
+) -> str:
+    params = [("q", q)] if q else []
+    params += [("decision", d) for d in decision]
+    params += [("profile", p) for p in profile]
+    params += [("from", date_from.strftime(_LOGS_DATE_FORMAT)), ("to", date_to.strftime(_LOGS_DATE_FORMAT))]
+    return urlencode(params)
+
+
+def _logs_sort_links(filter_query_string: str, sort: str, direction: str) -> dict[str, str]:
+    links = {}
+    for column in _LOGS_SORT_COLUMNS:
+        next_dir = "desc" if sort == column and direction == "asc" else "asc"
+        links[column] = f"/logs?{filter_query_string}&sort={column}&dir={next_dir}"
+    return links
 
 
 def _logs_context(
@@ -182,9 +232,18 @@ def _logs_context(
     profile: list[str],
     date_from: str | None,
     date_to: str | None,
+    sort: str,
+    direction: str,
+    page: int,
 ) -> dict:
     effective_from, effective_to = _effective_logs_range(date_from, date_to)
-    events = _filtered_events(session, q, decision, profile, effective_from, effective_to)
+    sort = sort if sort in _LOGS_SORT_COLUMNS else _LOGS_DEFAULT_SORT
+    direction = direction if direction in ("asc", "desc") else "desc"
+    page = max(page, 1)
+    events, total = _filtered_events(session, q, decision, profile, effective_from, effective_to, sort, direction, page)
+    total_pages = max((total + _RECENT_EVENTS_LIMIT - 1) // _RECENT_EVENTS_LIMIT, 1)
+    filter_query_string = _logs_filter_query_string(q, decision, profile, effective_from, effective_to)
+    page_link_base = f"/logs?{filter_query_string}&sort={sort}&dir={direction}"
     return {
         "events": events,
         "q": q,
@@ -192,6 +251,16 @@ def _logs_context(
         "selected_profiles": profile,
         "date_from": effective_from,
         "date_to": effective_to,
+        "sort": sort,
+        "dir": direction,
+        "page": page,
+        "total_pages": total_pages,
+        "total_count": total,
+        "range_start": (page - 1) * _RECENT_EVENTS_LIMIT + 1 if total > 0 else 0,
+        "range_end": min(page * _RECENT_EVENTS_LIMIT, total),
+        "sort_links": _logs_sort_links(filter_query_string, sort, direction),
+        "prev_page_link": f"{page_link_base}&page={max(page - 1, 1)}",
+        "next_page_link": f"{page_link_base}&page={min(page + 1, total_pages)}",
     }
 
 
@@ -203,10 +272,13 @@ def logs(
     profile: list[str] = Query(default=[]),
     date_from: str | None = Query(default=None, alias="from"),
     date_to: str | None = Query(default=None, alias="to"),
+    sort: str = _LOGS_DEFAULT_SORT,
+    dir: str = "desc",
+    page: int = 1,
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
-    context = _logs_context(session, q, decision, profile, date_from, date_to)
+    context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
     return render(request, session, "logs.html", {"admin": admin, "active": "logs", **context})
 
 
@@ -218,10 +290,13 @@ def logs_partial(
     profile: list[str] = Query(default=[]),
     date_from: str | None = Query(default=None, alias="from"),
     date_to: str | None = Query(default=None, alias="to"),
+    sort: str = _LOGS_DEFAULT_SORT,
+    dir: str = "desc",
+    page: int = 1,
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
-    context = _logs_context(session, q, decision, profile, date_from, date_to)
+    context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
     return render(request, session, "_events_table.html", context)
 
 
