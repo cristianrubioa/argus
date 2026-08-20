@@ -11,6 +11,6 @@ services:
       ARGUS_MQTT_PORT: ${ARGUS_MQTT_PORT:-1883}
       ARGUS_MQTT_TOPIC_PREFIX: ${ARGUS_MQTT_TOPIC_PREFIX:-argus}
     volumes:
-      - ./data:/data
+      - /var/lib/argus:/data
     expose:
       - "8000"

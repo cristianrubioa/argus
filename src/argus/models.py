@@ -65,11 +65,7 @@ class DeviceEvent(Base):
 
 
 class WhitelistEntry(Base):
-    """The whitelist. Source of truth for both profiles — see design.md decision on
-    whitelist source of truth: Argus owns this table in SQLite; in Enforce profile,
-    every mutation here is also pushed to USBGuard via its own IPC commands
-    (usbguard_cli.allow_device/block_device), but reads never go back to USBGuard live.
-    """
+    """The whitelist, source of truth for both profiles (design.md decision #6a)."""
 
     __tablename__ = "whitelist_entries"
 
@@ -82,11 +78,7 @@ class WhitelistEntry(Base):
 
 
 class PendingUsbguardAction(Base):
-    """A whitelist write queued by argus-web (Docker, no access to USBGuard's host
-    IPC socket) for argus-agent (host) to apply. See design.md decision #1a: the
-    already-shared SQLite file doubles as the hand-off point, instead of adding a
-    new channel across the host/container boundary.
-    """
+    """A whitelist write queued by argus-web for argus-agent to apply (design.md decision #1a)."""
 
     __tablename__ = "pending_usbguard_actions"
 
@@ -108,13 +100,7 @@ class AdminUser(Base):
 
 
 class Settings(Base):
-    """Singleton row (id is always 1) holding the security profile.
-
-    `profile` is the admin's desired profile, writable from argus-web. `applied_profile`
-    is what argus-agent has actually pushed to USBGuard via IPC — only argus-agent writes
-    it, since only argus-agent can reach USBGuard's host-local socket (design.md decision
-    #1a). When the two differ, argus-agent's poller reconciles them.
-    """
+    """Singleton row (id=1). `profile` is desired (argus-web); `applied_profile` is what argus-agent applied."""
 
     __tablename__ = "settings"
 

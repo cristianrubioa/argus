@@ -22,17 +22,12 @@ def get_settings(session: Session) -> Settings:
 
 
 def get_active_profile(session: Session) -> Profile:
-    """The admin's desired profile — used to tag events, independent of whether
-    argus-agent has finished reconciling it with USBGuard yet.
-    """
+    """The admin's desired profile, used to tag events (may not be applied yet)."""
     return get_settings(session).profile
 
 
 def request_profile(session: Session, profile: Profile) -> Settings:
-    """Called from argus-web (Ajustes page). Only records what the admin wants —
-    argus-web has no path to USBGuard's host-local IPC socket, so it cannot apply
-    the change itself (design.md decision #1a). argus-agent's poller reconciles it.
-    """
+    """Called from argus-web. Only records the desired profile — argus-agent applies it (design.md decision #1a)."""
     settings = get_settings(session)
     settings.profile = profile
     session.commit()
@@ -40,11 +35,7 @@ def request_profile(session: Session, profile: Profile) -> Settings:
 
 
 def reconcile_profile(session: Session) -> None:
-    """Called from argus-agent's poll loop. If the desired profile differs from what
-    was last applied, does the actual USBGuard work: bootstrap the whitelist on the
-    first-ever switch to Enforce (design.md decision #6), then push
-    ImplicitPolicyTarget.
-    """
+    """Called from argus-agent's poll loop; applies a pending profile change to USBGuard."""
     settings = get_settings(session)
     if settings.profile == settings.applied_profile:
         return

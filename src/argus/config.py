@@ -11,11 +11,7 @@ def session_secret() -> str:
 
 
 def admin_bootstrap_credentials() -> tuple[str, str] | None:
-    """Username/password to seed the single admin account on first run, from the environment.
-
-    Returns None once no seed is configured — the caller falls back to whatever
-    is already stored in the database.
-    """
+    """Admin seed from the environment, or None if unconfigured (falls back to the stored admin)."""
     username = os.environ.get("ARGUS_ADMIN_USERNAME")
     password = os.environ.get("ARGUS_ADMIN_PASSWORD")
     if not username or not password:

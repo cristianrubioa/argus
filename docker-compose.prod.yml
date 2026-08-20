@@ -2,4 +2,4 @@ services:
   argus-web:
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8420:8000"

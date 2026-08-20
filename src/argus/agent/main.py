@@ -2,6 +2,7 @@ import logging
 import threading
 import time
 from datetime import datetime
+from datetime import timedelta
 from datetime import timezone
 
 from sqlalchemy.orm import Session
@@ -10,7 +11,7 @@ from argus import profiles
 from argus import usbguard_cli
 from argus.agent import watcher
 from argus.agent.mqtt_bridge import publish_event
-from argus.agent.parser import parse_event_line
+from argus.agent.parser import parse_event_block
 from argus.db import SessionLocal
 from argus.db import init_db
 from argus.models import Decision
@@ -23,6 +24,9 @@ from argus.models import WhitelistEntry
 logger = logging.getLogger(__name__)
 
 _PENDING_ACTIONS_POLL_SECONDS = 2
+
+# Covers composite-device bursts (~20-50ms) and slow storage enumeration (observed: 805ms).
+_DEDUPE_WINDOW_SECONDS = 1.5
 
 
 def _utcnow() -> datetime:
@@ -41,12 +45,16 @@ def _get_or_create_device(session: Session, parsed) -> Device:
     return device
 
 
-def handle_line(session: Session, line: str) -> None:
-    parsed = parse_event_line(line)
+def handle_event(session: Session, block: str) -> None:
+    parsed = parse_event_block(block)
     if parsed is None:
         return
 
     device = _get_or_create_device(session, parsed)
+    if _recently_recorded(session, device):
+        session.commit()
+        return
+
     is_whitelisted = session.query(WhitelistEntry).filter_by(device_id=device.id).first() is not None
 
     if is_whitelisted:
@@ -59,6 +67,14 @@ def handle_line(session: Session, line: str) -> None:
     event = _record_event(session, device, decision)
     session.commit()
     publish_event(device, event.decision)
+
+
+def _recently_recorded(session: Session, device: Device) -> bool:
+    cutoff = _utcnow() - timedelta(seconds=_DEDUPE_WINDOW_SECONDS)
+    return (
+        session.query(DeviceEvent).filter(DeviceEvent.device_id == device.id, DeviceEvent.occurred_at > cutoff).first()
+        is not None
+    )
 
 
 def _record_event(session: Session, device: Device, decision: Decision) -> DeviceEvent:
@@ -85,12 +101,12 @@ def apply_pending_actions(session: Session) -> None:
 
 def _watch_loop() -> None:
     while True:
-        for line in watcher.watch_events():
+        for block in watcher.watch_events():
             with SessionLocal() as session:
                 try:
-                    handle_line(session, line)
+                    handle_event(session, block)
                 except Exception:
-                    logger.exception("Failed to handle usbguard watch line: %s", line)
+                    logger.exception("Failed to handle usbguard watch event: %s", block)
         logger.warning("usbguard watch exited; restarting")
 
 

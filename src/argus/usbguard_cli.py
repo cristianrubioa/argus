@@ -1,10 +1,4 @@
-"""Thin wrapper around the `usbguard` CLI.
-
-Every write goes through USBGuard's own IPC commands — never by editing
-/etc/usbguard/rules.conf or reloading the daemon ourselves (see design.md
-decision #3). Requires the running user to hold an IPC access grant from
-`usbguard add-user` (see design.md decision #4) — no root needed.
-"""
+"""Thin wrapper around the `usbguard` CLI — writes go through IPC, never rules.conf directly (decision #3)."""
 
 import subprocess
 
@@ -22,6 +16,9 @@ def _run(*args: str) -> str:
         raise UsbguardCliError(f"usbguard {' '.join(args)} failed: {exc.stderr.strip()}") from exc
     except FileNotFoundError as exc:
         raise UsbguardCliError("usbguard CLI not found on this host") from exc
+    # Not every usbguard subcommand signals an IPC failure via exit code (e.g. append-rule exits 0 on "Permission denied").
+    if "ERROR" in result.stdout or "ERROR" in result.stderr:
+        raise UsbguardCliError(f"usbguard {' '.join(args)} failed: {(result.stdout + result.stderr).strip()}")
     return result.stdout
 
 
@@ -45,9 +42,9 @@ def set_implicit_policy_target(target: str) -> None:
     _run("set-parameter", "ImplicitPolicyTarget", target)
 
 
-def generate_policy() -> str:
-    """Returns a rule set authorizing currently connected devices, as text
-    (usbguard-rules.conf(5) format) — used to bootstrap the whitelist on
-    first switch to Enforce (design.md decision #6).
-    """
-    return _run("generate-policy")
+def generate_policy() -> None:
+    """Authorizes every connected device via IPC — bootstraps the whitelist on first switch to Enforce (decision #6)."""
+    for line in _run("generate-policy").splitlines():
+        line = line.strip()
+        if line:
+            _run("append-rule", line)

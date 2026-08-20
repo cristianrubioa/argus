@@ -1,7 +1,4 @@
-"""Publishes device events to MQTT for external, decoupled automation consumers
-(design.md decision #7). Entirely optional: with no broker configured, or if the
-broker is unreachable, event capture and persistence continue unaffected.
-"""
+"""Publishes device events to MQTT for external consumers (design.md decision #7) — entirely optional."""
 
 import json
 import logging

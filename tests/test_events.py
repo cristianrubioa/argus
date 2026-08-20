@@ -1,36 +1,114 @@
-from argus.agent.main import handle_line
+from argus.agent.main import handle_event
 from argus.models import Decision
 from argus.models import Device
 from argus.models import DeviceEvent
 
+# Captured verbatim from `sudo usbguard watch -w` on a real Ubuntu Noble host.
+_INSERT_BLOCKED_WITH_SERIAL = (
+    "[device] PresenceChanged: id=20\n"
+    " event=Insert\n"
+    " target=block\n"
+    ' device_rule=block id 058f:6387 serial "AAE9055C" name "Mass Storage" '
+    'hash "nenPRn0Y6FeYFUGzorTU6vCVd8iLMlDs2nQfDtRiNwI=" '
+    'parent-hash "jEP/6WzviqdJ5VSeTUY8PatCNBKeaREvo2OqdplND/o=" '
+    'via-port "3-5" with-interface 08:06:50 with-connect-type "hotplug"'
+)
+
+_INSERT_BLOCKED_NO_SERIAL = (
+    "[device] PresenceChanged: id=21\n"
+    " event=Insert\n"
+    " target=block\n"
+    ' device_rule=block id 046d:c542 serial "" name "Wireless Receiver" '
+    'hash "RE4eSWo4C6sJnh9noxTYUChFLUFP68OpRaakLzFKohg=" '
+    'parent-hash "jEP/6WzviqdJ5VSeTUY8PatCNBKeaREvo2OqdplND/o=" '
+    'via-port "3-5" with-interface 03:01:02 with-connect-type "hotplug"'
+)
+
+_INSERT_ALLOWED = (
+    "[device] PresenceChanged: id=22\n"
+    " event=Insert\n"
+    " target=allow\n"
+    ' device_rule=allow id 1d6b:0002 serial "0000:00:0d.0" name "xHCI Host Controller" '
+    'hash "d3YN7OD60Ggqc9hClW0/al6tlFEshidDnQKzZRRk410=" '
+    'parent-hash "Y1kBdG1uWQr5CjULQs7uh2F6pHgFb6VDHcWLk83v+tE=" '
+    'with-interface 09:00:00 with-connect-type ""'
+)
+
+_REMOVE = (
+    "[device] PresenceChanged: id=19\n"
+    " event=Remove\n"
+    " target=allow\n"
+    ' device_rule=allow id 058f:6387 serial "AAE9055C" name "Mass Storage"'
+)
+
+_POLICY_CHANGED = (
+    "[device] PolicyChanged: id=20\n"
+    " target_old=block\n"
+    " target_new=allow\n"
+    ' device_rule=allow id 058f:6387 serial "AAE9055C" name "Mass Storage"\n'
+    " rule_id=4294967294"
+)
+
 
 def test_event_recorded_with_full_device_attributes(session):
-    # Setup
-    line = 'DevicePolicyChanged target=allow id 1d6b:0002 name "xHCI Host Controller" serial "0000:00:0d.0"'
     # Action
-    handle_line(session, line)
+    handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
     # Expected
     device = session.query(Device).one()
-    assert device.vid_pid == "1d6b:0002"
-    assert device.serial == "0000:00:0d.0"
+    assert device.vid_pid == "058f:6387"
+    assert device.serial == "AAE9055C"
+    assert device.name == "Mass Storage"
     event = session.query(DeviceEvent).one()
-    assert event.decision == Decision.UNRECOGNIZED
+    assert event.decision == Decision.BLOCKED
+
+
+def test_rapid_duplicate_inserts_recorded_once(session):
+    # Setup — a composite device (e.g. a wireless mouse dongle) can fire several
+    # PresenceChanged/Insert blocks milliseconds apart for the same physical connect
+    # Action
+    handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
+    handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
+    # Expected
+    assert session.query(Device).count() == 1
+    assert session.query(DeviceEvent).count() == 1
 
 
 def test_event_recorded_for_device_without_serial(session):
-    # Setup
-    line = 'DevicePolicyChanged target=allow id 046d:c52b name "USB Receiver"'
     # Action
-    handle_line(session, line)
+    handle_event(session, _INSERT_BLOCKED_NO_SERIAL)
     # Expected
     device = session.query(Device).one()
     assert device.serial is None
     assert session.query(DeviceEvent).count() == 1
 
 
-def test_non_device_line_is_ignored(session):
+def test_unrecognized_device_not_blocked_by_usbguard(session):
     # Action
-    handle_line(session, "Waiting for IPC connection")
+    handle_event(session, _INSERT_ALLOWED)
+    # Expected
+    event = session.query(DeviceEvent).one()
+    assert event.decision == Decision.UNRECOGNIZED
+
+
+def test_remove_event_is_ignored(session):
+    # Action
+    handle_event(session, _REMOVE)
+    # Expected
+    assert session.query(Device).count() == 0
+    assert session.query(DeviceEvent).count() == 0
+
+
+def test_policy_changed_event_is_ignored(session):
+    # Action
+    handle_event(session, _POLICY_CHANGED)
+    # Expected
+    assert session.query(Device).count() == 0
+    assert session.query(DeviceEvent).count() == 0
+
+
+def test_ipc_status_line_is_ignored(session):
+    # Action
+    handle_event(session, "[IPC] Connected")
     # Expected
     assert session.query(Device).count() == 0
     assert session.query(DeviceEvent).count() == 0

@@ -1,16 +1,11 @@
-"""Subprocess wrapper around `usbguard watch` — USBGuard's own native-IPC event
-stream (design.md decision #2). No D-Bus, no extra service.
-"""
+"""Subprocess wrapper around `usbguard watch` — USBGuard's native-IPC event stream (design.md decision #2)."""
 
 import subprocess
 from collections.abc import Iterator
 
 
 def watch_events() -> Iterator[str]:
-    """Yields raw stdout lines from `usbguard watch -w` (-w: wait for the IPC
-    connection instead of exiting if the daemon isn't up yet). Runs until the
-    subprocess exits; the caller is expected to restart the loop on exit.
-    """
+    """Yields one joined event block per device event. Restart the loop on exit — this runs until the subprocess exits."""
     process = subprocess.Popen(
         ["usbguard", "watch", "-w"],
         stdout=subprocess.PIPE,
@@ -18,10 +13,17 @@ def watch_events() -> Iterator[str]:
         bufsize=1,
     )
     assert process.stdout is not None
+    block: list[str] = []
     try:
-        for line in process.stdout:
-            line = line.strip()
-            if line:
-                yield line
+        for raw_line in process.stdout:
+            line = raw_line.rstrip("\n")
+            if not line:
+                continue
+            if not line.startswith(" ") and block:
+                yield "\n".join(block)
+                block = []
+            block.append(line)
+        if block:
+            yield "\n".join(block)
     finally:
         process.terminate()

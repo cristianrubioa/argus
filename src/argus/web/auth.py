@@ -1,8 +1,4 @@
-"""Single-admin session-cookie login — no JWT, no roles, no registration
-(design.md decision #9). Password hashing uses stdlib PBKDF2-HMAC-SHA256 at an
-OWASP-recommended iteration count, avoiding an extra dependency (bcrypt/passlib)
-for a single low-throughput login.
-"""
+"""Single-admin session-cookie login (design.md decision #9) — no JWT, no roles."""
 
 import hashlib
 import hmac
@@ -34,9 +30,7 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 
 def ensure_admin_seeded(session: Session) -> None:
-    """On startup, if ARGUS_ADMIN_USERNAME/PASSWORD are set and no matching admin
-    exists yet, seed (or update) the single admin account from them.
-    """
+    """Seeds or updates the single admin account from ARGUS_ADMIN_USERNAME/PASSWORD, if set."""
     seed = config.admin_bootstrap_credentials()
     if seed is None:
         return

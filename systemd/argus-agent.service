@@ -7,9 +7,10 @@ Documentation=https://github.com/cristianrubioa/argus
 [Service]
 Type=simple
 User=argus-agent
-Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
+# Must come after EnvironmentFile= so this host path always wins (later directive wins).
 EnvironmentFile=-/etc/argus/agent.env
-ExecStart=/usr/local/bin/argus-agent
+Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
+ExecStart=/opt/argus/app/.venv/bin/argus-agent
 Restart=on-failure
 
 [Install]

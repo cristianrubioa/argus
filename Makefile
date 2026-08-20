@@ -2,12 +2,14 @@
 
 help:
 	@echo "Available commands:"
-	@echo "  make dev              Start development environment (argus-web on port 8000)"
+	@echo "  make dev              Start development environment (argus-web on port 8420)"
 	@echo "  make dev-down         Stop dev environment"
 	@echo "  make prod             Start production stack"
 	@echo "  make prod-down        Stop production stack"
 	@echo "  make build            Build Docker image"
 	@echo "  make logs             View argus-web container logs"
+	@echo "  make install-agent    Install argus-agent on this host (needs sudo)"
+	@echo "  make monitor-mode     Force USBGuard to stop blocking, right now (needs sudo)"
 	@echo ""
 	@echo "  make lint             Check style with ruff"
 	@echo "  make format           Format code with ruff"
@@ -35,6 +37,13 @@ build:
 
 logs:
 	docker compose logs -f argus-web
+
+install-agent:
+	chmod +x ./scripts/install-agent.sh
+	sudo ./scripts/install-agent.sh
+
+monitor-mode:
+	sudo usbguard set-parameter ImplicitPolicyTarget allow
 
 lint:
 	ruff check .

@@ -13,9 +13,6 @@ build/
 .ruff_cache/
 .pytest_cache/
 
-# SQLite data (bind-mounted, host/container shared state — never committed)
-data/
-
 # IDE
 .vscode/
 .idea/
