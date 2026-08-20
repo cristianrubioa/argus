@@ -6,6 +6,7 @@ import secrets
 
 from fastapi import HTTPException
 from fastapi import Request
+from fastapi import status
 from sqlalchemy.orm import Session
 
 from argus import config
@@ -52,5 +53,5 @@ def authenticate(session: Session, username: str, password: str) -> bool:
 def require_admin(request: Request) -> str:
     username = request.session.get("admin")
     if not username:
-        raise HTTPException(status_code=303, headers={"Location": "/login"})
+        raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/login"})
     return username

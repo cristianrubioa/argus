@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Form
 from fastapi import Request
+from fastapi import status
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -40,13 +41,13 @@ def login_submit(
     if not authenticate(session, username, password):
         return templates.TemplateResponse(request, "login.html", {"error": "Invalid username or password"})
     request.session["admin"] = username
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/logout")
 def logout(request: Request):
     request.session.clear()
-    return RedirectResponse(url="/login", status_code=303)
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
 # --- Dashboard ---
@@ -101,7 +102,7 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
         if profiles.get_active_profile(session) == Profile.ENFORCE:
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
         session.commit()
-    return RedirectResponse(url="/whitelist", status_code=303)
+    return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/whitelist/revoke/{device_id}")
@@ -112,7 +113,7 @@ def revoke_device(device_id: int, admin: str = Depends(require_admin), session: 
         if profiles.get_active_profile(session) == Profile.ENFORCE:
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.BLOCK))
         session.commit()
-    return RedirectResponse(url="/whitelist", status_code=303)
+    return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
 # --- Logs ---
@@ -147,4 +148,4 @@ def update_profile(
     session: Session = Depends(get_session),
 ):
     profiles.request_profile(session, Profile(profile))
-    return RedirectResponse(url="/ajustes", status_code=303)
+    return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)

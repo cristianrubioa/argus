@@ -8,9 +8,10 @@ from datetime import timezone
 from sqlalchemy.orm import Session
 
 from argus import profiles
-from argus import usbguard_cli
+from argus.agent import usbguard_cli
 from argus.agent import watcher
 from argus.agent.mqtt_bridge import publish_event
+from argus.agent.parser import ParsedEvent
 from argus.agent.parser import parse_event_block
 from argus.db import SessionLocal
 from argus.db import init_db
@@ -33,7 +34,7 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _get_or_create_device(session: Session, parsed) -> Device:
+def _get_or_create_device(session: Session, parsed: ParsedEvent) -> Device:
     device = session.query(Device).filter_by(vid=parsed.vid, pid=parsed.pid, serial=parsed.serial).first()
     if device is None:
         device = Device(vid=parsed.vid, pid=parsed.pid, name=parsed.name, serial=parsed.serial)
@@ -114,13 +115,17 @@ def _reconcile_loop() -> None:
     while True:
         with SessionLocal() as session:
             apply_pending_actions(session)
-            profiles.reconcile_profile(session)
+            try:
+                profiles.reconcile_profile(session)
+            except usbguard_cli.UsbguardCliError:
+                logger.exception("Failed to reconcile security profile")
         time.sleep(_PENDING_ACTIONS_POLL_SECONDS)
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     init_db()
+    usbguard_cli.warn_if_untested_version()
     threading.Thread(target=_watch_loop, daemon=True).start()
     _reconcile_loop()
 

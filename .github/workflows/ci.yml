@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  commit-lint:
+    name: Commit message
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit message format
+        run: |
+          MSG=$(git log -1 --pretty=%s)
+          echo "Commit: $MSG"
+          if ! echo "$MSG" | grep -qP '^:[a-z0-9_]+: \[(back|front|infra|ci|doc)\] [A-Z]'; then
+            echo "Invalid commit message format."
+            echo "Expected: :[emoji]: [(back|front|infra|ci|doc)] Capitalized message"
+            echo "Example:  :sparkles: [back] Add star catalog filter"
+            exit 1
+          fi
+
+  ruff:
+    name: Code quality
+    needs: commit-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Check code
+        run: make check
+
+  tests:
+    name: Tests
+    needs: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Run tests
+        run: poetry run make test

@@ -1,8 +1,14 @@
 """Thin wrapper around the `usbguard` CLI — writes go through IPC, never rules.conf directly (decision #3)."""
 
+import logging
 import subprocess
 
 from argus.models import Device
+
+logger = logging.getLogger(__name__)
+
+# Ubuntu Noble's usbguard 1.1.2+ds-6build2 — the version parser.py and this module were validated against.
+TESTED_VERSION = "1.1.2"
 
 
 class UsbguardCliError(RuntimeError):
@@ -48,3 +54,14 @@ def generate_policy() -> None:
         line = line.strip()
         if line:
             _run("append-rule", line)
+
+
+def warn_if_untested_version() -> None:
+    """Best-effort startup check — logs a warning if the installed usbguard differs from TESTED_VERSION."""
+    try:
+        installed = _run("--version").strip()
+    except UsbguardCliError:
+        logger.warning("Could not determine installed usbguard version")
+        return
+    if TESTED_VERSION not in installed:
+        logger.warning("Installed usbguard (%s) differs from the tested version (%s)", installed, TESTED_VERSION)

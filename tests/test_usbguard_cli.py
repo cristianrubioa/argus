@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from argus import usbguard_cli
+from argus.agent import usbguard_cli
 
 
 def test_run_raises_on_ipc_error_despite_exit_code_zero(monkeypatch):
@@ -34,3 +34,23 @@ def test_generate_policy_applies_every_line_via_append_rule(monkeypatch):
     assert calls[0] == ("generate-policy",)
     assert calls[1] == ("append-rule", 'allow id 058f:6387 serial "AAE9055C" name "Mass Storage"')
     assert calls[2] == ("append-rule", 'allow id 046d:c542 serial "" name "Wireless Receiver"')
+
+
+def test_warn_if_untested_version_logs_on_mismatch(monkeypatch, caplog):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: "usbguard 9.9.9\n")
+    # Action
+    with caplog.at_level("WARNING"):
+        usbguard_cli.warn_if_untested_version()
+    # Expected
+    assert "differs from the tested version" in caplog.text
+
+
+def test_warn_if_untested_version_silent_on_match(monkeypatch, caplog):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: f"usbguard {usbguard_cli.TESTED_VERSION}\n")
+    # Action
+    with caplog.at_level("WARNING"):
+        usbguard_cli.warn_if_untested_version()
+    # Expected
+    assert caplog.text == ""

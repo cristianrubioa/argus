@@ -1,5 +1,7 @@
+import pytest
+
 from argus import profiles
-from argus import usbguard_cli
+from argus.agent import usbguard_cli
 from argus.models import Profile
 
 
@@ -31,3 +33,19 @@ def test_switching_back_to_monitor_does_not_rebootstrap(session, monkeypatch):
     profiles.reconcile_profile(session)
     # Expected
     assert calls == ["generate", "set:block", "set:allow"]
+
+
+def test_reconcile_failure_does_not_partially_apply(session, monkeypatch):
+    # Setup
+    def _fail():
+        raise usbguard_cli.UsbguardCliError("denied")
+
+    monkeypatch.setattr(usbguard_cli, "generate_policy", _fail)
+    profiles.request_profile(session, Profile.ENFORCE)
+    # Action
+    with pytest.raises(usbguard_cli.UsbguardCliError):
+        profiles.reconcile_profile(session)
+    # Expected
+    settings = profiles.get_settings(session)
+    assert settings.applied_profile is None
+    assert settings.enforce_bootstrapped_at is None

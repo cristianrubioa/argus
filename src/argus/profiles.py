@@ -3,9 +3,11 @@ from datetime import timezone
 
 from sqlalchemy.orm import Session
 
-from argus import usbguard_cli
+from argus.agent import usbguard_cli
 from argus.models import Profile
 from argus.models import Settings
+
+_SETTINGS_ID = 1
 
 
 def _utcnow() -> datetime:
@@ -13,9 +15,9 @@ def _utcnow() -> datetime:
 
 
 def get_settings(session: Session) -> Settings:
-    settings = session.get(Settings, 1)
+    settings = session.get(Settings, _SETTINGS_ID)
     if settings is None:
-        settings = Settings(id=1, profile=Profile.MONITOR)
+        settings = Settings(id=_SETTINGS_ID, profile=Profile.MONITOR)
         session.add(settings)
         session.commit()
     return settings
