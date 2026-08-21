@@ -1,0 +1,63 @@
+{# Literal Tailwind classes per color, keyed by color name (not by domain value) — the only place
+   these strings should live. Kept literal (no string interpolation) so a future static Tailwind
+   build can still find them by scanning this file. #}
+{% set _badge_classes = {
+  'green': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+  'red': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  'yellow': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+  'sky': 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+  'amber': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+} %}
+{% set _chip_classes = {
+  'green': 'has-[:checked]:bg-green-100 has-[:checked]:text-green-700 dark:has-[:checked]:bg-green-900/40 dark:has-[:checked]:text-green-300',
+  'red': 'has-[:checked]:bg-red-100 has-[:checked]:text-red-700 dark:has-[:checked]:bg-red-900/40 dark:has-[:checked]:text-red-300',
+  'yellow': 'has-[:checked]:bg-yellow-100 has-[:checked]:text-yellow-700 dark:has-[:checked]:bg-yellow-900/40 dark:has-[:checked]:text-yellow-300',
+  'sky': 'has-[:checked]:bg-sky-100 has-[:checked]:text-sky-700 dark:has-[:checked]:bg-sky-900/40 dark:has-[:checked]:text-sky-300',
+  'amber': 'has-[:checked]:bg-amber-100 has-[:checked]:text-amber-700 dark:has-[:checked]:bg-amber-900/40 dark:has-[:checked]:text-amber-300',
+} %}
+
+{# Domain value -> color name. The color-name layer above is what's actually shared; these are
+   small and domain-specific on purpose (whitelist status isn't a Decision, even though it
+   currently borrows the same green/yellow). #}
+{% set decision_colors = {'authorized': 'green', 'blocked': 'red', 'unrecognized': 'yellow'} %}
+{% set profile_colors = {'monitor': 'sky', 'enforce': 'amber'} %}
+{% set whitelist_status_colors = {'whitelisted': 'green', 'unrecognized': 'yellow'} %}
+
+{% macro badge(text, color) %}<span class="px-1.5 py-0.5 rounded text-xs {{ _badge_classes[color] }}">{{ text }}</span>{% endmacro %}
+
+{% macro chip_classes(color) %}{{ _chip_classes[color] }}{% endmacro %}
+
+{% macro sort_header(columns, sort_links, sort, dir, target, include_this=false, sync=none) %}
+{% for column, label in columns %}
+<th class="py-2 pr-4">
+  {% if sort_links %}
+  <a href="{{ sort_links[column] }}" hx-get="{{ sort_links[column]|replace('/logs?', '/logs/partial?') }}"
+    hx-target="{{ target }}" hx-swap="innerHTML"{% if include_this %} hx-include="this"{% endif %}{% if sync %} hx-sync="{{ sync }}"{% endif %} class="hover:text-gray-900 dark:hover:text-gray-200">
+    {{ label }}{% if sort == column %} <i class="fa-solid fa-arrow-{{ 'up' if dir == 'asc' else 'down' }} text-xs"></i>{% endif %}
+  </a>
+  {% else %}
+  {{ label }}
+  {% endif %}
+</th>
+{% endfor %}
+{% endmacro %}
+
+{% macro pagination_footer(page, total_pages, range_start, range_end, total_count, prev_link, next_link, target, include_this=false, sync=none) %}
+{% if total_pages %}
+<div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+  <span>{{ t('logs_pagination_showing') }} {{ range_start }}–{{ range_end }} {{ t('logs_pagination_of') }} {{ total_count }}</span>
+  <div class="flex gap-2">
+    <a href="{{ prev_link }}" hx-get="{{ prev_link|replace('/logs?', '/logs/partial?') }}"
+      hx-target="{{ target }}" hx-swap="innerHTML"{% if include_this %} hx-include="this"{% endif %}{% if sync %} hx-sync="{{ sync }}"{% endif %}
+      class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page <= 1 else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      <i class="fa-solid fa-chevron-left text-xs mr-1.5"></i>{{ t('logs_pagination_prev') }}
+    </a>
+    <a href="{{ next_link }}" hx-get="{{ next_link|replace('/logs?', '/logs/partial?') }}"
+      hx-target="{{ target }}" hx-swap="innerHTML"{% if include_this %} hx-include="this"{% endif %}{% if sync %} hx-sync="{{ sync }}"{% endif %}
+      class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page >= total_pages else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      {{ t('logs_pagination_next') }}<i class="fa-solid fa-chevron-right text-xs ml-1.5"></i>
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endmacro %}

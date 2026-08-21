@@ -1,21 +1,14 @@
+{% import "_table_macros.html" as macros with context %}
 <table class="w-full text-sm table-fixed">
   <colgroup>
     <col class="w-[23%]"><col class="w-[21%]"><col class="w-[21%]"><col class="w-[11%]"><col class="w-[9%]"><col class="w-[15%]">
   </colgroup>
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
-      {% for column, label in (('name', t('table_name')), ('vid_pid', 'VID:PID'), ('serial', t('table_serial')), ('decision', t('table_decision')), ('profile', t('table_profile')), ('occurred_at', t('table_when'))) %}
-      <th class="py-2 pr-4">
-        {% if sort_links is defined %}
-        <a href="{{ sort_links[column] }}" hx-get="{{ sort_links[column]|replace('/logs?', '/logs/partial?') }}"
-          hx-target="#events-table" hx-swap="innerHTML" hx-include="this" class="hover:text-gray-900 dark:hover:text-gray-200">
-          {{ label }}{% if sort == column %} <i class="fa-solid fa-arrow-{{ 'up' if dir == 'asc' else 'down' }} text-xs"></i>{% endif %}
-        </a>
-        {% else %}
-        {{ label }}
-        {% endif %}
-      </th>
-      {% endfor %}
+      {{ macros.sort_header(
+        (('name', t('table_name')), ('vid_pid', 'VID:PID'), ('serial', t('table_serial')), ('decision', t('table_decision')), ('profile', t('table_profile')), ('occurred_at', t('table_when'))),
+        sort_links, sort, dir, '#events-table', true
+      ) }}
     </tr>
   </thead>
   <tbody>
@@ -24,21 +17,8 @@
       <td class="py-2 pr-4 truncate">{{ event.device.display_name }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ event.device.vid_pid }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ event.device.serial or "—" }}</td>
-      <td class="py-2 pr-4">
-        <span class="px-1.5 py-0.5 rounded text-xs
-          {% if event.decision.value == 'authorized' %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
-          {% elif event.decision.value == 'blocked' %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300
-          {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300{% endif %}">
-          {{ t('decision_' + event.decision.value) }}
-        </span>
-      </td>
-      <td class="py-2 pr-4">
-        <span class="px-1.5 py-0.5 rounded text-xs
-          {% if event.profile.value == 'enforce' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
-          {% else %}bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300{% endif %}">
-          {{ t('profile_' + event.profile.value) }}
-        </span>
-      </td>
+      <td class="py-2 pr-4">{{ macros.badge(t('decision_' + event.decision.value), macros.decision_colors[event.decision.value]) }}</td>
+      <td class="py-2 pr-4">{{ macros.badge(t('profile_' + event.profile.value), macros.profile_colors[event.profile.value]) }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
     </tr>
     {% else %}
@@ -46,20 +26,4 @@
     {% endfor %}
   </tbody>
 </table>
-{% if total_pages is defined %}
-<div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
-  <span>{{ t('logs_pagination_showing') }} {{ range_start }}–{{ range_end }} {{ t('logs_pagination_of') }} {{ total_count }}</span>
-  <div class="flex gap-2">
-    <a href="{{ prev_page_link }}" hx-get="{{ prev_page_link|replace('/logs?', '/logs/partial?') }}"
-      hx-target="#events-table" hx-swap="innerHTML" hx-include="this"
-      class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page <= 1 else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
-      <i class="fa-solid fa-chevron-left text-xs mr-1.5"></i>{{ t('logs_pagination_prev') }}
-    </a>
-    <a href="{{ next_page_link }}" hx-get="{{ next_page_link|replace('/logs?', '/logs/partial?') }}"
-      hx-target="#events-table" hx-swap="innerHTML" hx-include="this"
-      class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page >= total_pages else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
-      {{ t('logs_pagination_next') }}<i class="fa-solid fa-chevron-right text-xs ml-1.5"></i>
-    </a>
-  </div>
-</div>
-{% endif %}
+{{ macros.pagination_footer(page, total_pages, range_start, range_end, total_count, prev_page_link, next_page_link, '#events-table', true) }}

@@ -1,4 +1,5 @@
 {% extends "_shell.html" %}
+{% import "_table_macros.html" as macros with context %}
 {% block title %}Argus — {{ t('nav_logs') }}{% endblock %}
 {% block content %}
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('nav_logs') }}</h1>
@@ -43,14 +44,10 @@
       <div>
         <p class="text-xs text-gray-600 dark:text-gray-400 mb-1.5">{{ t('table_decision') }}</p>
         <div class="flex flex-wrap gap-1.5">
-          {% for value, colors in (
-            ('authorized', 'has-[:checked]:bg-green-100 has-[:checked]:text-green-700 dark:has-[:checked]:bg-green-900/40 dark:has-[:checked]:text-green-300'),
-            ('blocked', 'has-[:checked]:bg-red-100 has-[:checked]:text-red-700 dark:has-[:checked]:bg-red-900/40 dark:has-[:checked]:text-red-300'),
-            ('unrecognized', 'has-[:checked]:bg-yellow-100 has-[:checked]:text-yellow-700 dark:has-[:checked]:bg-yellow-900/40 dark:has-[:checked]:text-yellow-300'),
-          ) %}
+          {% for value in ('authorized', 'blocked', 'unrecognized') %}
           {% set is_checked = not selected_decisions or value in selected_decisions %}
-          <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent {{ colors }}">
-            <input type="checkbox" name="decision" value="{{ value }}" class="peer hidden" {% if is_checked %}checked{% endif %}>
+          <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent {{ macros.chip_classes(macros.decision_colors[value]) }}">
+            <input type="checkbox" name="decision" value="{{ value }}" class="peer hidden" data-poll-exclude {% if is_checked %}checked{% endif %}>
             <i class="fa-solid fa-check text-[10px] mr-1 hidden peer-checked:inline"></i>{{ t('decision_' + value) }}
           </label>
           {% endfor %}
@@ -59,13 +56,10 @@
       <div>
         <p class="text-xs text-gray-600 dark:text-gray-400 mb-1.5">{{ t('table_profile') }}</p>
         <div class="flex flex-wrap gap-1.5">
-          {% for value, colors in (
-            ('monitor', 'has-[:checked]:bg-sky-100 has-[:checked]:text-sky-700 dark:has-[:checked]:bg-sky-900/40 dark:has-[:checked]:text-sky-300'),
-            ('enforce', 'has-[:checked]:bg-amber-100 has-[:checked]:text-amber-700 dark:has-[:checked]:bg-amber-900/40 dark:has-[:checked]:text-amber-300'),
-          ) %}
+          {% for value in ('monitor', 'enforce') %}
           {% set is_checked = not selected_profiles or value in selected_profiles %}
-          <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent {{ colors }}">
-            <input type="checkbox" name="profile" value="{{ value }}" class="peer hidden" {% if is_checked %}checked{% endif %}>
+          <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent {{ macros.chip_classes(macros.profile_colors[value]) }}">
+            <input type="checkbox" name="profile" value="{{ value }}" class="peer hidden" data-poll-exclude {% if is_checked %}checked{% endif %}>
             <i class="fa-solid fa-check text-[10px] mr-1 hidden peer-checked:inline"></i>{{ t('profile_' + value) }}
           </label>
           {% endfor %}
@@ -79,9 +73,16 @@
   </div>
 </form>
 
+{# Outside the form on purpose: mirror the last *applied* decision/profile filters (only ever
+   updated from the pushed URL after a real request settles — see syncMultiMirror below), so the
+   2s poll can use them without reading the live, possibly-not-yet-applied checkbox state. #}
+<div id="poll-decision-mirror" class="hidden">{% for value in selected_decisions %}<input type="hidden" name="decision" value="{{ value }}">{% endfor %}</div>
+<div id="poll-profile-mirror" class="hidden">{% for value in selected_profiles %}<input type="hidden" name="profile" value="{{ value }}">{% endfor %}</div>
+
 <div id="events-table" hx-get="/logs/partial?page={{ page }}"
   hx-trigger="every 2s [!document.getElementById('events-panel').classList.contains('hidden')]"
-  hx-include="#logs-filter-form" hx-swap="innerHTML" hx-headers='{"X-Argus-Poll": "true"}'>
+  hx-include="#logs-filter-form input:not([data-poll-exclude]), #poll-decision-mirror input, #poll-profile-mirror input"
+  hx-swap="innerHTML" hx-headers='{"X-Argus-Poll": "true"}'>
   {% include "_events_table.html" %}
 </div>
 </div>
@@ -166,10 +167,10 @@
     actionsBtn.addEventListener("click", () => activate("actions", actionsBtn, actionsPanel, eventsBtn, eventsPanel));
   })();
 
-  (function () {
-    const fromEl = document.getElementById("date-from");
-    const toEl = document.getElementById("date-to");
-    flatpickr("#date-range", {
+  function bindDateRangeFilter(rangeId, fromId, toId, formId) {
+    const fromEl = document.getElementById(fromId);
+    const toEl = document.getElementById(toId);
+    flatpickr("#" + rangeId, {
       mode: "range",
       enableTime: true,
       time_24hr: true,
@@ -179,47 +180,83 @@
         if (selectedDates.length === 2) {
           fromEl.value = selectedDates[0].toISOString().slice(0, 16);
           toEl.value = selectedDates[1].toISOString().slice(0, 16);
-          document.getElementById("logs-filter-form").requestSubmit();
+          document.getElementById(formId).requestSubmit();
         }
       }
     });
-  })();
-
-  (function () {
-    const fromEl = document.getElementById("a-date-from");
-    const toEl = document.getElementById("a-date-to");
-    flatpickr("#a-date-range", {
-      mode: "range",
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d H:i",
-      defaultDate: [new Date(fromEl.value + "Z"), new Date(toEl.value + "Z")],
-      onClose(selectedDates) {
-        if (selectedDates.length === 2) {
-          fromEl.value = selectedDates[0].toISOString().slice(0, 16);
-          toEl.value = selectedDates[1].toISOString().slice(0, 16);
-          document.getElementById("admin-actions-filter-form").requestSubmit();
-        }
-      }
-    });
-  })();
+  }
+  bindDateRangeFilter("date-range", "date-from", "date-to", "logs-filter-form");
+  bindDateRangeFilter("a-date-range", "a-date-from", "a-date-to", "admin-actions-filter-form");
 
   (function () {
     // A sort-link or pagination-link swap only replaces the table area, so the filter
     // forms' hidden sort/dir fields (and the events poll's own page number) would
     // otherwise go stale and get overwritten by the next 2s poll or filter submit.
+    function syncSortDir(formId, sortParam, dirParam, params) {
+      const form = document.getElementById(formId);
+      if (params.has(sortParam)) form[sortParam].value = params.get(sortParam);
+      if (params.has(dirParam)) form[dirParam].value = params.get(dirParam);
+    }
+    // Rebuilds a hidden-input mirror (see poll-decision-mirror/poll-profile-mirror above) from
+    // the URL so it always reflects the last *applied* filter, never the live checkbox state.
+    function syncMultiMirror(containerId, name, params) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      for (const value of params.getAll(name)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        container.appendChild(input);
+      }
+    }
+    // The 2s poll and a sort/pagination/filter request can both be in flight at once, both
+    // targeting #events-table. A poll's own hx-include reads whatever the hidden sort/dir
+    // fields currently hold, so any poll dispatched before a click's response has synced those
+    // fields is working off stale params — even if that poll's response happens to arrive
+    // *after* the click's. A poll must never be allowed to overwrite a click/pagination/filter
+    // swap; the reverse (a click always wins) is always safe, since it reflects explicit,
+    // just-confirmed user intent. Identify "poll" vs "not poll" by request origin: the poll's
+    // own hx-trigger lives on #events-table itself (elt === target); every other request
+    // targeting #events-table (sort/pagination links, the filter form) originates from a
+    // different element.
+    let nonPollGeneration = 0;
+    let pendingNonPollCount = 0;
+    const pollDispatchInfo = new WeakMap();
+    document.body.addEventListener("htmx:beforeRequest", (evt) => {
+      if (!evt.detail.target || evt.detail.target.id !== "events-table") return;
+      const isPoll = evt.detail.elt && evt.detail.elt.id === "events-table";
+      if (isPoll) {
+        pollDispatchInfo.set(evt.detail.xhr, { generation: nonPollGeneration, hadPending: pendingNonPollCount > 0 });
+      } else {
+        nonPollGeneration++;
+        pendingNonPollCount++;
+      }
+    });
+    document.body.addEventListener("htmx:beforeSwap", (evt) => {
+      if (!evt.detail.target || evt.detail.target.id !== "events-table") return;
+      const isPoll = evt.detail.elt && evt.detail.elt.id === "events-table";
+      if (!isPoll) return;
+      const info = pollDispatchInfo.get(evt.detail.xhr);
+      if (info && (info.generation !== nonPollGeneration || info.hadPending)) {
+        evt.detail.shouldSwap = false;
+      }
+    });
+
     document.body.addEventListener("htmx:afterSettle", (evt) => {
       const params = new URLSearchParams(window.location.search);
       if (evt.target.id === "events-table") {
-        const form = document.getElementById("logs-filter-form");
-        if (params.has("sort")) form.sort.value = params.get("sort");
-        if (params.has("dir")) form.dir.value = params.get("dir");
+        const isPoll = evt.detail.elt && evt.detail.elt.id === "events-table";
+        if (!isPoll) {
+          pendingNonPollCount = Math.max(0, pendingNonPollCount - 1);
+        }
+        syncSortDir("logs-filter-form", "sort", "dir", params);
+        syncMultiMirror("poll-decision-mirror", "decision", params);
+        syncMultiMirror("poll-profile-mirror", "profile", params);
         evt.target.setAttribute("hx-get", "/logs/partial?page=" + (params.get("page") || "1"));
       }
       if (evt.target.id === "admin-actions-table") {
-        const form = document.getElementById("admin-actions-filter-form");
-        if (params.has("a_sort")) form.a_sort.value = params.get("a_sort");
-        if (params.has("a_dir")) form.a_dir.value = params.get("a_dir");
+        syncSortDir("admin-actions-filter-form", "a_sort", "a_dir", params);
       }
     });
   })();

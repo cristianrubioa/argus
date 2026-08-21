@@ -1,4 +1,5 @@
 {% extends "_shell.html" %}
+{% import "_table_macros.html" as macros with context %}
 {% block title %}Argus — {{ t('nav_devices') }}{% endblock %}
 {% block content %}
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('devices_heading') }}</h1>
@@ -25,9 +26,9 @@
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ device.last_seen_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
       <td class="py-2 pr-4">
         {% if device.id in whitelisted_ids %}
-        <span class="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{{ t('status_whitelisted') }}</span>
+        {{ macros.badge(t('status_whitelisted'), macros.whitelist_status_colors['whitelisted']) }}
         {% else %}
-        <span class="px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">{{ t('status_unrecognized') }}</span>
+        {{ macros.badge(t('status_unrecognized'), macros.whitelist_status_colors['unrecognized']) }}
         {% endif %}
       </td>
       <td class="py-2 pr-4">
