@@ -17,9 +17,12 @@ def test_font_size_persists_via_profiles(session):
     assert profiles.get_font_size(session) == "lg"
 
 
+_BASE_AJUSTES_FORM = {"profile": "monitor", "language": "en", "theme": "dark", "font_size": "md"}
+
+
 def test_font_size_persists_via_ajustes_route(logged_in_client, session):
     # Action
-    response = logged_in_client.post("/ajustes/font-size", data={"font_size": "lg"})
+    response = logged_in_client.post("/ajustes", data={**_BASE_AJUSTES_FORM, "font_size": "lg"})
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert profiles.get_font_size(session) == "lg"
@@ -27,7 +30,7 @@ def test_font_size_persists_via_ajustes_route(logged_in_client, session):
 
 def test_ajustes_route_ignores_unsupported_font_size(logged_in_client, session):
     # Action
-    logged_in_client.post("/ajustes/font-size", data={"font_size": "xl"})
+    logged_in_client.post("/ajustes", data={**_BASE_AJUSTES_FORM, "font_size": "xl"})
     # Expected
     assert profiles.get_font_size(session) == "md"
 

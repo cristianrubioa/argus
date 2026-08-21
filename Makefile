@@ -7,6 +7,8 @@ help:
 	@echo "  make build            Build Docker image"
 	@echo "  make logs             View argus-web container logs"
 	@echo "  make install-agent    Install argus-agent on this host (needs sudo)"
+	@echo "  make restart-agent    Restart the argus-agent service, e.g. after Ajustes shows it Stale (needs sudo)"
+	@echo "  make agent-logs       Tail argus-agent's systemd journal"
 	@echo "  make monitor-mode     Force USBGuard to stop blocking, right now (needs sudo)"
 	@echo "  make mqtt-broker      Start a throwaway local Mosquitto broker for testing"
 	@echo "  make mqtt-watch       Watch messages on the local test broker"
@@ -35,6 +37,12 @@ logs:
 install-agent:
 	chmod +x ./scripts/install-agent.sh
 	sudo ./scripts/install-agent.sh
+
+restart-agent:
+	sudo systemctl restart argus-agent
+
+agent-logs:
+	journalctl -u argus-agent -f
 
 monitor-mode:
 	sudo usbguard set-parameter ImplicitPolicyTarget allow

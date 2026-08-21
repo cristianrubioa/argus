@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="flex flex-col min-h-screen">
+<div class="flex flex-col h-screen">
 
   <header class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-6 flex items-center gap-3 shrink-0" style="height: var(--header-h)">
-    <i class="fa-solid fa-eye text-2xl text-blue-500 dark:text-blue-400"></i>
-    <span class="font-semibold tracking-wide leading-none" style="font-size: var(--app-name-size)">Argus</span>
-    <span class="text-sm text-gray-600 dark:text-gray-500 font-normal">USB Device Monitor</span>
+    <div class="flex items-center gap-3 shrink-0" style="width: calc(var(--panel-w) - 1.5rem)">
+      <i class="fa-solid fa-eye text-2xl text-blue-500 dark:text-blue-400"></i>
+      <span class="font-semibold tracking-wide leading-none" style="font-size: var(--app-name-size)">Argus</span>
+      <span class="text-sm text-gray-600 dark:text-gray-500 font-normal">USB Device Monitor</span>
+      <span class="w-px h-4 bg-gray-200 dark:bg-gray-800 ml-auto"></span>
+    </div>
+    <span id="agent-status-badge" hx-get="/agent-status/partial" hx-trigger="every 5s" hx-swap="innerHTML">
+      {% include "_agent_status_badge.html" %}
+    </span>
     <a class="crubio-home-link" href="https://crubio.fyi">crubio.fyi</a>
   </header>
 

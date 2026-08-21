@@ -37,6 +37,28 @@ def test_sort_by_name_descending(logged_in_client, session):
     assert response.text.index("Zebra Drive") < response.text.index("Apple Drive")
 
 
+def test_sort_by_serial_ascending(logged_in_client, session):
+    # Setup
+    DeviceEventFactory(device=DeviceFactory(name="Zebra Drive", serial="ZZZ"))
+    DeviceEventFactory(device=DeviceFactory(name="Apple Drive", serial="AAA"))
+    # Action
+    response = logged_in_client.get("/logs", params={"sort": "serial", "dir": "asc"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert response.text.index("Apple Drive") < response.text.index("Zebra Drive")
+
+
+def test_sort_by_serial_descending(logged_in_client, session):
+    # Setup
+    DeviceEventFactory(device=DeviceFactory(name="Zebra Drive", serial="ZZZ"))
+    DeviceEventFactory(device=DeviceFactory(name="Apple Drive", serial="AAA"))
+    # Action
+    response = logged_in_client.get("/logs", params={"sort": "serial", "dir": "desc"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert response.text.index("Zebra Drive") < response.text.index("Apple Drive")
+
+
 def test_second_page_returns_the_next_20_excluding_the_first_page(logged_in_client, session):
     # Setup — 25 events, newest (Device 0) first under the default occurred_at desc sort
     _seed_events(25)

@@ -114,6 +114,7 @@ def _watch_loop() -> None:
 def _reconcile_loop() -> None:
     while True:
         with SessionLocal() as session:
+            profiles.record_agent_heartbeat(session)
             apply_pending_actions(session)
             try:
                 profiles.reconcile_profile(session)

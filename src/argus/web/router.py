@@ -47,6 +47,7 @@ def render(request: Request, session: Session, name: str, context: dict):
         "supported_languages": SUPPORTED_LANGUAGES,
         "theme": profiles.get_theme(session),
         "font_size": profiles.get_font_size(session),
+        "agent_status": profiles.agent_status(session),
     }
     return templates.TemplateResponse(request, name, full_context)
 
@@ -73,6 +74,14 @@ def login_submit(
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- Agent status ---
+
+
+@router.get("/agent-status/partial")
+def agent_status_partial(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+    return render(request, session, "_agent_status_badge.html", {})
 
 
 # --- Dashboard ---
@@ -173,6 +182,7 @@ def _effective_logs_range(date_from: str | None, date_to: str | None) -> tuple[d
 _LOGS_SORT_COLUMNS = {
     "name": Device.name,
     "vid_pid": Device.vid.op("||")(":").op("||")(Device.pid),
+    "serial": Device.serial,
     "decision": DeviceEvent.decision,
     "profile": DeviceEvent.profile,
     "occurred_at": DeviceEvent.occurred_at,
@@ -195,7 +205,7 @@ def _filtered_events(
     if q:
         like = f"%{q}%"
         vid_pid = Device.vid.op("||")(":").op("||")(Device.pid)
-        query = query.filter(or_(Device.name.ilike(like), vid_pid.ilike(like)))
+        query = query.filter(or_(Device.name.ilike(like), vid_pid.ilike(like), Device.serial.ilike(like)))
     if decisions:
         query = query.filter(DeviceEvent.decision.in_(decisions))
     if event_profiles:
@@ -310,48 +320,22 @@ def settings_page(request: Request, admin: str = Depends(require_admin), session
     return render(request, session, "settings.html", {"admin": admin, "settings": current, "active": "ajustes"})
 
 
-@router.post("/ajustes/profile")
-def update_profile(
+@router.post("/ajustes")
+def update_settings(
     request: Request,
     profile: str = Form(...),
-    admin: str = Depends(require_admin),
-    session: Session = Depends(get_session),
-):
-    profiles.request_profile(session, Profile(profile))
-    return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)
-
-
-@router.post("/ajustes/language")
-def update_language(
-    request: Request,
     language: str = Form(...),
-    admin: str = Depends(require_admin),
-    session: Session = Depends(get_session),
-):
-    if language in SUPPORTED_LANGUAGES:
-        profiles.set_language(session, language)
-    return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)
-
-
-@router.post("/ajustes/theme")
-def update_theme(
-    request: Request,
     theme: str = Form(...),
-    admin: str = Depends(require_admin),
-    session: Session = Depends(get_session),
-):
-    if theme in ("light", "dark"):
-        profiles.set_theme(session, theme)
-    return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)
-
-
-@router.post("/ajustes/font-size")
-def update_font_size(
-    request: Request,
     font_size: str = Form(...),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
+    """Single confirm gate for the whole Ajustes form — every field commits together, or not at all."""
+    profiles.request_profile(session, Profile(profile))
+    if language in SUPPORTED_LANGUAGES:
+        profiles.set_language(session, language)
+    if theme in ("light", "dark"):
+        profiles.set_theme(session, theme)
     if font_size in ("md", "lg"):
         profiles.set_font_size(session, font_size)
     return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)

@@ -43,9 +43,12 @@ def test_init_db_is_idempotent_on_a_database_that_already_has_language():
     assert "language" in columns
 
 
+_BASE_AJUSTES_FORM = {"profile": "monitor", "language": "en", "theme": "dark", "font_size": "md"}
+
+
 def test_language_persists_via_ajustes_route(logged_in_client, session):
     # Action
-    response = logged_in_client.post("/ajustes/language", data={"language": "de"})
+    response = logged_in_client.post("/ajustes", data={**_BASE_AJUSTES_FORM, "language": "de"})
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert profiles.get_language(session) == "de"
@@ -53,7 +56,7 @@ def test_language_persists_via_ajustes_route(logged_in_client, session):
 
 def test_ajustes_route_ignores_unsupported_language(logged_in_client, session):
     # Action
-    logged_in_client.post("/ajustes/language", data={"language": "xx"})
+    logged_in_client.post("/ajustes", data={**_BASE_AJUSTES_FORM, "language": "xx"})
     # Expected
     assert profiles.get_language(session) == "en"
 

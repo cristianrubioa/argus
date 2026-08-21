@@ -1,13 +1,16 @@
 from datetime import datetime
+from datetime import timedelta
 from datetime import timezone
 
 from sqlalchemy.orm import Session
 
 from argus.agent import usbguard_cli
+from argus.models import AgentStatus
 from argus.models import Profile
 from argus.models import Settings
 
 _SETTINGS_ID = 1
+_HEARTBEAT_STALE_SECONDS = 30
 
 
 def _utcnow() -> datetime:
@@ -67,6 +70,25 @@ def set_font_size(session: Session, font_size: str) -> Settings:
     settings.font_size = font_size
     session.commit()
     return settings
+
+
+def record_agent_heartbeat(session: Session) -> None:
+    """Called from argus-agent's reconcile loop, every cycle, regardless of what else the cycle does."""
+    settings = get_settings(session)
+    settings.agent_last_heartbeat_at = _utcnow()
+    session.commit()
+
+
+def agent_status(session: Session) -> AgentStatus:
+    last_heartbeat = get_settings(session).agent_last_heartbeat_at
+    if last_heartbeat is None:
+        return AgentStatus.NEVER
+    if last_heartbeat.tzinfo is None:
+        # SQLite drops tzinfo on round-trip; every write here is UTC (_utcnow()), so restore that marker.
+        last_heartbeat = last_heartbeat.replace(tzinfo=timezone.utc)
+    if _utcnow() - last_heartbeat > timedelta(seconds=_HEARTBEAT_STALE_SECONDS):
+        return AgentStatus.STALE
+    return AgentStatus.LIVE
 
 
 def reconcile_profile(session: Session) -> None:

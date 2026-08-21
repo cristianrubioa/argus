@@ -8,6 +8,18 @@ from argus.models import UsbguardAction
 from argus.models import WhitelistEntry
 
 
+def test_whitelist_page_shows_device_serial(logged_in_client, session):
+    # Setup
+    device = DeviceFactory(serial="AAE9055C")
+    session.add(WhitelistEntry(device_id=device.id, added_by="test-admin"))
+    session.commit()
+    # Action
+    response = logged_in_client.get("/whitelist")
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "AAE9055C" in response.text
+
+
 def test_authorize_in_monitor_profile_does_not_enqueue_usbguard_action(logged_in_client, session):
     # Setup
     device = DeviceFactory()

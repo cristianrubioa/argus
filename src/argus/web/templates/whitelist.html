@@ -7,6 +7,7 @@
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
       <th class="py-2 pr-4">{{ t('table_name') }}</th>
       <th class="py-2 pr-4">VID:PID</th>
+      <th class="py-2 pr-4">{{ t('table_serial') }}</th>
       <th class="py-2 pr-4">{{ t('table_added') }}</th>
       <th class="py-2 pr-4">{{ t('table_added_by') }}</th>
       <th class="py-2 pr-4"></th>
@@ -27,6 +28,7 @@
         </form>
       </td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.device.vid_pid }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.device.serial or "—" }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.added_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.added_by }}</td>
       <td class="py-2 pr-4 text-right">
@@ -36,9 +38,9 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="py-4 text-center text-gray-500">{{ t('whitelist_empty') }}</td></tr>
+    <tr><td colspan="6" class="py-4 text-center text-gray-500">{{ t('whitelist_empty') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>
-<p class="text-xs text-gray-500 mt-4">{{ t('whitelist_hint') }}</p>
+<p class="text-xs text-gray-500 mt-4">{{ t('whitelist_hint_before') }}<a href="/dispositivos" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">{{ t('whitelist_hint_link') }}</a>{{ t('whitelist_hint_after') }}</p>
 {% endblock %}

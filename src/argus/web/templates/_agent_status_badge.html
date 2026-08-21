@@ -1,0 +1,10 @@
+<span class="px-1.5 py-0.5 rounded text-xs inline-flex items-center gap-1.5
+  {% if agent_status == 'live' %}bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300
+  {% elif agent_status == 'stale' %}bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300
+  {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+  <span class="w-1.5 h-1.5 rounded-full
+    {% if agent_status == 'live' %}bg-teal-500 animate-pulse
+    {% elif agent_status == 'stale' %}bg-orange-500
+    {% else %}bg-gray-400{% endif %}"></span>
+  {{ t('agent_status_' + agent_status) }}
+</span>

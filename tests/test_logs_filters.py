@@ -34,6 +34,18 @@ def test_search_matches_vid_pid(logged_in_client, session):
     assert "Logitech Mouse" not in response.text
 
 
+def test_search_matches_serial(logged_in_client, session):
+    # Setup
+    DeviceEventFactory(device=DeviceFactory(name="Kingston Flash Drive", serial="AAE9055C"))
+    DeviceEventFactory(device=DeviceFactory(name="Logitech Mouse", serial="0000:00:0d.0"))
+    # Action
+    response = logged_in_client.get("/logs", params={"q": "AAE9055C"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Kingston Flash Drive" in response.text
+    assert "Logitech Mouse" not in response.text
+
+
 def test_decision_tag_filter_narrows_results(logged_in_client, session):
     # Setup
     DeviceEventFactory(device=DeviceFactory(name="Allowed Device"), decision=Decision.AUTHORIZED)

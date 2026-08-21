@@ -1,7 +1,7 @@
 <table class="w-full text-sm">
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
-      {% for column, label in (('name', t('table_device')), ('vid_pid', 'VID:PID'), ('decision', t('table_decision')), ('profile', t('table_profile')), ('occurred_at', t('table_when'))) %}
+      {% for column, label in (('name', t('table_device')), ('vid_pid', 'VID:PID'), ('serial', t('table_serial')), ('decision', t('table_decision')), ('profile', t('table_profile')), ('occurred_at', t('table_when'))) %}
       <th class="py-2 pr-4">
         {% if sort_links is defined %}
         <a href="{{ sort_links[column] }}" class="hover:text-gray-900 dark:hover:text-gray-200">
@@ -19,6 +19,7 @@
     <tr class="border-b border-gray-100 dark:border-gray-900">
       <td class="py-2 pr-4">{{ event.device.display_name }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.device.vid_pid }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.device.serial or "—" }}</td>
       <td class="py-2 pr-4">
         <span class="px-1.5 py-0.5 rounded text-xs
           {% if event.decision.value == 'authorized' %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
@@ -37,7 +38,7 @@
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="py-4 text-center text-gray-500">{{ t('logs_empty') }}</td></tr>
+    <tr><td colspan="6" class="py-4 text-center text-gray-500">{{ t('logs_empty') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>

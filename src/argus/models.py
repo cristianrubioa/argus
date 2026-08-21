@@ -33,6 +33,12 @@ class UsbguardAction(enum.StrEnum):
     BLOCK = "block"
 
 
+class AgentStatus(enum.StrEnum):
+    LIVE = "live"
+    STALE = "stale"
+    NEVER = "never"
+
+
 class Device(Base):
     __tablename__ = "devices"
 
@@ -119,3 +125,4 @@ class Settings(Base):
     mqtt_last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)
     theme: Mapped[str] = mapped_column(String(5), default="dark")
     font_size: Mapped[str] = mapped_column(String(2), default="md")
+    agent_last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
