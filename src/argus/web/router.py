@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from argus import profiles
 from argus.db import get_session
+from argus.models import AdminAction
 from argus.models import AdminActionType
 from argus.models import Device
 from argus.models import DeviceEvent
@@ -146,7 +147,12 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
         session.commit()
         profiles.record_admin_action(
-            session, admin, AdminActionType.WHITELIST_AUTHORIZE, device.display_name, vid_pid=device.vid_pid
+            session,
+            admin,
+            AdminActionType.WHITELIST_AUTHORIZE,
+            device.display_name,
+            vid_pid=device.vid_pid,
+            serial=device.serial,
         )
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -155,12 +161,14 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
 def revoke_device(device_id: int, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     device = session.get(Device, device_id)
     if device is not None and device.whitelist_entry is not None:
-        vid_pid, target = device.vid_pid, device.display_name
+        vid_pid, serial, target = device.vid_pid, device.serial, device.display_name
         session.delete(device.whitelist_entry)
         if profiles.get_active_profile(session) == Profile.ENFORCE:
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.BLOCK))
         session.commit()
-        profiles.record_admin_action(session, admin, AdminActionType.WHITELIST_REVOKE, target, vid_pid=vid_pid)
+        profiles.record_admin_action(
+            session, admin, AdminActionType.WHITELIST_REVOKE, target, vid_pid=vid_pid, serial=serial
+        )
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -184,6 +192,7 @@ def rename_device(
                 AdminActionType.DEVICE_RENAME,
                 new_name or device.name,
                 vid_pid=device.vid_pid,
+                serial=device.serial,
                 source=old_name,
             )
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
@@ -301,6 +310,86 @@ def _logs_context(
     }
 
 
+_ADMIN_ACTIONS_SORT_COLUMNS = {
+    "action_type": AdminAction.action_type,
+    "vid_pid": AdminAction.vid_pid,
+    "serial": AdminAction.serial,
+    "source": AdminAction.source,
+    "target": AdminAction.target,
+    "occurred_at": AdminAction.occurred_at,
+}
+_ADMIN_ACTIONS_DEFAULT_SORT = "occurred_at"
+
+
+def _filtered_admin_actions(
+    session: Session,
+    action_types: list[str],
+    date_from: datetime,
+    date_to: datetime,
+    sort: str,
+    direction: str,
+    page: int,
+) -> tuple[list[AdminAction], int]:
+    query = session.query(AdminAction)
+    if action_types:
+        query = query.filter(AdminAction.action_type.in_(action_types))
+    query = query.filter(AdminAction.occurred_at >= date_from, AdminAction.occurred_at <= date_to)
+    total = query.count()
+    column = _ADMIN_ACTIONS_SORT_COLUMNS[sort]
+    ordered = column.asc() if direction == "asc" else column.desc()
+    actions = query.order_by(ordered).offset((page - 1) * _ADMIN_ACTIONS_LIMIT).limit(_ADMIN_ACTIONS_LIMIT).all()
+    return actions, total
+
+
+def _admin_actions_filter_query_string(action_types: list[str], date_from: datetime, date_to: datetime) -> str:
+    params = [("a_action", a) for a in action_types]
+    params += [("a_from", date_from.strftime(_LOGS_DATE_FORMAT)), ("a_to", date_to.strftime(_LOGS_DATE_FORMAT))]
+    return urlencode(params)
+
+
+def _admin_actions_sort_links(filter_query_string: str, sort: str, direction: str) -> dict[str, str]:
+    links = {}
+    for column in _ADMIN_ACTIONS_SORT_COLUMNS:
+        next_dir = "desc" if sort == column and direction == "asc" else "asc"
+        links[column] = f"/logs?{filter_query_string}&a_sort={column}&a_dir={next_dir}&tab=actions"
+    return links
+
+
+def _admin_actions_context(
+    session: Session,
+    action_types: list[str],
+    date_from: str | None,
+    date_to: str | None,
+    sort: str,
+    direction: str,
+    page: int,
+) -> dict:
+    effective_from, effective_to = _effective_logs_range(date_from, date_to)
+    sort = sort if sort in _ADMIN_ACTIONS_SORT_COLUMNS else _ADMIN_ACTIONS_DEFAULT_SORT
+    direction = direction if direction in ("asc", "desc") else "desc"
+    page = max(page, 1)
+    actions, total = _filtered_admin_actions(session, action_types, effective_from, effective_to, sort, direction, page)
+    total_pages = max((total + _ADMIN_ACTIONS_LIMIT - 1) // _ADMIN_ACTIONS_LIMIT, 1)
+    filter_query_string = _admin_actions_filter_query_string(action_types, effective_from, effective_to)
+    page_link_base = f"/logs?{filter_query_string}&a_sort={sort}&a_dir={direction}&tab=actions"
+    return {
+        "admin_actions": actions,
+        "a_selected_actions": action_types,
+        "a_date_from": effective_from,
+        "a_date_to": effective_to,
+        "a_sort": sort,
+        "a_dir": direction,
+        "a_page": page,
+        "a_total_pages": total_pages,
+        "a_total_count": total,
+        "a_range_start": (page - 1) * _ADMIN_ACTIONS_LIMIT + 1 if total > 0 else 0,
+        "a_range_end": min(page * _ADMIN_ACTIONS_LIMIT, total),
+        "a_sort_links": _admin_actions_sort_links(filter_query_string, sort, direction),
+        "a_prev_page_link": f"{page_link_base}&a_page={max(page - 1, 1)}",
+        "a_next_page_link": f"{page_link_base}&a_page={min(page + 1, total_pages)}",
+    }
+
+
 _LOGS_TABS = ("events", "actions")
 
 
@@ -315,18 +404,24 @@ def logs(
     sort: str = _LOGS_DEFAULT_SORT,
     dir: str = "desc",
     page: int = 1,
+    a_action: list[str] = Query(default=[]),
+    a_from: str | None = Query(default=None),
+    a_to: str | None = Query(default=None),
+    a_sort: str = _ADMIN_ACTIONS_DEFAULT_SORT,
+    a_dir: str = "desc",
+    a_page: int = 1,
     tab: str = "events",
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
     context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
-    admin_actions = profiles.recent_admin_actions(session, _ADMIN_ACTIONS_LIMIT)
+    admin_actions_context = _admin_actions_context(session, a_action, a_from, a_to, a_sort, a_dir, a_page)
     tab = tab if tab in _LOGS_TABS else "events"
     return render(
         request,
         session,
         "logs.html",
-        {"admin": admin, "active": "logs", "admin_actions": admin_actions, "tab": tab, **context},
+        {"admin": admin, "active": "logs", "tab": tab, **context, **admin_actions_context},
     )
 
 

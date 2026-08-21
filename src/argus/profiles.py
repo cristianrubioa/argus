@@ -105,14 +105,13 @@ def record_admin_action(
     action_type: AdminActionType,
     target: str,
     vid_pid: str | None = None,
+    serial: str | None = None,
     source: str | None = None,
 ) -> None:
-    session.add(AdminAction(actor=actor, action_type=action_type, vid_pid=vid_pid, source=source, target=target))
+    session.add(
+        AdminAction(actor=actor, action_type=action_type, vid_pid=vid_pid, serial=serial, source=source, target=target)
+    )
     session.commit()
-
-
-def recent_admin_actions(session: Session, limit: int) -> list[AdminAction]:
-    return session.query(AdminAction).order_by(AdminAction.occurred_at.desc()).limit(limit).all()
 
 
 def prune_old_events(session: Session) -> None:

@@ -21,6 +21,7 @@ def test_authorize_records_whitelist_authorize_action(logged_in_client, session)
     assert action.actor == "admin"
     assert action.action_type == AdminActionType.WHITELIST_AUTHORIZE
     assert action.vid_pid == device.vid_pid
+    assert action.serial == device.serial
     assert action.source is None
     assert action.target == "Mass Storage"
 
@@ -35,6 +36,7 @@ def test_revoke_records_whitelist_revoke_action_that_survives_entry_deletion(log
     revoke_action = session.query(AdminAction).filter_by(action_type=AdminActionType.WHITELIST_REVOKE).one()
     assert revoke_action.actor == "admin"
     assert revoke_action.vid_pid == device.vid_pid
+    assert revoke_action.serial == device.serial
     assert revoke_action.target == "Mass Storage"
     assert device.whitelist_entry is None
 
@@ -48,6 +50,7 @@ def test_rename_records_device_rename_action_with_before_and_after(logged_in_cli
     # Expected
     action = session.query(AdminAction).filter_by(action_type=AdminActionType.DEVICE_RENAME).one()
     assert action.vid_pid == device.vid_pid
+    assert action.serial == device.serial
     assert action.source == "Mass Storage"
     assert action.target == "Backup SSD"
 
@@ -133,6 +136,73 @@ def test_logs_page_shows_source_and_vid_pid_columns_for_rename(logged_in_client,
     assert device.vid_pid in response.text
     assert "Mass Storage" in response.text
     assert "Backup SSD" in response.text
+
+
+def test_admin_actions_filter_narrows_by_action_type(logged_in_client, session):
+    # Setup
+    device = DeviceFactory(name="Mass Storage")
+    logged_in_client.post(f"/whitelist/authorize/{device.id}")
+    logged_in_client.post(f"/whitelist/rename/{device.id}", data={"custom_name": "Backup SSD"})
+    # Action — the rename target ("Backup SSD") only ever appears in the rename row, never
+    # in the filter panel's static labels, so its absence proves the row itself was filtered out
+    response = logged_in_client.get("/logs", params={"tab": "actions", "a_action": "whitelist_authorize"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Mass Storage" in response.text
+    assert "Backup SSD" not in response.text
+
+
+def test_admin_actions_date_range_excludes_actions_outside_it(logged_in_client, session):
+    # Setup — one action outside the default 7-day range, one inside it
+    session.add(
+        AdminAction(
+            actor="admin",
+            action_type=AdminActionType.WHITELIST_AUTHORIZE,
+            target="Old Device",
+            occurred_at=datetime.now(timezone.utc) - timedelta(days=30),
+        )
+    )
+    session.commit()
+    device = DeviceFactory(name="Recent Device")
+    logged_in_client.post(f"/whitelist/authorize/{device.id}")
+    # Action
+    response = logged_in_client.get("/logs", params={"tab": "actions"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Old Device" not in response.text
+    assert "Recent Device" in response.text
+
+
+def test_admin_actions_sort_by_occurred_at_ascending_orders_oldest_first(logged_in_client, session):
+    # Setup
+    older = DeviceFactory(name="Older Device")
+    logged_in_client.post(f"/whitelist/authorize/{older.id}")
+    newer = DeviceFactory(name="Newer Device")
+    logged_in_client.post(f"/whitelist/authorize/{newer.id}")
+    # Action
+    response = logged_in_client.get("/logs", params={"tab": "actions", "a_sort": "occurred_at", "a_dir": "asc"})
+    # Expected
+    assert response.text.index("Older Device") < response.text.index("Newer Device")
+
+
+def test_admin_actions_pagination_moves_to_the_next_page(logged_in_client, session):
+    # Setup — one more row than fits on a single page
+    for i in range(21):
+        session.add(
+            AdminAction(
+                actor="admin",
+                action_type=AdminActionType.WHITELIST_AUTHORIZE,
+                target=f"Device {i}",
+                occurred_at=datetime.now(timezone.utc) - timedelta(minutes=i),
+            )
+        )
+    session.commit()
+    # Action
+    response = logged_in_client.get("/logs", params={"tab": "actions", "a_page": 2})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Device 20" in response.text
+    assert "Device 0" not in response.text
 
 
 def test_prune_deletes_old_admin_actions_when_retention_configured(session, monkeypatch):

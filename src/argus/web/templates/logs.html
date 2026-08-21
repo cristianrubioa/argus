@@ -83,18 +83,59 @@
 </div>
 
 <div id="actions-panel" class="{{ 'hidden' if tab != 'actions' else '' }}">
+<form id="admin-actions-filter-form" method="get" action="/logs" class="flex flex-wrap gap-3 items-end mb-4">
+  <input type="hidden" name="tab" value="actions">
+  <input type="hidden" name="a_sort" value="{{ a_sort }}">
+  <input type="hidden" name="a_dir" value="{{ a_dir }}">
+  <div>
+    <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">{{ t('logs_date_range_label') }}</label>
+    <input type="text" id="a-date-range" readonly
+      class="bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm w-72 cursor-pointer focus:outline-none focus:border-blue-400">
+    <input type="hidden" name="a_from" id="a-date-from" value="{{ a_date_from.strftime('%Y-%m-%dT%H:%M') }}">
+    <input type="hidden" name="a_to" id="a-date-to" value="{{ a_date_to.strftime('%Y-%m-%dT%H:%M') }}">
+  </div>
+  <div>
+    <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">{{ t('logs_filter_button') }}</label>
+    <details class="relative">
+    <summary class="list-none cursor-pointer inline-flex items-center justify-center h-[34px] border border-gray-300 dark:border-gray-700 rounded px-3 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300"
+              title="{{ t('logs_filter_button') }}">
+      <i class="fa-solid fa-filter"></i>
+    </summary>
+    <div class="absolute right-0 z-10 mt-2 w-64 p-3 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded shadow-lg space-y-3">
+      <div>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1.5">{{ t('table_action') }}</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for value in ('whitelist_authorize', 'whitelist_revoke', 'device_rename', 'profile_switch') %}
+          {% set is_checked = not a_selected_actions or value in a_selected_actions %}
+          <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700 dark:has-[:checked]:bg-blue-900/40 dark:has-[:checked]:text-blue-300">
+            <input type="checkbox" name="a_action" value="{{ value }}" class="peer hidden" {% if is_checked %}checked{% endif %}>
+            <i class="fa-solid fa-check text-[10px] mr-1 hidden peer-checked:inline"></i>{{ t('action_type_' + value) }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <button type="submit" class="w-full bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-3 py-1.5 transition">
+        {{ t('logs_filter_apply') }}
+      </button>
+    </div>
+    </details>
+  </div>
+</form>
+
 <table class="w-full text-sm table-fixed">
   <colgroup>
-    <col class="w-[10%]"><col class="w-[18%]"><col class="w-[10%]"><col class="w-[22%]"><col class="w-[22%]"><col class="w-[18%]">
+    <col class="w-[8%]"><col class="w-[14%]"><col class="w-[9%]"><col class="w-[12%]"><col class="w-[17%]"><col class="w-[17%]"><col class="w-[23%]">
   </colgroup>
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
       <th class="py-2 pr-4">{{ t('table_actor') }}</th>
-      <th class="py-2 pr-4">{{ t('table_action') }}</th>
-      <th class="py-2 pr-4">VID:PID</th>
-      <th class="py-2 pr-4">{{ t('table_source') }}</th>
-      <th class="py-2 pr-4">{{ t('table_target') }}</th>
-      <th class="py-2 pr-4">{{ t('table_when') }}</th>
+      {% for column, label in (('action_type', t('table_action')), ('vid_pid', 'VID:PID'), ('serial', t('table_serial')), ('source', t('table_source')), ('target', t('table_target')), ('occurred_at', t('table_when'))) %}
+      <th class="py-2 pr-4">
+        <a href="{{ a_sort_links[column] }}" class="hover:text-gray-900 dark:hover:text-gray-200">
+          {{ label }}{% if a_sort == column %} <i class="fa-solid fa-arrow-{{ 'up' if a_dir == 'asc' else 'down' }} text-xs"></i>{% endif %}
+        </a>
+      </th>
+      {% endfor %}
     </tr>
   </thead>
   <tbody>
@@ -103,15 +144,29 @@
       <td class="py-2 pr-4 truncate">{{ entry.actor }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ t('action_type_' + entry.action_type.value) }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.vid_pid or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.serial or "—" }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.source or "—" }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.target }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>
+    <tr><td colspan="7" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>
+{% if a_total_pages is defined %}
+<div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+  <span>{{ t('logs_pagination_showing') }} {{ a_range_start }}–{{ a_range_end }} {{ t('logs_pagination_of') }} {{ a_total_count }}</span>
+  <div class="flex gap-2">
+    <a href="{{ a_prev_page_link }}" class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if a_page <= 1 else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      <i class="fa-solid fa-chevron-left text-xs mr-1.5"></i>{{ t('logs_pagination_prev') }}
+    </a>
+    <a href="{{ a_next_page_link }}" class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if a_page >= a_total_pages else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      {{ t('logs_pagination_next') }}<i class="fa-solid fa-chevron-right text-xs ml-1.5"></i>
+    </a>
+  </div>
+</div>
+{% endif %}
 </div>
 
 <script>
@@ -155,6 +210,25 @@
           fromEl.value = selectedDates[0].toISOString().slice(0, 16);
           toEl.value = selectedDates[1].toISOString().slice(0, 16);
           document.getElementById("logs-filter-form").submit();
+        }
+      }
+    });
+  })();
+
+  (function () {
+    const fromEl = document.getElementById("a-date-from");
+    const toEl = document.getElementById("a-date-to");
+    flatpickr("#a-date-range", {
+      mode: "range",
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d H:i",
+      defaultDate: [new Date(fromEl.value + "Z"), new Date(toEl.value + "Z")],
+      onClose(selectedDates) {
+        if (selectedDates.length === 2) {
+          fromEl.value = selectedDates[0].toISOString().slice(0, 16);
+          toEl.value = selectedDates[1].toISOString().slice(0, 16);
+          document.getElementById("admin-actions-filter-form").submit();
         }
       }
     });
