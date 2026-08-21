@@ -54,18 +54,18 @@ mqtt-watch:
 	docker run --rm --network host eclipse-mosquitto mosquitto_sub -h localhost -t 'argus/#' -v
 
 lint:
-	ruff check .
+	poetry run ruff check .
 
 format:
-	ruff format .
+	poetry run ruff format .
 
 fix:
-	ruff check . --fix
-	ruff format .
+	poetry run ruff check . --fix
+	poetry run ruff format .
 
 check:
-	ruff check .
-	ruff format . --check
+	poetry run ruff check .
+	poetry run ruff format . --check
 
 test:
 	poetry run pytest
