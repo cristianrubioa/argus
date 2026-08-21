@@ -19,5 +19,5 @@ async def _lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Argus", lifespan=_lifespan)
-app.add_middleware(SessionMiddleware, secret_key=config.session_secret())
+app.add_middleware(SessionMiddleware, secret_key=config.session_secret(), https_only=config.session_https_only())
 app.include_router(router)

@@ -7,7 +7,14 @@ def db_path() -> Path:
 
 
 def session_secret() -> str:
-    return os.environ.get("ARGUS_SESSION_SECRET", "dev-insecure-secret-change-me")
+    secret = os.environ.get("ARGUS_SESSION_SECRET")
+    if not secret:
+        raise RuntimeError("ARGUS_SESSION_SECRET is required — set it (see .env.example)")
+    return secret
+
+
+def session_https_only() -> bool:
+    return os.environ.get("ARGUS_SESSION_HTTPS_ONLY", "").lower() in ("1", "true", "yes")
 
 
 def admin_bootstrap_credentials() -> tuple[str, str] | None:

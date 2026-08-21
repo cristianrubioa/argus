@@ -24,6 +24,9 @@ from argus.models import Profile
 from argus.models import UsbguardAction
 from argus.models import WhitelistEntry
 from argus.web.auth import authenticate
+from argus.web.auth import is_locked_out
+from argus.web.auth import record_failure
+from argus.web.auth import record_success
 from argus.web.auth import require_admin
 from argus.web.i18n import LANGUAGE_NAMES
 from argus.web.i18n import SUPPORTED_LANGUAGES
@@ -64,8 +67,13 @@ def login_form(request: Request, session: Session = Depends(get_session)):
 def login_submit(
     request: Request, username: str = Form(...), password: str = Form(...), session: Session = Depends(get_session)
 ):
+    source = request.client.host if request.client else "unknown"
+    if is_locked_out(source):
+        return render(request, session, "login.html", {"error": "Too many attempts. Try again later."})
     if not authenticate(session, username, password):
+        record_failure(source)
         return render(request, session, "login.html", {"error": "Invalid username or password"})
+    record_success(source)
     request.session["admin"] = username
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 

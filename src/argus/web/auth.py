@@ -2,7 +2,12 @@
 
 import hashlib
 import hmac
+import logging
 import secrets
+import threading
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 
 from fastapi import HTTPException
 from fastapi import Request
@@ -12,7 +17,43 @@ from sqlalchemy.orm import Session
 from argus import config
 from argus.models import AdminUser
 
+logger = logging.getLogger(__name__)
+
 _PBKDF2_ITERATIONS = 600_000
+
+_LOGIN_MAX_ATTEMPTS = 5
+_LOGIN_LOCKOUT_SECONDS = 300
+
+_login_attempts: dict[str, tuple[int, datetime | None]] = {}
+_login_attempts_lock = threading.Lock()
+
+
+def is_locked_out(source: str) -> bool:
+    with _login_attempts_lock:
+        _, locked_until = _login_attempts.get(source, (0, None))
+        return locked_until is not None and datetime.now(timezone.utc) < locked_until
+
+
+def record_failure(source: str) -> None:
+    with _login_attempts_lock:
+        count, _ = _login_attempts.get(source, (0, None))
+        count += 1
+        locked_until = (
+            datetime.now(timezone.utc) + timedelta(seconds=_LOGIN_LOCKOUT_SECONDS) if count >= _LOGIN_MAX_ATTEMPTS else None
+        )
+        _login_attempts[source] = (count, locked_until)
+    logger.warning("Failed login attempt from %s (%d/%d)", source, count, _LOGIN_MAX_ATTEMPTS)
+
+
+def record_success(source: str) -> None:
+    with _login_attempts_lock:
+        _login_attempts.pop(source, None)
+
+
+def _reset_login_attempts() -> None:
+    """Test-only: clears rate-limit state between tests sharing the same TestClient source."""
+    with _login_attempts_lock:
+        _login_attempts.clear()
 
 
 def hash_password(password: str, salt: bytes | None = None) -> str:

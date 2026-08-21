@@ -11,10 +11,18 @@ from argus.factories import DeviceEventFactory
 from argus.factories import DeviceFactory
 from argus.factories import WhitelistEntryFactory
 from argus.models import AdminUser
+from argus.web import auth
 from argus.web.auth import hash_password
 from argus.web.main import app
 
 _FACTORIES = (DeviceFactory, DeviceEventFactory, WhitelistEntryFactory, AdminUserFactory)
+
+
+@pytest.fixture(autouse=True)
+def _reset_login_attempts():
+    auth._reset_login_attempts()
+    yield
+    auth._reset_login_attempts()
 
 
 @pytest.fixture()
