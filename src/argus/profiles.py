@@ -99,8 +99,15 @@ def agent_status(session: Session) -> AgentStatus:
     return AgentStatus.LIVE
 
 
-def record_admin_action(session: Session, actor: str, action_type: AdminActionType, target: str) -> None:
-    session.add(AdminAction(actor=actor, action_type=action_type, target=target))
+def record_admin_action(
+    session: Session,
+    actor: str,
+    action_type: AdminActionType,
+    target: str,
+    vid_pid: str | None = None,
+    source: str | None = None,
+) -> None:
+    session.add(AdminAction(actor=actor, action_type=action_type, vid_pid=vid_pid, source=source, target=target))
     session.commit()
 
 

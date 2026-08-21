@@ -110,14 +110,18 @@ class PendingUsbguardAction(Base):
 
 
 class AdminAction(Base):
-    """Append-only audit trail of security-relevant admin actions — target is a human-readable
-    snapshot, not a foreign key, so it stays meaningful after the thing it describes changes or is deleted."""
+    """Append-only audit trail of security-relevant admin actions. vid_pid/source/target are
+    human-readable snapshots, not foreign keys, so a record stays meaningful after the thing it
+    describes changes or is deleted. source is the "before" value for a genuine transition
+    (rename, profile switch) and null otherwise; target is always populated."""
 
     __tablename__ = "admin_actions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     actor: Mapped[str] = mapped_column(String(64))
     action_type: Mapped[AdminActionType] = mapped_column(Enum(AdminActionType))
+    vid_pid: Mapped[str | None] = mapped_column(String(9), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
     target: Mapped[str] = mapped_column(String(255))
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 

@@ -146,7 +146,7 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
         session.commit()
         profiles.record_admin_action(
-            session, admin, AdminActionType.WHITELIST_AUTHORIZE, f"{device.vid_pid} {device.display_name}"
+            session, admin, AdminActionType.WHITELIST_AUTHORIZE, device.display_name, vid_pid=device.vid_pid
         )
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -155,12 +155,12 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
 def revoke_device(device_id: int, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     device = session.get(Device, device_id)
     if device is not None and device.whitelist_entry is not None:
-        target = f"{device.vid_pid} {device.display_name}"
+        vid_pid, target = device.vid_pid, device.display_name
         session.delete(device.whitelist_entry)
         if profiles.get_active_profile(session) == Profile.ENFORCE:
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.BLOCK))
         session.commit()
-        profiles.record_admin_action(session, admin, AdminActionType.WHITELIST_REVOKE, target)
+        profiles.record_admin_action(session, admin, AdminActionType.WHITELIST_REVOKE, target, vid_pid=vid_pid)
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -182,7 +182,9 @@ def rename_device(
                 session,
                 admin,
                 AdminActionType.DEVICE_RENAME,
-                f"{device.vid_pid}: '{old_name}' -> '{new_name or device.name}'",
+                new_name or device.name,
+                vid_pid=device.vid_pid,
+                source=old_name,
             )
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -299,6 +301,9 @@ def _logs_context(
     }
 
 
+_LOGS_TABS = ("events", "actions")
+
+
 @router.get("/logs")
 def logs(
     request: Request,
@@ -310,13 +315,18 @@ def logs(
     sort: str = _LOGS_DEFAULT_SORT,
     dir: str = "desc",
     page: int = 1,
+    tab: str = "events",
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
     context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
     admin_actions = profiles.recent_admin_actions(session, _ADMIN_ACTIONS_LIMIT)
+    tab = tab if tab in _LOGS_TABS else "events"
     return render(
-        request, session, "logs.html", {"admin": admin, "active": "logs", "admin_actions": admin_actions, **context}
+        request,
+        session,
+        "logs.html",
+        {"admin": admin, "active": "logs", "admin_actions": admin_actions, "tab": tab, **context},
     )
 
 
@@ -363,7 +373,7 @@ def update_settings(
     profiles.request_profile(session, new_profile)
     if new_profile != old_profile:
         profiles.record_admin_action(
-            session, admin, AdminActionType.PROFILE_SWITCH, f"{old_profile.value} -> {new_profile.value}"
+            session, admin, AdminActionType.PROFILE_SWITCH, new_profile.value, source=old_profile.value
         )
     if language in SUPPORTED_LANGUAGES:
         profiles.set_language(session, language)

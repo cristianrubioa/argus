@@ -2,7 +2,10 @@
 {% block title %}Argus — {{ t('nav_whitelist') }}{% endblock %}
 {% block content %}
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('whitelist_heading') }}</h1>
-<table class="w-full text-sm">
+<table class="w-full text-sm table-fixed">
+  <colgroup>
+    <col class="w-[26%]"><col class="w-[12%]"><col class="w-[14%]"><col class="w-[18%]"><col class="w-[14%]"><col class="w-[16%]">
+  </colgroup>
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
       <th class="py-2 pr-4">{{ t('table_name') }}</th>
@@ -10,7 +13,7 @@
       <th class="py-2 pr-4">{{ t('table_serial') }}</th>
       <th class="py-2 pr-4">{{ t('table_added') }}</th>
       <th class="py-2 pr-4">{{ t('table_added_by') }}</th>
-      <th class="py-2 pr-4"></th>
+      <th class="py-2 pr-4">{{ t('table_action') }}</th>
     </tr>
   </thead>
   <tbody>
@@ -19,19 +22,19 @@
       <td class="py-2 pr-4">
         <form method="post" action="/whitelist/rename/{{ entry.device_id }}" class="relative">
           <input type="text" name="custom_name" value="{{ entry.device.custom_name or '' }}" placeholder="{{ entry.device.name }}"
-            title="{{ t('whitelist_rename_hint') }}"
-            class="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-blue-400 focus:bg-white dark:focus:bg-gray-950 rounded pl-1.5 pr-7 py-1 text-sm w-full focus:outline-none">
+            title="{{ t('whitelist_rename_hint') }}" maxlength="60"
+            class="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-blue-400 focus:bg-white dark:focus:bg-gray-950 rounded pl-1.5 pr-7 py-1 text-sm w-full focus:outline-none truncate">
           <button type="submit" title="{{ t('action_save') }}"
             class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
             <i class="fa-solid fa-check text-xs"></i>
           </button>
         </form>
       </td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.device.vid_pid }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.device.serial or "—" }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.added_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.added_by }}</td>
-      <td class="py-2 pr-4 text-right">
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.device.vid_pid }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.device.serial or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.added_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.added_by }}</td>
+      <td class="py-2 pr-4">
         <form method="post" action="/whitelist/revoke/{{ entry.device_id }}">
           <button type="submit" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">{{ t('action_revoke') }}</button>
         </form>

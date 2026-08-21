@@ -49,10 +49,20 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
 
 _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = ("ALTER TABLE devices ADD COLUMN custom_name VARCHAR(255)",)
 
+_ADMIN_ACTIONS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
+    "ALTER TABLE admin_actions ADD COLUMN vid_pid VARCHAR(9)",
+    "ALTER TABLE admin_actions ADD COLUMN source VARCHAR(255)",
+)
+
 
 def _add_missing_columns(target):
     """Guard for schema changes on a pre-existing database — no migration tool yet (add-ui-localization/design.md)."""
-    for statement in _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA + _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA:
+    statements = (
+        _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA
+        + _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA
+        + _ADMIN_ACTIONS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA
+    )
+    for statement in statements:
         try:
             with target.begin() as conn:
                 conn.execute(text(statement))

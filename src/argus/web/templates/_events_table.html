@@ -1,4 +1,7 @@
-<table class="w-full text-sm">
+<table class="w-full text-sm table-fixed">
+  <colgroup>
+    <col class="w-[26%]"><col class="w-[12%]"><col class="w-[14%]"><col class="w-[14%]"><col class="w-[12%]"><col class="w-[22%]">
+  </colgroup>
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
       {% for column, label in (('name', t('table_device')), ('vid_pid', 'VID:PID'), ('serial', t('table_serial')), ('decision', t('table_decision')), ('profile', t('table_profile')), ('occurred_at', t('table_when'))) %}
@@ -17,9 +20,9 @@
   <tbody>
     {% for event in events %}
     <tr class="border-b border-gray-100 dark:border-gray-900">
-      <td class="py-2 pr-4">{{ event.device.display_name }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.device.vid_pid }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.device.serial or "—" }}</td>
+      <td class="py-2 pr-4 truncate">{{ event.device.display_name }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ event.device.vid_pid }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ event.device.serial or "—" }}</td>
       <td class="py-2 pr-4">
         <span class="px-1.5 py-0.5 rounded text-xs
           {% if event.decision.value == 'authorized' %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
@@ -32,7 +35,7 @@
         <span class="px-1.5 py-0.5 rounded text-xs
           {% if event.profile.value == 'enforce' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
           {% else %}bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300{% endif %}">
-          {{ event.profile.value }}
+          {{ t('profile_' + event.profile.value) }}
         </span>
       </td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
@@ -46,10 +49,10 @@
 <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
   <span>{{ t('logs_pagination_showing') }} {{ range_start }}–{{ range_end }} {{ t('logs_pagination_of') }} {{ total_count }}</span>
   <div class="flex gap-2">
-    <a href="{{ prev_page_link }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page <= 1 else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+    <a href="{{ prev_page_link }}" class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page <= 1 else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
       <i class="fa-solid fa-chevron-left text-xs mr-1.5"></i>{{ t('logs_pagination_prev') }}
     </a>
-    <a href="{{ next_page_link }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page >= total_pages else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+    <a href="{{ next_page_link }}" class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if page >= total_pages else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
       {{ t('logs_pagination_next') }}<i class="fa-solid fa-chevron-right text-xs ml-1.5"></i>
     </a>
   </div>

@@ -1,9 +1,20 @@
 {% extends "_shell.html" %}
 {% block title %}Argus — {{ t('nav_logs') }}{% endblock %}
 {% block content %}
-<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('logs_heading') }}</h1>
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('nav_logs') }}</h1>
 
+<div class="flex gap-4 border-b border-gray-200 dark:border-gray-800 mb-4">
+  <button type="button" id="tab-events-btn" class="pb-2 text-sm font-medium border-b-2 {{ 'border-blue-600 text-blue-700 dark:text-blue-300' if tab == 'events' else 'border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' }}">
+    {{ t('logs_heading') }}
+  </button>
+  <button type="button" id="tab-actions-btn" class="pb-2 text-sm font-medium border-b-2 {{ 'border-blue-600 text-blue-700 dark:text-blue-300' if tab == 'actions' else 'border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300' }}">
+    {{ t('admin_actions_heading') }}
+  </button>
+</div>
+
+<div id="events-panel" class="{{ 'hidden' if tab != 'events' else '' }}">
 <form id="logs-filter-form" method="get" action="/logs" class="flex flex-wrap gap-3 items-end mb-4">
+  <input type="hidden" name="tab" id="tab-field" value="{{ tab }}">
   <div class="flex-1 min-w-[16rem]">
     <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">{{ t('logs_search_label') }}</label>
     <input type="text" name="q" value="{{ q }}" onchange="this.form.submit()"
@@ -53,7 +64,7 @@
           {% set is_checked = not selected_profiles or value in selected_profiles %}
           <label class="px-2 py-1 rounded text-xs cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-500 has-[:checked]:border-transparent {{ colors }}">
             <input type="checkbox" name="profile" value="{{ value }}" class="peer hidden" {% if is_checked %}checked{% endif %}>
-            <i class="fa-solid fa-check text-[10px] mr-1 hidden peer-checked:inline"></i>{{ value }}
+            <i class="fa-solid fa-check text-[10px] mr-1 hidden peer-checked:inline"></i>{{ t('profile_' + value) }}
           </label>
           {% endfor %}
         </div>
@@ -69,13 +80,19 @@
 <div id="events-table" hx-get="/logs/partial?page={{ page }}" hx-trigger="every 2s" hx-include="#logs-filter-form" hx-swap="innerHTML">
   {% include "_events_table.html" %}
 </div>
+</div>
 
-<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('admin_actions_heading') }}</h1>
-<table class="w-full text-sm">
+<div id="actions-panel" class="{{ 'hidden' if tab != 'actions' else '' }}">
+<table class="w-full text-sm table-fixed">
+  <colgroup>
+    <col class="w-[10%]"><col class="w-[18%]"><col class="w-[10%]"><col class="w-[22%]"><col class="w-[22%]"><col class="w-[18%]">
+  </colgroup>
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
       <th class="py-2 pr-4">{{ t('table_actor') }}</th>
       <th class="py-2 pr-4">{{ t('table_action') }}</th>
+      <th class="py-2 pr-4">VID:PID</th>
+      <th class="py-2 pr-4">{{ t('table_source') }}</th>
       <th class="py-2 pr-4">{{ t('table_target') }}</th>
       <th class="py-2 pr-4">{{ t('table_when') }}</th>
     </tr>
@@ -83,18 +100,47 @@
   <tbody>
     {% for entry in admin_actions %}
     <tr class="border-b border-gray-100 dark:border-gray-900">
-      <td class="py-2 pr-4">{{ entry.actor }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ t('action_type_' + entry.action_type.value) }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.target }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4 truncate">{{ entry.actor }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ t('action_type_' + entry.action_type.value) }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.vid_pid or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.source or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.target }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="4" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>
+    <tr><td colspan="6" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 
 <script>
+  (function () {
+    const eventsBtn = document.getElementById("tab-events-btn");
+    const actionsBtn = document.getElementById("tab-actions-btn");
+    const eventsPanel = document.getElementById("events-panel");
+    const actionsPanel = document.getElementById("actions-panel");
+    const tabField = document.getElementById("tab-field");
+    const activeClasses = ["border-blue-600", "text-blue-700", "dark:text-blue-300"];
+    const inactiveClasses = ["border-transparent", "text-gray-500", "dark:text-gray-500"];
+
+    function activate(name, btn, panel, otherBtn, otherPanel) {
+      panel.classList.remove("hidden");
+      otherPanel.classList.add("hidden");
+      btn.classList.add(...activeClasses);
+      btn.classList.remove(...inactiveClasses);
+      otherBtn.classList.add(...inactiveClasses);
+      otherBtn.classList.remove(...activeClasses);
+      tabField.value = name;
+      const url = new URL(window.location);
+      url.searchParams.set("tab", name);
+      window.history.replaceState({}, "", url);
+    }
+
+    eventsBtn.addEventListener("click", () => activate("events", eventsBtn, eventsPanel, actionsBtn, actionsPanel));
+    actionsBtn.addEventListener("click", () => activate("actions", actionsBtn, actionsPanel, eventsBtn, eventsPanel));
+  })();
+
   (function () {
     const fromEl = document.getElementById("date-from");
     const toEl = document.getElementById("date-to");
