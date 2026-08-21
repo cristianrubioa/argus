@@ -10,14 +10,14 @@
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
       <input type="radio" name="profile" value="monitor" class="mt-1" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
       <span>
-        <span class="block font-medium">Monitor</span>
+        <span class="block font-medium">{{ t('profile_monitor') }}</span>
         <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_monitor_desc') }}</span>
       </span>
     </label>
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
       <input type="radio" name="profile" value="enforce" class="mt-1" {% if settings.profile.value == 'enforce' %}checked{% endif %}>
       <span>
-        <span class="block font-medium">Enforce</span>
+        <span class="block font-medium">{{ t('profile_enforce') }}</span>
         <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_enforce_desc') }}</span>
       </span>
     </label>

@@ -71,10 +71,10 @@ def login_submit(
 ):
     source = request.client.host if request.client else "unknown"
     if is_locked_out(source):
-        return render(request, session, "login.html", {"error": "Too many attempts. Try again later."})
+        return render(request, session, "login.html", {"error": "login_error_locked_out"})
     if not authenticate(session, username, password):
         record_failure(source)
-        return render(request, session, "login.html", {"error": "Invalid username or password"})
+        return render(request, session, "login.html", {"error": "login_error_invalid"})
     record_success(source)
     request.session["admin"] = username
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)

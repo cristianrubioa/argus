@@ -1,5 +1,6 @@
 import json
 import socket
+import time
 
 from argus import config
 from argus import profiles
@@ -90,6 +91,27 @@ def test_failed_publish_records_error(session, monkeypatch):
     settings = profiles.get_settings(session)
     assert settings.mqtt_last_publish_ok is False
     assert "broker unreachable" in settings.mqtt_last_error
+
+
+def test_publish_timeout_does_not_block_and_records_failure(session, monkeypatch):
+    # Setup
+    event = DeviceEventFactory()
+    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(mqtt_bridge, "_PUBLISH_TIMEOUT_SECONDS", 0.05)
+
+    def _hang(*args, **kwargs):
+        time.sleep(2)
+
+    monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", _hang)
+    # Action
+    started_at = time.monotonic()
+    mqtt_bridge.publish_event(event, session)
+    elapsed = time.monotonic() - started_at
+    # Expected — returns promptly instead of blocking for the full hang duration
+    assert elapsed < 1
+    settings = profiles.get_settings(session)
+    assert settings.mqtt_last_publish_ok is False
+    assert "timed out" in settings.mqtt_last_error.lower()
 
 
 def test_ajustes_shows_never_attempted_by_default(logged_in_client):

@@ -46,6 +46,17 @@ def test_search_matches_serial(logged_in_client, session):
     assert "Logitech Mouse" not in response.text
 
 
+def test_profile_badge_is_localized_not_raw_enum_value(logged_in_client, session):
+    # Setup
+    DeviceEventFactory(device=DeviceFactory(name="Monitored Device"), profile=Profile.MONITOR)
+    # Action
+    response = logged_in_client.get("/logs")
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Monitor" in response.text
+    assert ">monitor<" not in response.text
+
+
 def test_decision_tag_filter_narrows_results(logged_in_client, session):
     # Setup
     DeviceEventFactory(device=DeviceFactory(name="Allowed Device"), decision=Decision.AUTHORIZED)

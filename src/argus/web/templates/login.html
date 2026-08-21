@@ -8,7 +8,7 @@
       <span class="font-semibold tracking-wide" style="font-size: var(--app-name-size)">Argus</span>
     </div>
     {% if error %}
-    <div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2">{{ error }}</div>
+    <div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2">{{ t(error) }}</div>
     {% endif %}
     <div>
       <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('login_username') }}</label>
