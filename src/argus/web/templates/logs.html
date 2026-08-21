@@ -70,6 +70,30 @@
   {% include "_events_table.html" %}
 </div>
 
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('admin_actions_heading') }}</h1>
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
+      <th class="py-2 pr-4">{{ t('table_actor') }}</th>
+      <th class="py-2 pr-4">{{ t('table_action') }}</th>
+      <th class="py-2 pr-4">{{ t('table_target') }}</th>
+      <th class="py-2 pr-4">{{ t('table_when') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in admin_actions %}
+    <tr class="border-b border-gray-100 dark:border-gray-900">
+      <td class="py-2 pr-4">{{ entry.actor }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ t('action_type_' + entry.action_type.value) }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.target }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
 <script>
   (function () {
     const fromEl = document.getElementById("date-from");

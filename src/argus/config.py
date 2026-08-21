@@ -26,6 +26,12 @@ def admin_bootstrap_credentials() -> tuple[str, str] | None:
     return username, password
 
 
+def log_retention_days() -> int | None:
+    """Days of device_events/applied whitelist actions to keep, or None to keep forever (default)."""
+    days = os.environ.get("ARGUS_LOG_RETENTION_DAYS")
+    return int(days) if days else None
+
+
 def mqtt_config() -> dict | None:
     """MQTT broker settings, or None when unconfigured — the bridge is fully optional."""
     host = os.environ.get("ARGUS_MQTT_HOST")

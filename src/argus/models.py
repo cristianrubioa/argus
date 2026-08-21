@@ -39,6 +39,13 @@ class AgentStatus(enum.StrEnum):
     NEVER = "never"
 
 
+class AdminActionType(enum.StrEnum):
+    WHITELIST_AUTHORIZE = "whitelist_authorize"
+    WHITELIST_REVOKE = "whitelist_revoke"
+    DEVICE_RENAME = "device_rename"
+    PROFILE_SWITCH = "profile_switch"
+
+
 class Device(Base):
     __tablename__ = "devices"
 
@@ -102,6 +109,19 @@ class PendingUsbguardAction(Base):
     device: Mapped["Device"] = relationship()
 
 
+class AdminAction(Base):
+    """Append-only audit trail of security-relevant admin actions — target is a human-readable
+    snapshot, not a foreign key, so it stays meaningful after the thing it describes changes or is deleted."""
+
+    __tablename__ = "admin_actions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    actor: Mapped[str] = mapped_column(String(64))
+    action_type: Mapped[AdminActionType] = mapped_column(Enum(AdminActionType))
+    target: Mapped[str] = mapped_column(String(255))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
 class AdminUser(Base):
     __tablename__ = "admin_users"
 
@@ -126,3 +146,4 @@ class Settings(Base):
     theme: Mapped[str] = mapped_column(String(5), default="dark")
     font_size: Mapped[str] = mapped_column(String(2), default="md")
     agent_last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_log_prune_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

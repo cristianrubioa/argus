@@ -4,17 +4,28 @@ from datetime import timezone
 
 from sqlalchemy.orm import Session
 
+from argus import config
 from argus.agent import usbguard_cli
+from argus.models import AdminAction
+from argus.models import AdminActionType
 from argus.models import AgentStatus
+from argus.models import DeviceEvent
+from argus.models import PendingUsbguardAction
 from argus.models import Profile
 from argus.models import Settings
 
 _SETTINGS_ID = 1
 _HEARTBEAT_STALE_SECONDS = 30
+_LOG_PRUNE_CHECK_INTERVAL = timedelta(hours=24)
 
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _as_aware(dt: datetime) -> datetime:
+    """SQLite drops tzinfo on round-trip; every timestamp this module writes is UTC (_utcnow())."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 def get_settings(session: Session) -> Settings:
@@ -83,12 +94,39 @@ def agent_status(session: Session) -> AgentStatus:
     last_heartbeat = get_settings(session).agent_last_heartbeat_at
     if last_heartbeat is None:
         return AgentStatus.NEVER
-    if last_heartbeat.tzinfo is None:
-        # SQLite drops tzinfo on round-trip; every write here is UTC (_utcnow()), so restore that marker.
-        last_heartbeat = last_heartbeat.replace(tzinfo=timezone.utc)
-    if _utcnow() - last_heartbeat > timedelta(seconds=_HEARTBEAT_STALE_SECONDS):
+    if _utcnow() - _as_aware(last_heartbeat) > timedelta(seconds=_HEARTBEAT_STALE_SECONDS):
         return AgentStatus.STALE
     return AgentStatus.LIVE
+
+
+def record_admin_action(session: Session, actor: str, action_type: AdminActionType, target: str) -> None:
+    session.add(AdminAction(actor=actor, action_type=action_type, target=target))
+    session.commit()
+
+
+def recent_admin_actions(session: Session, limit: int) -> list[AdminAction]:
+    return session.query(AdminAction).order_by(AdminAction.occurred_at.desc()).limit(limit).all()
+
+
+def prune_old_events(session: Session) -> None:
+    """Called from argus-agent's reconcile loop, every cycle; no-ops unless retention is configured and due."""
+    retention_days = config.log_retention_days()
+    if retention_days is None:
+        return
+
+    settings = get_settings(session)
+    if settings.last_log_prune_at is not None:
+        if _utcnow() - _as_aware(settings.last_log_prune_at) < _LOG_PRUNE_CHECK_INTERVAL:
+            return
+
+    cutoff = _utcnow() - timedelta(days=retention_days)
+    session.query(DeviceEvent).filter(DeviceEvent.occurred_at < cutoff).delete()
+    session.query(PendingUsbguardAction).filter(
+        PendingUsbguardAction.applied_at.is_not(None), PendingUsbguardAction.applied_at < cutoff
+    ).delete()
+    session.query(AdminAction).filter(AdminAction.occurred_at < cutoff).delete()
+    settings.last_log_prune_at = _utcnow()
+    session.commit()
 
 
 def reconcile_profile(session: Session) -> None:

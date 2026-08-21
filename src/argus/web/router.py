@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from argus import profiles
 from argus.db import get_session
+from argus.models import AdminActionType
 from argus.models import Device
 from argus.models import DeviceEvent
 from argus.models import PendingUsbguardAction
@@ -36,6 +37,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 _RECENT_EVENTS_LIMIT = 20
+_ADMIN_ACTIONS_LIMIT = 20
 _LOGS_DEFAULT_RANGE_DAYS = 7
 _LOGS_DATE_FORMAT = "%Y-%m-%dT%H:%M"
 
@@ -143,6 +145,9 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
         if profiles.get_active_profile(session) == Profile.ENFORCE:
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
         session.commit()
+        profiles.record_admin_action(
+            session, admin, AdminActionType.WHITELIST_AUTHORIZE, f"{device.vid_pid} {device.display_name}"
+        )
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -150,10 +155,12 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
 def revoke_device(device_id: int, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     device = session.get(Device, device_id)
     if device is not None and device.whitelist_entry is not None:
+        target = f"{device.vid_pid} {device.display_name}"
         session.delete(device.whitelist_entry)
         if profiles.get_active_profile(session) == Profile.ENFORCE:
             session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.BLOCK))
         session.commit()
+        profiles.record_admin_action(session, admin, AdminActionType.WHITELIST_REVOKE, target)
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -166,8 +173,17 @@ def rename_device(
 ):
     device = session.get(Device, device_id)
     if device is not None and device.whitelist_entry is not None:
-        device.custom_name = custom_name.strip() or None
-        session.commit()
+        old_name = device.display_name
+        new_name = custom_name.strip() or None
+        if new_name != old_name:
+            device.custom_name = new_name
+            session.commit()
+            profiles.record_admin_action(
+                session,
+                admin,
+                AdminActionType.DEVICE_RENAME,
+                f"{device.vid_pid}: '{old_name}' -> '{new_name or device.name}'",
+            )
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -298,7 +314,10 @@ def logs(
     session: Session = Depends(get_session),
 ):
     context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
-    return render(request, session, "logs.html", {"admin": admin, "active": "logs", **context})
+    admin_actions = profiles.recent_admin_actions(session, _ADMIN_ACTIONS_LIMIT)
+    return render(
+        request, session, "logs.html", {"admin": admin, "active": "logs", "admin_actions": admin_actions, **context}
+    )
 
 
 @router.get("/logs/partial")
@@ -339,7 +358,13 @@ def update_settings(
     session: Session = Depends(get_session),
 ):
     """Single confirm gate for the whole Ajustes form — every field commits together, or not at all."""
-    profiles.request_profile(session, Profile(profile))
+    old_profile = profiles.get_active_profile(session)
+    new_profile = Profile(profile)
+    profiles.request_profile(session, new_profile)
+    if new_profile != old_profile:
+        profiles.record_admin_action(
+            session, admin, AdminActionType.PROFILE_SWITCH, f"{old_profile.value} -> {new_profile.value}"
+        )
     if language in SUPPORTED_LANGUAGES:
         profiles.set_language(session, language)
     if theme in ("light", "dark"):

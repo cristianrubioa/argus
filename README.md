@@ -29,6 +29,13 @@ make check   # ruff check + format --check
 
 `make run` bind-mounts `./src` with `--reload`, so code edits take effect without a rebuild.
 
+## Log retention
+
+```
+# set ARGUS_LOG_RETENTION_DAYS=30 in .env, redeploy argus-agent
+```
+Off by default (keeps everything forever). Once set, argus-agent permanently deletes events and applied whitelist actions older than N days — irreversible.
+
 ## Testing the MQTT bridge locally
 
 ```
