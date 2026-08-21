@@ -1,0 +1,50 @@
+<table class="w-full text-sm table-fixed">
+  <colgroup>
+    <col class="w-[6%]"><col class="w-[13%]"><col class="w-[9%]"><col class="w-[9%]"><col class="w-[25%]"><col class="w-[24%]"><col class="w-[14%]">
+  </colgroup>
+  <thead>
+    <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
+      <th class="py-2 pr-4">{{ t('table_actor') }}</th>
+      {% for column, label in (('action_type', t('table_action')), ('vid_pid', 'VID:PID'), ('serial', t('table_serial')), ('source', t('table_source')), ('target', t('table_target')), ('occurred_at', t('table_when'))) %}
+      <th class="py-2 pr-4">
+        <a href="{{ a_sort_links[column] }}" hx-get="{{ a_sort_links[column]|replace('/logs?', '/logs/partial?') }}"
+          hx-target="#admin-actions-table" hx-swap="innerHTML" class="hover:text-gray-900 dark:hover:text-gray-200">
+          {{ label }}{% if a_sort == column %} <i class="fa-solid fa-arrow-{{ 'up' if a_dir == 'asc' else 'down' }} text-xs"></i>{% endif %}
+        </a>
+      </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in admin_actions %}
+    <tr class="border-b border-gray-100 dark:border-gray-900">
+      <td class="py-2 pr-4 truncate">{{ entry.actor }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ t('action_type_' + entry.action_type.value) }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.vid_pid or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.serial or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.source or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.target }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if a_total_pages is defined %}
+<div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+  <span>{{ t('logs_pagination_showing') }} {{ a_range_start }}–{{ a_range_end }} {{ t('logs_pagination_of') }} {{ a_total_count }}</span>
+  <div class="flex gap-2">
+    <a href="{{ a_prev_page_link }}" hx-get="{{ a_prev_page_link|replace('/logs?', '/logs/partial?') }}"
+      hx-target="#admin-actions-table" hx-swap="innerHTML"
+      class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if a_page <= 1 else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      <i class="fa-solid fa-chevron-left text-xs mr-1.5"></i>{{ t('logs_pagination_prev') }}
+    </a>
+    <a href="{{ a_next_page_link }}" hx-get="{{ a_next_page_link|replace('/logs?', '/logs/partial?') }}"
+      hx-target="#admin-actions-table" hx-swap="innerHTML"
+      class="px-3 h-[34px] inline-flex items-center border border-gray-300 dark:border-gray-700 rounded {{ 'opacity-40 pointer-events-none' if a_page >= a_total_pages else 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+      {{ t('logs_pagination_next') }}<i class="fa-solid fa-chevron-right text-xs ml-1.5"></i>
+    </a>
+  </div>
+</div>
+{% endif %}
