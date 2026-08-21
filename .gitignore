@@ -23,5 +23,8 @@ build/
 # OpenSpec
 openspec/
 
+# Local SQLite data (default ARGUS_DB_PATH)
+data/
+
 # OS
 .DS_Store
