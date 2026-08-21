@@ -1,8 +1,4 @@
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
 from pathlib import Path
-from urllib.parse import urlencode
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -12,7 +8,6 @@ from fastapi import Request
 from fastapi import status
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from argus import profiles
@@ -21,10 +16,13 @@ from argus.models import AdminAction
 from argus.models import AdminActionType
 from argus.models import Device
 from argus.models import DeviceEvent
+from argus.models import FontSize
 from argus.models import PendingUsbguardAction
 from argus.models import Profile
+from argus.models import Theme
 from argus.models import UsbguardAction
 from argus.models import WhitelistEntry
+from argus.web import listing
 from argus.web.auth import authenticate
 from argus.web.auth import is_locked_out
 from argus.web.auth import record_failure
@@ -39,8 +37,6 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 _RECENT_EVENTS_LIMIT = 20
 _ADMIN_ACTIONS_LIMIT = 20
-_LOGS_DEFAULT_RANGE_DAYS = 7
-_LOGS_DATE_FORMAT = "%Y-%m-%dT%H:%M"
 
 
 def render(request: Request, session: Session, name: str, context: dict):
@@ -91,7 +87,7 @@ def logout(request: Request):
 
 
 @router.get("/agent-status/partial")
-def agent_status_partial(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+def agent_status_partial(request: Request, _admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     return render(request, session, "_agent_status_badge.html", {})
 
 
@@ -105,7 +101,7 @@ def dashboard(request: Request, admin: str = Depends(require_admin), session: Se
 
 
 @router.get("/dashboard/partial")
-def dashboard_partial(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+def dashboard_partial(request: Request, _admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     events = _recent_events(session)
     return render(request, session, "_events_table.html", {"events": events})
 
@@ -114,7 +110,7 @@ def _recent_events(session: Session) -> list[DeviceEvent]:
     return session.query(DeviceEvent).order_by(DeviceEvent.occurred_at.desc()).limit(_RECENT_EVENTS_LIMIT).all()
 
 
-# --- Dispositivos ---
+# --- Devices ---
 
 
 @router.get("/dispositivos")
@@ -201,19 +197,6 @@ def rename_device(
 # --- Logs ---
 
 
-def _parse_logs_datetime(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    return datetime.strptime(value, _LOGS_DATE_FORMAT).replace(tzinfo=timezone.utc)
-
-
-def _effective_logs_range(date_from: str | None, date_to: str | None) -> tuple[datetime, datetime]:
-    now = datetime.now(timezone.utc)
-    parsed_from = _parse_logs_datetime(date_from)
-    parsed_to = _parse_logs_datetime(date_to)
-    return parsed_from or now - timedelta(days=_LOGS_DEFAULT_RANGE_DAYS), parsed_to or now
-
-
 _LOGS_SORT_COLUMNS = {
     "name": Device.name,
     "vid_pid": Device.vid.op("||")(":").op("||")(Device.pid),
@@ -223,92 +206,6 @@ _LOGS_SORT_COLUMNS = {
     "occurred_at": DeviceEvent.occurred_at,
 }
 _LOGS_DEFAULT_SORT = "occurred_at"
-
-
-def _filtered_events(
-    session: Session,
-    q: str,
-    decisions: list[str],
-    event_profiles: list[str],
-    date_from: datetime,
-    date_to: datetime,
-    sort: str,
-    direction: str,
-    page: int,
-) -> tuple[list[DeviceEvent], int]:
-    query = session.query(DeviceEvent).join(Device)
-    if q:
-        like = f"%{q}%"
-        vid_pid = Device.vid.op("||")(":").op("||")(Device.pid)
-        query = query.filter(or_(Device.name.ilike(like), vid_pid.ilike(like), Device.serial.ilike(like)))
-    if decisions:
-        query = query.filter(DeviceEvent.decision.in_(decisions))
-    if event_profiles:
-        query = query.filter(DeviceEvent.profile.in_(event_profiles))
-    query = query.filter(DeviceEvent.occurred_at >= date_from, DeviceEvent.occurred_at <= date_to)
-    total = query.count()
-    column = _LOGS_SORT_COLUMNS[sort]
-    ordered = column.asc() if direction == "asc" else column.desc()
-    events = query.order_by(ordered).offset((page - 1) * _RECENT_EVENTS_LIMIT).limit(_RECENT_EVENTS_LIMIT).all()
-    return events, total
-
-
-def _logs_filter_query_string(
-    q: str, decision: list[str], profile: list[str], date_from: datetime, date_to: datetime
-) -> str:
-    params = [("q", q)] if q else []
-    params += [("decision", d) for d in decision]
-    params += [("profile", p) for p in profile]
-    params += [("from", date_from.strftime(_LOGS_DATE_FORMAT)), ("to", date_to.strftime(_LOGS_DATE_FORMAT))]
-    return urlencode(params)
-
-
-def _logs_sort_links(filter_query_string: str, sort: str, direction: str) -> dict[str, str]:
-    links = {}
-    for column in _LOGS_SORT_COLUMNS:
-        next_dir = "desc" if sort == column and direction == "asc" else "asc"
-        links[column] = f"/logs?{filter_query_string}&sort={column}&dir={next_dir}"
-    return links
-
-
-def _logs_context(
-    session: Session,
-    q: str,
-    decision: list[str],
-    profile: list[str],
-    date_from: str | None,
-    date_to: str | None,
-    sort: str,
-    direction: str,
-    page: int,
-) -> dict:
-    effective_from, effective_to = _effective_logs_range(date_from, date_to)
-    sort = sort if sort in _LOGS_SORT_COLUMNS else _LOGS_DEFAULT_SORT
-    direction = direction if direction in ("asc", "desc") else "desc"
-    page = max(page, 1)
-    events, total = _filtered_events(session, q, decision, profile, effective_from, effective_to, sort, direction, page)
-    total_pages = max((total + _RECENT_EVENTS_LIMIT - 1) // _RECENT_EVENTS_LIMIT, 1)
-    filter_query_string = _logs_filter_query_string(q, decision, profile, effective_from, effective_to)
-    page_link_base = f"/logs?{filter_query_string}&sort={sort}&dir={direction}"
-    return {
-        "events": events,
-        "q": q,
-        "selected_decisions": decision,
-        "selected_profiles": profile,
-        "date_from": effective_from,
-        "date_to": effective_to,
-        "sort": sort,
-        "dir": direction,
-        "page": page,
-        "total_pages": total_pages,
-        "total_count": total,
-        "range_start": (page - 1) * _RECENT_EVENTS_LIMIT + 1 if total > 0 else 0,
-        "range_end": min(page * _RECENT_EVENTS_LIMIT, total),
-        "sort_links": _logs_sort_links(filter_query_string, sort, direction),
-        "prev_page_link": f"{page_link_base}&page={max(page - 1, 1)}",
-        "next_page_link": f"{page_link_base}&page={min(page + 1, total_pages)}",
-    }
-
 
 _ADMIN_ACTIONS_SORT_COLUMNS = {
     "action_type": AdminAction.action_type,
@@ -320,92 +217,49 @@ _ADMIN_ACTIONS_SORT_COLUMNS = {
 }
 _ADMIN_ACTIONS_DEFAULT_SORT = "occurred_at"
 
-
-def _filtered_admin_actions(
-    session: Session,
-    q: str,
-    action_types: list[str],
-    date_from: datetime,
-    date_to: datetime,
-    sort: str,
-    direction: str,
-    page: int,
-) -> tuple[list[AdminAction], int]:
-    query = session.query(AdminAction)
-    if q:
-        like = f"%{q}%"
-        query = query.filter(
-            or_(
-                AdminAction.actor.ilike(like),
-                AdminAction.vid_pid.ilike(like),
-                AdminAction.serial.ilike(like),
-                AdminAction.source.ilike(like),
-                AdminAction.target.ilike(like),
-            )
-        )
-    if action_types:
-        query = query.filter(AdminAction.action_type.in_(action_types))
-    query = query.filter(AdminAction.occurred_at >= date_from, AdminAction.occurred_at <= date_to)
-    total = query.count()
-    column = _ADMIN_ACTIONS_SORT_COLUMNS[sort]
-    ordered = column.asc() if direction == "asc" else column.desc()
-    actions = query.order_by(ordered).offset((page - 1) * _ADMIN_ACTIONS_LIMIT).limit(_ADMIN_ACTIONS_LIMIT).all()
-    return actions, total
-
-
-def _admin_actions_filter_query_string(q: str, action_types: list[str], date_from: datetime, date_to: datetime) -> str:
-    params = [("a_q", q)] if q else []
-    params += [("a_action", a) for a in action_types]
-    params += [("a_from", date_from.strftime(_LOGS_DATE_FORMAT)), ("a_to", date_to.strftime(_LOGS_DATE_FORMAT))]
-    return urlencode(params)
-
-
-def _admin_actions_sort_links(filter_query_string: str, sort: str, direction: str) -> dict[str, str]:
-    links = {}
-    for column in _ADMIN_ACTIONS_SORT_COLUMNS:
-        next_dir = "desc" if sort == column and direction == "asc" else "asc"
-        links[column] = f"/logs?{filter_query_string}&a_sort={column}&a_dir={next_dir}&tab=actions"
-    return links
-
-
-def _admin_actions_context(
-    session: Session,
-    q: str,
-    action_types: list[str],
-    date_from: str | None,
-    date_to: str | None,
-    sort: str,
-    direction: str,
-    page: int,
-) -> dict:
-    effective_from, effective_to = _effective_logs_range(date_from, date_to)
-    sort = sort if sort in _ADMIN_ACTIONS_SORT_COLUMNS else _ADMIN_ACTIONS_DEFAULT_SORT
-    direction = direction if direction in ("asc", "desc") else "desc"
-    page = max(page, 1)
-    actions, total = _filtered_admin_actions(session, q, action_types, effective_from, effective_to, sort, direction, page)
-    total_pages = max((total + _ADMIN_ACTIONS_LIMIT - 1) // _ADMIN_ACTIONS_LIMIT, 1)
-    filter_query_string = _admin_actions_filter_query_string(q, action_types, effective_from, effective_to)
-    page_link_base = f"/logs?{filter_query_string}&a_sort={sort}&a_dir={direction}&tab=actions"
-    return {
-        "admin_actions": actions,
-        "a_q": q,
-        "a_selected_actions": action_types,
-        "a_date_from": effective_from,
-        "a_date_to": effective_to,
-        "a_sort": sort,
-        "a_dir": direction,
-        "a_page": page,
-        "a_total_pages": total_pages,
-        "a_total_count": total,
-        "a_range_start": (page - 1) * _ADMIN_ACTIONS_LIMIT + 1 if total > 0 else 0,
-        "a_range_end": min(page * _ADMIN_ACTIONS_LIMIT, total),
-        "a_sort_links": _admin_actions_sort_links(filter_query_string, sort, direction),
-        "a_prev_page_link": f"{page_link_base}&a_page={max(page - 1, 1)}",
-        "a_next_page_link": f"{page_link_base}&a_page={min(page + 1, total_pages)}",
-    }
-
-
 _LOGS_TABS = ("events", "actions")
+
+
+def _events_listing(session: Session) -> listing.ListingSpec:
+    vid_pid = Device.vid.op("||")(":").op("||")(Device.pid)
+    return listing.ListingSpec(
+        prefix="",
+        base_path="/logs",
+        tab_suffix="",
+        items_key="events",
+        query=session.query(DeviceEvent).join(Device),
+        search_columns=(Device.name, vid_pid, Device.serial),
+        category_filters=(
+            listing.CategoryFilter("decision", "selected_decisions", DeviceEvent.decision),
+            listing.CategoryFilter("profile", "selected_profiles", DeviceEvent.profile),
+        ),
+        date_column=DeviceEvent.occurred_at,
+        sort_columns=_LOGS_SORT_COLUMNS,
+        default_sort=_LOGS_DEFAULT_SORT,
+        page_size=_RECENT_EVENTS_LIMIT,
+    )
+
+
+def _admin_actions_listing(session: Session) -> listing.ListingSpec:
+    return listing.ListingSpec(
+        prefix="a_",
+        base_path="/logs",
+        tab_suffix="&tab=actions",
+        items_key="admin_actions",
+        query=session.query(AdminAction),
+        search_columns=(
+            AdminAction.actor,
+            AdminAction.vid_pid,
+            AdminAction.serial,
+            AdminAction.source,
+            AdminAction.target,
+        ),
+        category_filters=(listing.CategoryFilter("a_action", "a_selected_actions", AdminAction.action_type),),
+        date_column=AdminAction.occurred_at,
+        sort_columns=_ADMIN_ACTIONS_SORT_COLUMNS,
+        default_sort=_ADMIN_ACTIONS_DEFAULT_SORT,
+        page_size=_ADMIN_ACTIONS_LIMIT,
+    )
 
 
 @router.get("/logs")
@@ -430,8 +284,12 @@ def logs(
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
-    context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
-    admin_actions_context = _admin_actions_context(session, a_q, a_action, a_from, a_to, a_sort, a_dir, a_page)
+    context = listing.build_context(
+        _events_listing(session), q, {"decision": decision, "profile": profile}, date_from, date_to, sort, dir, page
+    )
+    admin_actions_context = listing.build_context(
+        _admin_actions_listing(session), a_q, {"a_action": a_action}, a_from, a_to, a_sort, a_dir, a_page
+    )
     tab = tab if tab in _LOGS_TABS else "events"
     return render(
         request,
@@ -465,22 +323,30 @@ def logs_partial(
 ):
     tab = tab if tab in _LOGS_TABS else "events"
     if tab == "actions":
-        context = _admin_actions_context(session, a_q, a_action, a_from, a_to, a_sort, a_dir, a_page)
+        spec = _admin_actions_listing(session)
+        context = listing.build_context(spec, a_q, {"a_action": a_action}, a_from, a_to, a_sort, a_dir, a_page)
         template_name = "_admin_actions_table.html"
-        push_query_string = _admin_actions_filter_query_string(
-            context["a_q"], context["a_selected_actions"], context["a_date_from"], context["a_date_to"]
+        push_query_string = listing.filter_query_string(
+            spec,
+            context["a_q"],
+            {"a_action": context["a_selected_actions"]},
+            context["a_date_from"],
+            context["a_date_to"],
         )
         push_url = (
             f"/logs?{push_query_string}&a_sort={context['a_sort']}&a_dir={context['a_dir']}"
             f"&a_page={context['a_page']}&tab=actions"
         )
     else:
-        context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
+        spec = _events_listing(session)
+        context = listing.build_context(
+            spec, q, {"decision": decision, "profile": profile}, date_from, date_to, sort, dir, page
+        )
         template_name = "_events_table.html"
-        push_query_string = _logs_filter_query_string(
+        push_query_string = listing.filter_query_string(
+            spec,
             context["q"],
-            context["selected_decisions"],
-            context["selected_profiles"],
+            {"decision": context["selected_decisions"], "profile": context["selected_profiles"]},
             context["date_from"],
             context["date_to"],
         )
@@ -495,7 +361,7 @@ def logs_partial(
     return response
 
 
-# --- Ajustes ---
+# --- Settings ---
 
 
 @router.get("/ajustes")
@@ -524,8 +390,8 @@ def update_settings(
         )
     if language in SUPPORTED_LANGUAGES:
         profiles.set_language(session, language)
-    if theme in ("light", "dark"):
+    if theme in Theme:
         profiles.set_theme(session, theme)
-    if font_size in ("md", "lg"):
+    if font_size in FontSize:
         profiles.set_font_size(session, font_size)
     return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)

@@ -46,6 +46,16 @@ class AdminActionType(enum.StrEnum):
     PROFILE_SWITCH = "profile_switch"
 
 
+class Theme(enum.StrEnum):
+    LIGHT = "light"
+    DARK = "dark"
+
+
+class FontSize(enum.StrEnum):
+    MD = "md"
+    LG = "lg"
+
+
 class Device(Base):
     __tablename__ = "devices"
 
