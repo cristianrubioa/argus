@@ -452,11 +452,47 @@ def logs_partial(
     sort: str = _LOGS_DEFAULT_SORT,
     dir: str = "desc",
     page: int = 1,
+    a_q: str = "",
+    a_action: list[str] = Query(default=[]),
+    a_from: str | None = Query(default=None),
+    a_to: str | None = Query(default=None),
+    a_sort: str = _ADMIN_ACTIONS_DEFAULT_SORT,
+    a_dir: str = "desc",
+    a_page: int = 1,
+    tab: str = "events",
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
-    context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
-    return render(request, session, "_events_table.html", context)
+    tab = tab if tab in _LOGS_TABS else "events"
+    if tab == "actions":
+        context = _admin_actions_context(session, a_q, a_action, a_from, a_to, a_sort, a_dir, a_page)
+        template_name = "_admin_actions_table.html"
+        push_query_string = _admin_actions_filter_query_string(
+            context["a_q"], context["a_selected_actions"], context["a_date_from"], context["a_date_to"]
+        )
+        push_url = (
+            f"/logs?{push_query_string}&a_sort={context['a_sort']}&a_dir={context['a_dir']}"
+            f"&a_page={context['a_page']}&tab=actions"
+        )
+    else:
+        context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
+        template_name = "_events_table.html"
+        push_query_string = _logs_filter_query_string(
+            context["q"],
+            context["selected_decisions"],
+            context["selected_profiles"],
+            context["date_from"],
+            context["date_to"],
+        )
+        push_url = (
+            f"/logs?{push_query_string}&sort={context['sort']}&dir={context['dir']}&page={context['page']}&tab=events"
+        )
+
+    response = render(request, session, template_name, context)
+    is_poll = request.headers.get("X-Argus-Poll") == "true"
+    if request.headers.get("HX-Request") == "true" and not is_poll:
+        response.headers["HX-Push-Url"] = push_url
+    return response
 
 
 # --- Ajustes ---

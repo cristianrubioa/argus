@@ -6,6 +6,8 @@ from fastapi import status
 
 from argus.factories import DeviceEventFactory
 from argus.factories import DeviceFactory
+from argus.models import AdminAction
+from argus.models import AdminActionType
 
 
 def _seed_events(count: int):
@@ -107,6 +109,44 @@ def test_logs_partial_applies_the_same_sort_and_page_as_logs(logged_in_client, s
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert response.text.index("Apple Drive") < response.text.index("Zebra Drive")
+
+
+def test_logs_partial_with_tab_actions_returns_admin_actions_table(logged_in_client, session):
+    # Setup
+    session.add_all(
+        [
+            AdminAction(actor="admin", action_type=AdminActionType.WHITELIST_AUTHORIZE, target="Zebra Drive"),
+            AdminAction(actor="admin", action_type=AdminActionType.WHITELIST_AUTHORIZE, target="Apple Drive"),
+        ]
+    )
+    session.commit()
+    # Action
+    response = logged_in_client.get("/logs/partial", params={"tab": "actions", "a_sort": "target", "a_dir": "asc"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert response.text.index("Apple Drive") < response.text.index("Zebra Drive")
+
+
+def test_logs_partial_sets_hx_push_url_header_reflecting_current_state(logged_in_client, session):
+    # Setup
+    DeviceEventFactory(device=DeviceFactory(name="Zebra Drive"))
+    # Action
+    response = logged_in_client.get("/logs/partial", params={"sort": "name", "dir": "asc"}, headers={"HX-Request": "true"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["HX-Push-Url"].startswith("/logs?")
+    assert "sort=name" in response.headers["HX-Push-Url"]
+    assert "dir=asc" in response.headers["HX-Push-Url"]
+
+
+def test_logs_partial_without_hx_request_header_omits_push_url_header(logged_in_client, session):
+    # Setup
+    DeviceEventFactory(device=DeviceFactory(name="Zebra Drive"))
+    # Action
+    response = logged_in_client.get("/logs/partial")
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "HX-Push-Url" not in response.headers
 
 
 def test_dashboard_has_no_sort_links_or_pagination(logged_in_client, session):
