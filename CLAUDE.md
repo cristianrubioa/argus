@@ -7,6 +7,7 @@
 
 ## Code Style
 - Formatter: ruff (`make fix` to apply, `make check` to verify)
+- Tailwind classes are compiled statically (`make css`, folded into `make fix`) — no CDN script, no `tailwind.config` inline in templates. Edit `tailwind.config.js` for config changes.
 - Line length: 124 · Target: Python 3.12 · Rules: E, F, I, W
 - Tuples over lists for literals that aren't mutated at runtime
 - No multi-name imports (`from x import A, B`) — one name per line, or `from app import models` + `models.Thing`

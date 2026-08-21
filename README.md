@@ -25,9 +25,10 @@ Log in, pick a profile (Monitor/Enforce) under Ajustes.
 poetry install
 make test    # pytest
 make check   # ruff check + format --check
+make css     # rebuild static/app.css after editing templates (make fix does this too)
 ```
 
-`make run` bind-mounts `./src` with `--reload`, so code edits take effect without a rebuild.
+`make run` bind-mounts `./src` with `--reload`, so code edits take effect without a rebuild. Static/app.css changes still need a browser refresh — it's not part of the poll/htmx swap cycle.
 
 ## Log retention
 

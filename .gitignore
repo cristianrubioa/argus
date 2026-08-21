@@ -13,6 +13,9 @@ build/
 .ruff_cache/
 .pytest_cache/
 
+# Downloaded build tools (fetched by `make css`, not a project asset)
+.tools/
+
 # IDE
 .vscode/
 .idea/

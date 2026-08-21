@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.staticfiles import StaticFiles
 
 from argus import config
 from argus.db import SessionLocal
@@ -20,4 +22,5 @@ async def _lifespan(_: FastAPI):
 
 app = FastAPI(title="Argus", lifespan=_lifespan)
 app.add_middleware(SessionMiddleware, secret_key=config.session_secret(), https_only=config.session_https_only())
+app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 app.include_router(router)
