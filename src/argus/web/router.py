@@ -323,6 +323,7 @@ _ADMIN_ACTIONS_DEFAULT_SORT = "occurred_at"
 
 def _filtered_admin_actions(
     session: Session,
+    q: str,
     action_types: list[str],
     date_from: datetime,
     date_to: datetime,
@@ -331,6 +332,17 @@ def _filtered_admin_actions(
     page: int,
 ) -> tuple[list[AdminAction], int]:
     query = session.query(AdminAction)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                AdminAction.actor.ilike(like),
+                AdminAction.vid_pid.ilike(like),
+                AdminAction.serial.ilike(like),
+                AdminAction.source.ilike(like),
+                AdminAction.target.ilike(like),
+            )
+        )
     if action_types:
         query = query.filter(AdminAction.action_type.in_(action_types))
     query = query.filter(AdminAction.occurred_at >= date_from, AdminAction.occurred_at <= date_to)
@@ -341,8 +353,9 @@ def _filtered_admin_actions(
     return actions, total
 
 
-def _admin_actions_filter_query_string(action_types: list[str], date_from: datetime, date_to: datetime) -> str:
-    params = [("a_action", a) for a in action_types]
+def _admin_actions_filter_query_string(q: str, action_types: list[str], date_from: datetime, date_to: datetime) -> str:
+    params = [("a_q", q)] if q else []
+    params += [("a_action", a) for a in action_types]
     params += [("a_from", date_from.strftime(_LOGS_DATE_FORMAT)), ("a_to", date_to.strftime(_LOGS_DATE_FORMAT))]
     return urlencode(params)
 
@@ -357,6 +370,7 @@ def _admin_actions_sort_links(filter_query_string: str, sort: str, direction: st
 
 def _admin_actions_context(
     session: Session,
+    q: str,
     action_types: list[str],
     date_from: str | None,
     date_to: str | None,
@@ -368,12 +382,13 @@ def _admin_actions_context(
     sort = sort if sort in _ADMIN_ACTIONS_SORT_COLUMNS else _ADMIN_ACTIONS_DEFAULT_SORT
     direction = direction if direction in ("asc", "desc") else "desc"
     page = max(page, 1)
-    actions, total = _filtered_admin_actions(session, action_types, effective_from, effective_to, sort, direction, page)
+    actions, total = _filtered_admin_actions(session, q, action_types, effective_from, effective_to, sort, direction, page)
     total_pages = max((total + _ADMIN_ACTIONS_LIMIT - 1) // _ADMIN_ACTIONS_LIMIT, 1)
-    filter_query_string = _admin_actions_filter_query_string(action_types, effective_from, effective_to)
+    filter_query_string = _admin_actions_filter_query_string(q, action_types, effective_from, effective_to)
     page_link_base = f"/logs?{filter_query_string}&a_sort={sort}&a_dir={direction}&tab=actions"
     return {
         "admin_actions": actions,
+        "a_q": q,
         "a_selected_actions": action_types,
         "a_date_from": effective_from,
         "a_date_to": effective_to,
@@ -404,6 +419,7 @@ def logs(
     sort: str = _LOGS_DEFAULT_SORT,
     dir: str = "desc",
     page: int = 1,
+    a_q: str = "",
     a_action: list[str] = Query(default=[]),
     a_from: str | None = Query(default=None),
     a_to: str | None = Query(default=None),
@@ -415,7 +431,7 @@ def logs(
     session: Session = Depends(get_session),
 ):
     context = _logs_context(session, q, decision, profile, date_from, date_to, sort, dir, page)
-    admin_actions_context = _admin_actions_context(session, a_action, a_from, a_to, a_sort, a_dir, a_page)
+    admin_actions_context = _admin_actions_context(session, a_q, a_action, a_from, a_to, a_sort, a_dir, a_page)
     tab = tab if tab in _LOGS_TABS else "events"
     return render(
         request,

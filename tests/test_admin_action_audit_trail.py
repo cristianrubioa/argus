@@ -152,6 +152,20 @@ def test_admin_actions_filter_narrows_by_action_type(logged_in_client, session):
     assert "Backup SSD" not in response.text
 
 
+def test_admin_actions_search_matches_serial(logged_in_client, session):
+    # Setup
+    device = DeviceFactory(name="Mass Storage", serial="UNIQUESERIAL1")
+    other = DeviceFactory(name="Other Device", serial="DIFFERENT2")
+    logged_in_client.post(f"/whitelist/authorize/{device.id}")
+    logged_in_client.post(f"/whitelist/authorize/{other.id}")
+    # Action
+    response = logged_in_client.get("/logs", params={"tab": "actions", "a_q": "UNIQUESERIAL1"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Mass Storage" in response.text
+    assert "Other Device" not in response.text
+
+
 def test_admin_actions_date_range_excludes_actions_outside_it(logged_in_client, session):
     # Setup — one action outside the default 7-day range, one inside it
     session.add(

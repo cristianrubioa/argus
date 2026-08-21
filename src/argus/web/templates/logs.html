@@ -87,6 +87,12 @@
   <input type="hidden" name="tab" value="actions">
   <input type="hidden" name="a_sort" value="{{ a_sort }}">
   <input type="hidden" name="a_dir" value="{{ a_dir }}">
+  <div class="flex-1 min-w-[16rem]">
+    <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">{{ t('logs_search_label') }}</label>
+    <input type="text" name="a_q" value="{{ a_q }}" onchange="this.form.submit()"
+      placeholder="{{ t('logs_search_placeholder') }}"
+      class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+  </div>
   <div>
     <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">{{ t('logs_date_range_label') }}</label>
     <input type="text" id="a-date-range" readonly
