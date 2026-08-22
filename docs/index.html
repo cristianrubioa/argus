@@ -100,9 +100,9 @@
     /* ── Main ───────────────────────────────────────────── */
     main {
       flex: 1;
-      max-width: 720px;
+      max-width: 880px;
       margin: 0 auto;
-      padding: 2rem 1.5rem;
+      padding: 3vh 1.5rem;
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -110,15 +110,61 @@
     }
 
     /* ── Hero ───────────────────────────────────────────── */
-    .hero { margin-bottom: 2rem; }
-    .hero .tagline {
-      font-size: 1.3rem;
-      color: var(--text);
-      font-weight: 400;
-      line-height: 1.5;
-      margin-bottom: 0.4rem;
+    .hero { margin-bottom: 3.75rem; text-align: center; }
+    .hero-icon {
+      font-size: 2.75rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
     }
-    .hero .sub { font-size: 0.9rem; color: var(--text-muted); }
+    .hero .tags {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .hero .tagline {
+      font-size: 2.75rem;
+      color: var(--text);
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .hero .tagline .accent { color: var(--accent); }
+    .hero .sub { font-size: 1.1rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; }
+
+    /* ── Quick start ────────────────────────────────────── */
+    .quickstart-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+    .terminal-tabs { display: flex; gap: 0.3rem; }
+    .terminal-tab {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: #8b949e;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.6rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .terminal-tab:hover { color: #e6edf3; border-color: #444c56; }
+    .terminal-tab.active {
+      color: #e6edf3;
+      border-color: #4d94ff;
+      background: rgba(77, 148, 255, 0.1);
+    }
 
     /* ── Terminal ───────────────────────────────────────── */
     .terminal {
@@ -135,8 +181,9 @@
       padding: 0.6rem 1rem;
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: space-between;
     }
+    .traffic-lights { display: flex; gap: 6px; }
     .dot { width: 12px; height: 12px; border-radius: 50%; }
     .dot-red    { background: #ff5f57; }
     .dot-yellow { background: #febc2e; }
@@ -150,6 +197,7 @@
       justify-content: space-between;
       gap: 1rem;
       line-height: 1.6;
+      min-height: 6.6rem;
     }
     .prompt { color: #57ab5a; user-select: none; }
     .cmd-block {
@@ -205,8 +253,9 @@
 
     /* ── Responsive ─────────────────────────────────────── */
     @media (max-width: 520px) {
-      .hero .tagline { font-size: 1.1rem; }
+      .hero .tagline { font-size: 1.5rem; white-space: normal; }
       .terminal-body { flex-direction: column; }
+      .terminal-tab { font-size: 0.66rem; padding: 0.18rem 0.45rem; }
     }
   </style>
 </head>
@@ -222,24 +271,33 @@
   <main>
 
     <section class="hero">
-      <p class="tagline">USB device monitoring and control</p>
-      <p class="sub">Built on USBGuard.</p>
+      <i class="fa-solid fa-eye hero-icon"></i>
+      <p class="tags">Open Source · Homelab</p>
+      <p class="tagline">USB device monitoring and <span class="accent">control</span></p>
+      <p class="sub">Every device that connects gets seen, approved, or blocked automatically — built on USBGuard.</p>
     </section>
 
+    <span class="quickstart-label">Quick Start</span>
     <div class="terminal">
       <div class="terminal-bar">
-        <span class="dot dot-red"></span>
-        <span class="dot dot-yellow"></span>
-        <span class="dot dot-green"></span>
+        <div class="traffic-lights">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+        </div>
+        <div class="terminal-tabs">
+          <button class="terminal-tab active" data-tab="curl">curl</button>
+          <button class="terminal-tab" data-tab="clone">From a clone</button>
+        </div>
       </div>
       <div class="terminal-body">
-        <pre class="cmd-block"><span class="prompt">$</span> curl -fsSL https://install.crubio.fyi/argus | sudo bash</pre>
+        <pre class="cmd-block" id="cmdBlock"><span class="prompt">$</span> curl -fsSL https://install.crubio.fyi/argus | sudo bash</pre>
         <button class="copy-btn" id="copyBtn" aria-label="Copy install command">
           <i class="fas fa-copy"></i>
         </button>
       </div>
     </div>
-    <p class="requirements">Debian/Ubuntu · Python 3.12+</p>
+    <p class="requirements">Currently supports Debian/Ubuntu only · Python 3.12+</p>
 
     <div class="links">
       <a class="link-btn" href="https://github.com/cristianrubioa/argus" target="_blank" rel="noopener">
@@ -281,12 +339,39 @@
       applyTheme(next);
     });
 
+    // ── Install method tabs ────────────────────────────────
+    var INSTALL_COMMANDS = {
+      curl: ['curl -fsSL https://install.crubio.fyi/argus | sudo bash'],
+      clone: [
+        'git clone https://github.com/cristianrubioa/argus.git',
+        'cd argus',
+        'make install'
+      ]
+    };
+
+    var cmdBlock = document.getElementById('cmdBlock');
+    var installTabs = document.querySelectorAll('.terminal-tab');
+    var activeTab = 'curl';
+
+    function renderCommand(tab) {
+      cmdBlock.innerHTML = INSTALL_COMMANDS[tab]
+        .map(function (line) { return '<span class="prompt">$</span> ' + line; })
+        .join('\n');
+    }
+
+    installTabs.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        activeTab = btn.dataset.tab;
+        installTabs.forEach(function (b) { b.classList.toggle('active', b === btn); });
+        renderCommand(activeTab);
+      });
+    });
+
     // ── Copy install command ──────────────────────────────
     var copyBtn = document.getElementById('copyBtn');
-    var installCmd = 'curl -fsSL https://install.crubio.fyi/argus | sudo bash';
 
     copyBtn.addEventListener('click', function () {
-      navigator.clipboard.writeText(installCmd).then(function () {
+      navigator.clipboard.writeText(INSTALL_COMMANDS[activeTab].join('\n')).then(function () {
         copyBtn.classList.add('copied');
         copyBtn.innerHTML = '<i class="fas fa-check"></i>';
         setTimeout(function () {
