@@ -5,6 +5,7 @@ from datetime import timezone
 from sqlalchemy.orm import Session
 
 from argus import config
+from argus import version_check
 from argus.agent import usbguard_cli
 from argus.models import AdminAction
 from argus.models import AdminActionType
@@ -17,6 +18,7 @@ from argus.models import Settings
 _SETTINGS_ID = 1
 _HEARTBEAT_STALE_SECONDS = 30
 _LOG_PRUNE_CHECK_INTERVAL = timedelta(hours=24)
+_VERSION_CHECK_INTERVAL = timedelta(hours=24)
 
 
 def _utcnow() -> datetime:
@@ -132,6 +134,22 @@ def prune_old_events(session: Session) -> None:
     ).delete()
     session.query(AdminAction).filter(AdminAction.occurred_at < cutoff).delete()
     settings.last_log_prune_at = _utcnow()
+    session.commit()
+
+
+def refresh_version_check(session: Session) -> None:
+    """No-ops unless the cached check is missing or stale (_VERSION_CHECK_INTERVAL). A failed fetch
+    still updates version_checked_at (so a down/unreachable source isn't retried every request), but
+    leaves the last successfully fetched latest_version_available in place rather than clearing it."""
+    settings = get_settings(session)
+    if settings.version_checked_at is not None:
+        if _utcnow() - _as_aware(settings.version_checked_at) < _VERSION_CHECK_INTERVAL:
+            return
+
+    latest = version_check.fetch_latest_version()
+    if latest is not None:
+        settings.latest_version_available = latest
+    settings.version_checked_at = _utcnow()
     session.commit()
 
 

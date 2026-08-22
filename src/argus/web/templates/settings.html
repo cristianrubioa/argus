@@ -106,4 +106,44 @@
     {{ t('mqtt_status_failed_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }} — {{ settings.mqtt_last_error }}
   {% endif %}
 </p>
+
+<h1 id="software" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_software_heading') }}</h1>
+<p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
+  <span>{{ t('settings_software_version_label') }} v{{ version_state.installed }}</span>
+  <i class="fa-solid fa-arrow-right text-xs text-gray-400 dark:text-gray-600"></i>
+  {% if version_state.status == 'update_available' %}
+    <span class="text-blue-600 dark:text-blue-400 font-medium">{{ t('settings_software_update_available') }} v{{ version_state.latest }}</span>
+  {% elif version_state.status == 'up_to_date' %}
+    <span>{{ t('settings_software_up_to_date') }}</span>
+  {% else %}
+    <span>{{ t('settings_software_unknown') }}</span>
+  {% endif %}
+</p>
+{% if version_state.status == 'update_available' %}
+<div class="mt-3 inline-flex items-center gap-3 bg-gray-950 dark:bg-gray-900 border border-gray-800 dark:border-gray-700 rounded px-4 py-2 max-w-full">
+  <code id="update-command" class="font-mono text-xs text-gray-200 overflow-x-auto whitespace-nowrap">curl -fsSL https://install.crubio.fyi/argus | sudo bash</code>
+  <button type="button" id="copy-update-command" title="{{ t('settings_software_copy') }}"
+    class="shrink-0 text-gray-400 hover:text-gray-200 transition-colors">
+    <i class="fa-solid fa-copy"></i>
+  </button>
+</div>
+<script>
+  (function () {
+    const button = document.getElementById("copy-update-command");
+    if (!button) return;
+    const command = document.getElementById("update-command").textContent;
+    const icon = button.querySelector("i");
+    button.addEventListener("click", function () {
+      navigator.clipboard.writeText(command).then(function () {
+        icon.classList.remove("fa-copy");
+        icon.classList.add("fa-check");
+        setTimeout(function () {
+          icon.classList.remove("fa-check");
+          icon.classList.add("fa-copy");
+        }, 1500);
+      });
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}

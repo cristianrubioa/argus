@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from argus import profiles
+from argus import version_check
 from argus.db import get_session
 from argus.models import AdminAction
 from argus.models import AdminActionType
@@ -44,6 +45,19 @@ _RECENT_EVENTS_LIMIT = 20
 _ADMIN_ACTIONS_LIMIT = 20
 
 
+def _version_state(session: Session) -> dict:
+    profiles.refresh_version_check(session)
+    settings = profiles.get_settings(session)
+    installed = version_check.installed_version()
+    if settings.latest_version_available is None:
+        status = "unknown"
+    elif version_check.is_newer(settings.latest_version_available, installed):
+        status = "update_available"
+    else:
+        status = "up_to_date"
+    return {"installed": installed, "status": status, "latest": settings.latest_version_available}
+
+
 def render(request: Request, session: Session, name: str, context: dict):
     language = profiles.get_language(session)
     full_context = {
@@ -55,6 +69,7 @@ def render(request: Request, session: Session, name: str, context: dict):
         "theme": profiles.get_theme(session),
         "font_size": profiles.get_font_size(session),
         "agent_status": profiles.agent_status(session),
+        "version_state": _version_state(session),
     }
     return templates.TemplateResponse(request, name, full_context)
 

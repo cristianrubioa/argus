@@ -77,7 +77,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_never": "Never seen",
         "agent_last_seen_label": "Last heartbeat:",
         "agent_restart_hint": (
-            "If this stays Stale or Never seen, run `make restart-agent` on the host, or check `make agent-logs`."
+            "If this stays Stale or Never seen, run `sudo systemctl restart argus-agent` on the host, "
+            "or check `journalctl -u argus-agent -f`."
         ),
         "settings_automation_heading": "Automation (MQTT)",
         "mqtt_config_note": (
@@ -114,6 +115,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_change_password": "Change password",
         "settings_password_changed": "Password changed.",
         "settings_password_error_current_incorrect": "Current password is incorrect",
+        "version_update_available": "Update available",
+        "version_up_to_date": "Up to date",
+        "settings_software_heading": "Software",
+        "settings_software_version_label": "Version:",
+        "settings_software_up_to_date": "You're on the latest version.",
+        "settings_software_update_available": "Update available:",
+        "settings_software_unknown": "Version status unknown.",
+        "settings_software_copy": "Copy",
     },
     "es": {
         "nav_dashboard": "Panel",
@@ -185,8 +194,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_never": "Nunca visto",
         "agent_last_seen_label": "Último latido:",
         "agent_restart_hint": (
-            "Si esto queda en Desactualizado o Nunca visto, corré `make restart-agent` en el host, "
-            "o revisá `make agent-logs`."
+            "Si esto queda en Desactualizado o Nunca visto, corré `sudo systemctl restart argus-agent` en el host, "
+            "o revisá `journalctl -u argus-agent -f`."
         ),
         "settings_automation_heading": "Automatización (MQTT)",
         "mqtt_config_note": (
@@ -223,6 +232,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_change_password": "Cambiar contraseña",
         "settings_password_changed": "Contraseña actualizada.",
         "settings_password_error_current_incorrect": "La contraseña actual es incorrecta",
+        "version_update_available": "Actualización disponible",
+        "version_up_to_date": "Actualizado",
+        "settings_software_heading": "Software",
+        "settings_software_version_label": "Versión:",
+        "settings_software_up_to_date": "Estás en la última versión.",
+        "settings_software_update_available": "Actualización disponible:",
+        "settings_software_unknown": "No se pudo verificar la versión.",
+        "settings_software_copy": "Copiar",
     },
     "pt": {
         "nav_dashboard": "Painel",
@@ -294,8 +311,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_never": "Nunca visto",
         "agent_last_seen_label": "Última pulsação:",
         "agent_restart_hint": (
-            "Se isso ficar Desatualizado ou Nunca visto, execute `make restart-agent` no host, "
-            "ou verifique `make agent-logs`."
+            "Se isso ficar Desatualizado ou Nunca visto, execute `sudo systemctl restart argus-agent` no host, "
+            "ou verifique `journalctl -u argus-agent -f`."
         ),
         "settings_automation_heading": "Automação (MQTT)",
         "mqtt_config_note": (
@@ -332,6 +349,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_change_password": "Alterar senha",
         "settings_password_changed": "Senha alterada.",
         "settings_password_error_current_incorrect": "Senha atual incorreta",
+        "version_update_available": "Atualização disponível",
+        "version_up_to_date": "Atualizado",
+        "settings_software_heading": "Software",
+        "settings_software_version_label": "Versão:",
+        "settings_software_up_to_date": "Você está na versão mais recente.",
+        "settings_software_update_available": "Atualização disponível:",
+        "settings_software_unknown": "Não foi possível verificar a versão.",
+        "settings_software_copy": "Copiar",
     },
     "fr": {
         "nav_dashboard": "Tableau de bord",
@@ -403,7 +428,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_never": "Jamais vu",
         "agent_last_seen_label": "Dernier battement :",
         "agent_restart_hint": (
-            "Si cela reste Obsolète ou Jamais vu, exécutez `make restart-agent` sur l'hôte, ou consultez `make agent-logs`."
+            "Si cela reste Obsolète ou Jamais vu, exécutez `sudo systemctl restart argus-agent` sur l'hôte, "
+            "ou consultez `journalctl -u argus-agent -f`."
         ),
         "settings_automation_heading": "Automatisation (MQTT)",
         "mqtt_config_note": (
@@ -440,6 +466,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_change_password": "Changer le mot de passe",
         "settings_password_changed": "Mot de passe modifié.",
         "settings_password_error_current_incorrect": "Le mot de passe actuel est incorrect",
+        "version_update_available": "Mise à jour disponible",
+        "version_up_to_date": "À jour",
+        "settings_software_heading": "Logiciel",
+        "settings_software_version_label": "Version :",
+        "settings_software_up_to_date": "Vous avez la dernière version.",
+        "settings_software_update_available": "Mise à jour disponible :",
+        "settings_software_unknown": "Impossible de vérifier la version.",
+        "settings_software_copy": "Copier",
     },
     "de": {
         "nav_dashboard": "Übersicht",
@@ -511,8 +545,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_never": "Nie gesehen",
         "agent_last_seen_label": "Letzter Herzschlag:",
         "agent_restart_hint": (
-            "Wenn dies Veraltet oder Nie gesehen bleibt, führen Sie `make restart-agent` auf dem Host aus, "
-            "oder prüfen Sie `make agent-logs`."
+            "Wenn dies Veraltet oder Nie gesehen bleibt, führen Sie `sudo systemctl restart argus-agent` auf dem "
+            "Host aus, oder prüfen Sie `journalctl -u argus-agent -f`."
         ),
         "settings_automation_heading": "Automatisierung (MQTT)",
         "mqtt_config_note": (
@@ -549,6 +583,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_change_password": "Passwort ändern",
         "settings_password_changed": "Passwort geändert.",
         "settings_password_error_current_incorrect": "Das aktuelle Passwort ist falsch",
+        "version_update_available": "Update verfügbar",
+        "version_up_to_date": "Aktuell",
+        "settings_software_heading": "Software",
+        "settings_software_version_label": "Version:",
+        "settings_software_up_to_date": "Sie haben die neueste Version.",
+        "settings_software_update_available": "Update verfügbar:",
+        "settings_software_unknown": "Version konnte nicht geprüft werden.",
+        "settings_software_copy": "Kopieren",
     },
 }
 

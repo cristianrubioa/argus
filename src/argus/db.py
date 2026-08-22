@@ -45,6 +45,8 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE settings ADD COLUMN font_size TEXT DEFAULT 'md'",
     "ALTER TABLE settings ADD COLUMN agent_last_heartbeat_at DATETIME",
     "ALTER TABLE settings ADD COLUMN last_log_prune_at DATETIME",
+    "ALTER TABLE settings ADD COLUMN latest_version_available VARCHAR(32)",
+    "ALTER TABLE settings ADD COLUMN version_checked_at DATETIME",
 )
 
 _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = ("ALTER TABLE devices ADD COLUMN custom_name VARCHAR(255)",)

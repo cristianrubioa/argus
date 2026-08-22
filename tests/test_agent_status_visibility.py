@@ -71,7 +71,7 @@ def test_settings_hides_restart_hint_when_live(logged_in_client, session):
     response = logged_in_client.get("/settings")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert "restart-agent" not in response.text
+    assert "restart argus-agent" not in response.text
 
 
 def test_settings_shows_restart_hint_when_never_seen(logged_in_client, session):
@@ -79,7 +79,7 @@ def test_settings_shows_restart_hint_when_never_seen(logged_in_client, session):
     response = logged_in_client.get("/settings")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert "restart-agent" in response.text
+    assert "restart argus-agent" in response.text
 
 
 def test_settings_shows_restart_hint_when_stale(logged_in_client, session):
@@ -92,7 +92,7 @@ def test_settings_shows_restart_hint_when_stale(logged_in_client, session):
     response = logged_in_client.get("/settings")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert "restart-agent" in response.text
+    assert "restart argus-agent" in response.text
 
 
 def test_settings_shows_precise_last_heartbeat_timestamp(logged_in_client, session):

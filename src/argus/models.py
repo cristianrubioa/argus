@@ -163,3 +163,5 @@ class Settings(Base):
     font_size: Mapped[str] = mapped_column(String(2), default="md")
     agent_last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_log_prune_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    latest_version_available: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    version_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from argus import version_check
 from argus.db import Base
 from argus.db import get_session
 from argus.factories import AdminUserFactory
@@ -30,6 +31,12 @@ def _reset_admin_exists_cache():
     auth._reset_admin_exists_cache()
     yield
     auth._reset_admin_exists_cache()
+
+
+@pytest.fixture(autouse=True)
+def _stub_version_check(monkeypatch):
+    """No test should make a real network call — render() calls refresh_version_check() on every request."""
+    monkeypatch.setattr(version_check, "fetch_latest_version", lambda: None)
 
 
 @pytest.fixture()
