@@ -21,10 +21,10 @@
       <nav class="flex-1 p-4 space-y-1">
         {% set nav_items = [
           ("/", "fa-gauge", t('nav_dashboard'), "dashboard"),
-          ("/dispositivos", "fa-usb", t('nav_devices'), "dispositivos"),
+          ("/devices", "fa-usb", t('nav_devices'), "devices"),
           ("/whitelist", "fa-shield-halved", t('nav_whitelist'), "whitelist"),
           ("/logs", "fa-list", t('nav_logs'), "logs"),
-          ("/ajustes", "fa-gear", t('nav_settings'), "ajustes"),
+          ("/settings", "fa-gear", t('nav_settings'), "settings"),
         ] %}
         {% for href, icon, label, key in nav_items %}
         <a href="{{ href }}"

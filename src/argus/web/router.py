@@ -113,7 +113,7 @@ def _recent_events(session: Session) -> list[DeviceEvent]:
 # --- Devices ---
 
 
-@router.get("/dispositivos")
+@router.get("/devices")
 def devices(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     all_devices = session.query(Device).order_by(Device.last_seen_at.desc()).all()
     whitelisted_ids = {w.device_id for w in session.query(WhitelistEntry).all()}
@@ -121,7 +121,7 @@ def devices(request: Request, admin: str = Depends(require_admin), session: Sess
         request,
         session,
         "devices.html",
-        {"admin": admin, "devices": all_devices, "whitelisted_ids": whitelisted_ids, "active": "dispositivos"},
+        {"admin": admin, "devices": all_devices, "whitelisted_ids": whitelisted_ids, "active": "devices"},
     )
 
 
@@ -364,13 +364,13 @@ def logs_partial(
 # --- Settings ---
 
 
-@router.get("/ajustes")
+@router.get("/settings")
 def settings_page(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     current = profiles.get_settings(session)
-    return render(request, session, "settings.html", {"admin": admin, "settings": current, "active": "ajustes"})
+    return render(request, session, "settings.html", {"admin": admin, "settings": current, "active": "settings"})
 
 
-@router.post("/ajustes")
+@router.post("/settings")
 def update_settings(
     request: Request,
     profile: str = Form(...),
@@ -380,7 +380,7 @@ def update_settings(
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
-    """Single confirm gate for the whole Ajustes form — every field commits together, or not at all."""
+    """Single confirm gate for the whole Settings form — every field commits together, or not at all."""
     old_profile = profiles.get_active_profile(session)
     new_profile = Profile(profile)
     profiles.request_profile(session, new_profile)
@@ -394,4 +394,4 @@ def update_settings(
         profiles.set_theme(session, theme)
     if font_size in FontSize:
         profiles.set_font_size(session, font_size)
-    return RedirectResponse(url="/ajustes", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)

@@ -68,7 +68,7 @@ def test_renaming_to_the_same_name_records_nothing(logged_in_client, session):
 
 def test_profile_switch_records_profile_switch_action(logged_in_client, session):
     # Action
-    logged_in_client.post("/ajustes", data={"profile": "enforce", "language": "en", "theme": "dark", "font_size": "md"})
+    logged_in_client.post("/settings", data={"profile": "enforce", "language": "en", "theme": "dark", "font_size": "md"})
     # Expected
     action = session.query(AdminAction).filter_by(action_type=AdminActionType.PROFILE_SWITCH).one()
     assert action.vid_pid is None
@@ -76,9 +76,9 @@ def test_profile_switch_records_profile_switch_action(logged_in_client, session)
     assert action.target == "enforce"
 
 
-def test_ajustes_save_without_profile_change_records_nothing(logged_in_client, session):
+def test_settings_save_without_profile_change_records_nothing(logged_in_client, session):
     # Action — only theme changes, profile stays at its default (monitor)
-    logged_in_client.post("/ajustes", data={"profile": "monitor", "language": "en", "theme": "light", "font_size": "md"})
+    logged_in_client.post("/settings", data={"profile": "monitor", "language": "en", "theme": "light", "font_size": "md"})
     # Expected
     assert session.query(AdminAction).filter_by(action_type=AdminActionType.PROFILE_SWITCH).count() == 0
 

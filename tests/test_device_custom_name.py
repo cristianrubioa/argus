@@ -81,7 +81,7 @@ def test_devices_page_renders_the_custom_name_once_set(logged_in_client, session
     logged_in_client.post(f"/whitelist/authorize/{device.id}")
     logged_in_client.post(f"/whitelist/rename/{device.id}", data={"custom_name": "Backup SSD"})
     # Action
-    response = logged_in_client.get("/dispositivos")
+    response = logged_in_client.get("/devices")
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Backup SSD" in response.text

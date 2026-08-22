@@ -17,20 +17,20 @@ def test_theme_persists_via_profiles(session):
     assert profiles.get_theme(session) == "light"
 
 
-_BASE_AJUSTES_FORM = {"profile": "monitor", "language": "en", "theme": "dark", "font_size": "md"}
+_BASE_SETTINGS_FORM = {"profile": "monitor", "language": "en", "theme": "dark", "font_size": "md"}
 
 
-def test_theme_persists_via_ajustes_route(logged_in_client, session):
+def test_theme_persists_via_settings_route(logged_in_client, session):
     # Action
-    response = logged_in_client.post("/ajustes", data={**_BASE_AJUSTES_FORM, "theme": "light"})
+    response = logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "theme": "light"})
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert profiles.get_theme(session) == "light"
 
 
-def test_ajustes_route_ignores_unsupported_theme(logged_in_client, session):
+def test_settings_route_ignores_unsupported_theme(logged_in_client, session):
     # Action
-    logged_in_client.post("/ajustes", data={**_BASE_AJUSTES_FORM, "theme": "solarized"})
+    logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "theme": "solarized"})
     # Expected
     assert profiles.get_theme(session) == "dark"
 
@@ -55,7 +55,7 @@ def test_dashboard_omits_dark_class_when_theme_is_light(logged_in_client, sessio
 
 def test_all_pages_render_without_error_in_both_themes(logged_in_client, session):
     # Setup
-    pages = ("/", "/dispositivos", "/whitelist", "/logs", "/ajustes")
+    pages = ("/", "/devices", "/whitelist", "/logs", "/settings")
     # Action & Expected
     for theme in ("dark", "light"):
         profiles.set_theme(session, theme)

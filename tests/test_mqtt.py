@@ -114,26 +114,26 @@ def test_publish_timeout_does_not_block_and_records_failure(session, monkeypatch
     assert "timed out" in settings.mqtt_last_error.lower()
 
 
-def test_ajustes_shows_never_attempted_by_default(logged_in_client):
+def test_settings_shows_never_attempted_by_default(logged_in_client):
     # Action
-    response = logged_in_client.get("/ajustes")
+    response = logged_in_client.get("/settings")
     # Expected
     assert "No publish attempted yet" in response.text
 
 
-def test_ajustes_shows_success_status(logged_in_client, session, monkeypatch):
+def test_settings_shows_success_status(logged_in_client, session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
     monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
     monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda *a, **k: None)
     mqtt_bridge.publish_event(event, session)
     # Action
-    response = logged_in_client.get("/ajustes")
+    response = logged_in_client.get("/settings")
     # Expected
     assert "Last publish (OK):" in response.text
 
 
-def test_ajustes_shows_failure_status(logged_in_client, session, monkeypatch):
+def test_settings_shows_failure_status(logged_in_client, session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
     monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
@@ -144,7 +144,7 @@ def test_ajustes_shows_failure_status(logged_in_client, session, monkeypatch):
     monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", _boom)
     mqtt_bridge.publish_event(event, session)
     # Action
-    response = logged_in_client.get("/ajustes")
+    response = logged_in_client.get("/settings")
     # Expected
     assert "Last publish (failed):" in response.text
     assert "broker unreachable" in response.text

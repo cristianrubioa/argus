@@ -41,7 +41,7 @@ def test_devices_page_shows_already_authorized_for_whitelisted_device(logged_in_
     # Setup
     WhitelistEntryFactory()
     # Action
-    response = logged_in_client.get("/dispositivos")
+    response = logged_in_client.get("/devices")
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert i18n.TRANSLATIONS["en"]["status_already_authorized"] in response.text
@@ -51,7 +51,7 @@ def test_devices_page_shows_authorize_action_for_unwhitelisted_device(logged_in_
     # Setup
     DeviceFactory()
     # Action
-    response = logged_in_client.get("/dispositivos")
+    response = logged_in_client.get("/devices")
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert i18n.TRANSLATIONS["en"]["action_authorize"] in response.text
@@ -62,7 +62,7 @@ def test_whitelist_hint_links_to_devices_page(logged_in_client, session):
     response = logged_in_client.get("/whitelist")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert '<a href="/dispositivos"' in response.text
+    assert '<a href="/devices"' in response.text
     assert i18n.TRANSLATIONS["en"]["whitelist_hint_link"] in response.text
 
 
@@ -73,13 +73,13 @@ def test_whitelist_hint_links_in_selected_language(logged_in_client, session):
     response = logged_in_client.get("/whitelist")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert '<a href="/dispositivos"' in response.text
+    assert '<a href="/devices"' in response.text
     assert i18n.TRANSLATIONS["es"]["whitelist_hint_link"] in response.text
 
 
-def test_ajustes_shows_account_section_before_security_profile(logged_in_client, session):
+def test_settings_shows_account_section_before_security_profile(logged_in_client, session):
     # Action
-    response = logged_in_client.get("/ajustes")
+    response = logged_in_client.get("/settings")
     # Expected
     assert response.status_code == status.HTTP_200_OK
     account_index = response.text.index(i18n.TRANSLATIONS["en"]["signed_in_as"])

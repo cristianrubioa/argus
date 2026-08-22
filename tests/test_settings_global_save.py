@@ -7,7 +7,7 @@ from argus.models import Profile
 def test_single_submit_commits_all_fields_together(logged_in_client, session):
     # Action
     response = logged_in_client.post(
-        "/ajustes", data={"profile": "enforce", "language": "es", "theme": "light", "font_size": "lg"}
+        "/settings", data={"profile": "enforce", "language": "es", "theme": "light", "font_size": "lg"}
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK
@@ -17,9 +17,9 @@ def test_single_submit_commits_all_fields_together(logged_in_client, session):
     assert profiles.get_font_size(session) == "lg"
 
 
-def test_ajustes_page_has_a_single_form(logged_in_client, session):
+def test_settings_page_has_a_single_form(logged_in_client, session):
     # Action
-    response = logged_in_client.get("/ajustes")
+    response = logged_in_client.get("/settings")
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert response.text.count("<form") == 1
