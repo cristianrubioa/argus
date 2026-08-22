@@ -5,6 +5,11 @@
 
 set -e
 
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script needs root — re-run with sudo." >&2
+    exit 1
+fi
+
 GITHUB_REPO="cristianrubioa/argus"
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
 
@@ -21,8 +26,11 @@ _fetch scripts/_common.sh "$TMP_COMMON"
 . "$TMP_COMMON"
 rm -f "$TMP_COMMON"
 
-systemctl disable --now $UNITS 2>/dev/null || true
 for unit in $UNITS; do
+    # One unit at a time: a single multi-unit `disable --now` can bail out on the first unit that
+    # doesn't exist (e.g. a host installed before argus-web.service/argus.target existed) and skip
+    # stopping the rest — silently leaving a live process behind.
+    systemctl disable --now "$unit" 2>/dev/null || true
     rm -f "/etc/systemd/system/$unit"
 done
 systemctl daemon-reload
@@ -31,7 +39,7 @@ if command -v usbguard >/dev/null 2>&1 && usbguard remove-user "$AGENT_USER" 2>/
     systemctl restart usbguard
 fi
 
-command -v pipx >/dev/null 2>&1 && PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx uninstall argus 2>/dev/null || true
+command -v pipx >/dev/null 2>&1 && PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx uninstall argus >/dev/null 2>&1 || true
 
 id -u "$AGENT_USER" >/dev/null 2>&1 && userdel "$AGENT_USER" || true
 

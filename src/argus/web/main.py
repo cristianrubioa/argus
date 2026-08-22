@@ -46,6 +46,7 @@ def main() -> None:
     port = _resolve_port()
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             probe.bind(("0.0.0.0", port))
     except OSError:
         sys.exit(f"Port {port} is already in use. Pick another with --port or ARGUS_WEB_PORT.")

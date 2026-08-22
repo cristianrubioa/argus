@@ -7,6 +7,11 @@
 
 set -e
 
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script needs root — re-run with sudo." >&2
+    exit 1
+fi
+
 GITHUB_REPO="cristianrubioa/argus"
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
 
@@ -42,13 +47,15 @@ if ! id -u "$AGENT_USER" >/dev/null 2>&1; then
     useradd --system --no-create-home --shell /usr/sbin/nologin "$AGENT_USER"
 fi
 
-echo "Granting $AGENT_USER IPC access (listen always; modify/policy for Enforce profile)..."
-usbguard add-user "$AGENT_USER" -p modify,list -d modify,list,listen -P modify,list
-# usbguard-daemon doesn't hot-reload IPCAccessControl.d — restart so the grant actually takes effect.
-systemctl restart usbguard
+if [ ! -f "/etc/usbguard/IPCAccessControl.d/$AGENT_USER" ]; then
+    echo "Granting $AGENT_USER IPC access (listen always; modify/policy for Enforce profile)..."
+    usbguard add-user "$AGENT_USER" -p modify,list -d modify,list,listen -P modify,list
+    # usbguard-daemon doesn't hot-reload IPCAccessControl.d — restart so the grant actually takes effect.
+    systemctl restart usbguard
+fi
 
 mkdir -p "$DATA_DIR" "$CONFIG_DIR"
-chown "$AGENT_USER" "$DATA_DIR"
+chown -R "$AGENT_USER":"$AGENT_USER" "$DATA_DIR"
 
 echo "Resolving latest release wheel from GitHub..."
 WHEEL_URL=$(curl -fsSL "https://api.github.com/repos/$GITHUB_REPO/releases/latest" \
@@ -60,7 +67,13 @@ if [ -z "$WHEEL_URL" ]; then
 fi
 
 echo "Installing argus-agent and argus-web via pipx..."
-PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx install --force "$WHEEL_URL"
+TMP_PIPX_LOG=$(mktemp)
+if ! PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx install --quiet --force "$WHEEL_URL" >"$TMP_PIPX_LOG" 2>&1; then
+    cat "$TMP_PIPX_LOG" >&2
+    rm -f "$TMP_PIPX_LOG"
+    exit 1
+fi
+rm -f "$TMP_PIPX_LOG"
 
 for unit in $UNITS; do
     _fetch "systemd/$unit" "/etc/systemd/system/$unit"

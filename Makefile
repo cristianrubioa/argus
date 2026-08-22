@@ -3,6 +3,7 @@
 help:
 	@echo "Available commands:"
 	@echo "  make install          Install argus-agent + argus-web on this host, from the latest release (needs sudo)"
+	@echo "  make update           Same as install — re-fetches the latest release and restarts (needs sudo)"
 	@echo "  make uninstall        Remove argus-agent + argus-web from this host, keeping /var/lib/argus and /etc/argus (needs sudo)"
 	@echo "  make restart-agent    Restart the argus-agent service, e.g. after Ajustes shows it Stale (needs sudo)"
 	@echo "  make agent-logs       Tail argus-agent's systemd journal"
@@ -37,7 +38,7 @@ build:
 logs:
 	docker compose logs -f argus-web
 
-install:
+install update:
 	chmod +x ./scripts/install.sh
 	sudo ./scripts/install.sh
 

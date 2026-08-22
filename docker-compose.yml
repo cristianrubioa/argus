@@ -15,6 +15,9 @@ services:
       ARGUS_MQTT_TOPIC_PREFIX: ${ARGUS_MQTT_TOPIC_PREFIX:-argus}
     volumes:
       - ./src:/app/src
-      - /var/lib/argus:/data
+      - argus_web_data:/data
     ports:
-      - "8420:8000"
+      - "8421:8000"
+
+volumes:
+  argus_web_data:
