@@ -197,7 +197,7 @@
       justify-content: space-between;
       gap: 1rem;
       line-height: 1.6;
-      min-height: 6.6rem;
+      min-height: 5rem;
     }
     .prompt { color: #57ab5a; user-select: none; }
     .cmd-block {
@@ -342,11 +342,7 @@
     // ── Install method tabs ────────────────────────────────
     var INSTALL_COMMANDS = {
       curl: ['curl -fsSL https://install.crubio.fyi/argus | sudo bash'],
-      clone: [
-        'git clone https://github.com/cristianrubioa/argus.git',
-        'cd argus',
-        'make install'
-      ]
+      clone: ['git clone https://github.com/cristianrubioa/argus.git && cd argus && make install']
     };
 
     var cmdBlock = document.getElementById('cmdBlock');
