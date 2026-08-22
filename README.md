@@ -23,7 +23,13 @@ Visit `http://<host>:8420` — first visit creates the admin account, then pick 
 
 To update to the latest release: same command again, or `make update` from a clone.
 
-To remove: `make uninstall` (from a clone) or the same `curl` with `uninstall.sh` in place of `install.sh`. Keeps `/var/lib/argus` and `/etc/argus`; `rm -rf` them yourself for a full wipe.
+To remove: `make uninstall` (from a clone), or without one:
+
+```
+curl -fsSL https://raw.githubusercontent.com/cristianrubioa/argus/main/scripts/uninstall.sh | sudo bash
+```
+
+Keeps `/var/lib/argus` and `/etc/argus`; `rm -rf` them yourself for a full wipe.
 
 ## Development
 
