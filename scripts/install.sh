@@ -86,12 +86,10 @@ if [ ! -f "$CONFIG_DIR/agent.env" ] && [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR
     install -m 600 "$SCRIPT_DIR/../.env" "$CONFIG_DIR/agent.env"
 fi
 
-if [ -f "$CONFIG_DIR/agent.env" ]; then
-    systemctl restart $UNITS
-    echo "Done. argus-agent and argus-web are running."
-else
-    echo "Done, but $CONFIG_DIR/agent.env doesn't exist yet. Create it (see .env.example for the" >&2
-    echo "required key: ARGUS_SESSION_SECRET), then:" >&2
-    echo "  systemctl restart $UNITS" >&2
-    echo "The admin account itself is created in the browser on first visit." >&2
+if [ ! -f "$CONFIG_DIR/agent.env" ]; then
+    echo "ARGUS_SESSION_SECRET=$(python3.12 -c 'import secrets; print(secrets.token_hex(32))')" >"$CONFIG_DIR/agent.env"
+    chmod 600 "$CONFIG_DIR/agent.env"
 fi
+
+systemctl restart $UNITS
+echo "Done. argus-agent and argus-web are running. Create the admin account in the browser on first visit."

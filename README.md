@@ -19,9 +19,7 @@ curl -fsSL https://install.crubio.fyi/argus | sudo bash
 
 Installs USBGuard, `argus-agent`, and `argus-web`, and starts both (`systemctl status argus.target`). From a clone, `make install` does the same.
 
-Then create `/etc/argus/agent.env` (see `.env.example` for the required keys) and `systemctl restart argus.target`.
-
-Log in at `http://<host>:8420`, pick a profile (Monitor/Enforce) under Ajustes.
+Visit `http://<host>:8420` — first visit creates the admin account, then pick a profile (Monitor/Enforce) under Settings.
 
 To update to the latest release: same command again, or `make update` from a clone.
 
