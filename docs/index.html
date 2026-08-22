@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <script>
+    (function () {
+      var t = localStorage.getItem('argus-theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Argus — Install</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233b82f6' fill-rule='evenodd' d='M12 4C5 4 1 12 1 12s4 8 11 8 11-8 11-8-4-8-11-8Zm0 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha384-/o6I2CkkWC//PSjvWC/eYN7l3xM3tJm8ZzVkCOfp//W05QcE3mlGskpoHB6XqI+B" crossorigin="anonymous" />
+  <style>
+    /* ── Theme variables (mirrors argus-web's blue/gray palette) ── */
+    :root {
+      --bg:           #f9fafb;
+      --surface:      #f3f4f6;
+      --border:       #e5e7eb;
+      --text:         #111827;
+      --text-muted:   #4b5563;
+      --accent:       #3b82f6;
+      --accent-hover: #2563eb;
+    }
+    [data-theme="dark"] {
+      --bg:           #030712;
+      --surface:      #111827;
+      --border:       #1f2937;
+      --text:         #e5e7eb;
+      --text-muted:   #9ca3af;
+      --accent:       #60a5fa;
+      --accent-hover: #93c5fd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 64px;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(249, 250, 251, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    [data-theme="dark"] header {
+      background: rgba(3, 7, 18, 0.85);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .brand i { color: var(--accent); font-size: 1.3rem; }
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      width: 38px;
+      height: 38px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s, background 0.2s;
+    }
+    .theme-toggle:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    /* ── Main ───────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 3rem;
+      width: 100%;
+    }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero { margin-bottom: 2rem; }
+    .hero .tagline {
+      font-size: 1.3rem;
+      color: var(--text);
+      font-weight: 400;
+      line-height: 1.5;
+      margin-bottom: 0.4rem;
+    }
+    .hero .sub { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* ── Terminal ───────────────────────────────────────── */
+    .terminal {
+      background: #0d1117;
+      border-radius: 10px;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+      margin-bottom: 0.75rem;
+    }
+    .terminal-bar {
+      background: #1c2128;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red    { background: #ff5f57; }
+    .dot-yellow { background: #febc2e; }
+    .dot-green  { background: #28c840; }
+
+    .terminal-body {
+      padding: 1.1rem 1.25rem;
+      color: #e6edf3;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      line-height: 1.6;
+    }
+    .prompt { color: #57ab5a; user-select: none; }
+    .cmd-block {
+      margin: 0;
+      font-family: inherit;
+      font-size: inherit;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #e6edf3;
+    }
+    .copy-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #8b949e;
+      font-size: 0.85rem;
+      padding: 0.2rem;
+      line-height: 1;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { color: #e6edf3; }
+    .copy-btn.copied { color: #57ab5a; }
+
+    .requirements { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2.5rem; }
+
+    /* ── Links ──────────────────────────────────────────── */
+    .links { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .link-btn {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 0.38rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .link-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.4rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 520px) {
+      .hero .tagline { font-size: 1.1rem; }
+      .terminal-body { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="brand"><i class="fa-solid fa-eye"></i> Argus</span>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+      <i id="themeIcon" class="fas fa-moon"></i>
+    </button>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <p class="tagline">USB device monitoring and control</p>
+      <p class="sub">Built on USBGuard.</p>
+    </section>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+      </div>
+      <div class="terminal-body">
+        <pre class="cmd-block"><span class="prompt">$</span> curl -fsSL https://install.crubio.fyi/argus | sudo bash</pre>
+        <button class="copy-btn" id="copyBtn" aria-label="Copy install command">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
+    </div>
+    <p class="requirements">Debian/Ubuntu · Python 3.12+</p>
+
+    <div class="links">
+      <a class="link-btn" href="https://github.com/cristianrubioa/argus" target="_blank" rel="noopener">
+        <i class="fab fa-github"></i> GitHub
+      </a>
+      <a class="link-btn" href="https://github.com/cristianrubioa/argus/issues/new" target="_blank" rel="noopener">
+        <i class="fas fa-circle-exclamation"></i> Report an issue
+      </a>
+      <a class="link-btn" href="https://ko-fi.com/cristianrubioa" target="_blank" rel="noopener">
+        <i class="fas fa-mug-hot"></i> Ko-fi
+      </a>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>
+      Made with <span style="color: #e55;">♥</span> by
+      <a href="https://github.com/cristianrubioa" target="_blank" rel="noopener">@cristianrubioa</a>
+    </p>
+  </footer>
+
+  <script>
+    // ── Theme ──────────────────────────────────────────────
+    var root = document.documentElement;
+    var toggleBtn = document.getElementById('themeToggle');
+    var themeIcon = document.getElementById('themeIcon');
+
+    function applyTheme(theme) {
+      root.setAttribute('data-theme', theme);
+      themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+
+    applyTheme(root.getAttribute('data-theme') || 'light');
+
+    toggleBtn.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('argus-theme', next);
+      applyTheme(next);
+    });
+
+    // ── Copy install command ──────────────────────────────
+    var copyBtn = document.getElementById('copyBtn');
+    var installCmd = 'curl -fsSL https://install.crubio.fyi/argus | sudo bash';
+
+    copyBtn.addEventListener('click', function () {
+      navigator.clipboard.writeText(installCmd).then(function () {
+        copyBtn.classList.add('copied');
+        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(function () {
+          copyBtn.classList.remove('copied');
+          copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        }, 1500);
+      });
+    });
+  </script>
+
+</body>
+</html>
