@@ -14,7 +14,7 @@ Requires Debian/Ubuntu and Python 3.12+.
 ## Install
 
 ```
-curl -fsSL https://raw.githubusercontent.com/cristianrubioa/argus/main/scripts/install.sh | sudo bash
+curl -fsSL https://install.crubio.fyi/argus | sudo bash
 ```
 
 Installs USBGuard, `argus-agent`, and `argus-web`, and starts both (`systemctl status argus.target`). From a clone, `make install` does the same.
@@ -23,9 +23,11 @@ Then create `/etc/argus/agent.env` (see `.env.example` for the required keys) an
 
 Log in at `http://<host>:8420`, pick a profile (Monitor/Enforce) under Ajustes.
 
-Prefer Docker for `argus-web`? `cp .env.example .env && make run` still works — `argus-agent` still needs the install step above either way.
+To update to the latest release: same command again, or `make update` from a clone.
 
-To remove: `make uninstall` (from a clone) or the same `curl` with `uninstall.sh`. Keeps `/var/lib/argus` and `/etc/argus`; `rm -rf` them yourself for a full wipe.
+To remove: `make uninstall` (from a clone) or the same `curl` with `uninstall.sh` in place of `install.sh`. Keeps `/var/lib/argus` and `/etc/argus`; `rm -rf` them yourself for a full wipe.
+
+Prefer Docker for `argus-web` instead? `cp .env.example .env && make run` — its own port (`8421`) and its own data volume, isolated from the native install; won't see real `argus-agent` events. `argus-agent` still needs the install step above either way.
 
 ## Development
 
