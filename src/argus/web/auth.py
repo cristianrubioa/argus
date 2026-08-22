@@ -9,17 +9,21 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 
+from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Request
 from fastapi import status
 from sqlalchemy.orm import Session
 
-from argus import config
+from argus.db import get_session
 from argus.models import AdminUser
 
 logger = logging.getLogger(__name__)
 
 _PBKDF2_ITERATIONS = 600_000
+_MIN_PASSWORD_LENGTH = 8
+
+_admin_exists_cache = False
 
 _LOGIN_MAX_ATTEMPTS = 5
 _LOGIN_LOCKOUT_SECONDS = 300
@@ -82,19 +86,27 @@ def verify_password(password: str, stored_hash: str) -> bool:
     return hmac.compare_digest(candidate.hex(), digest_hex)
 
 
-def ensure_admin_seeded(session: Session) -> None:
-    """Seeds or updates the single admin account from ARGUS_ADMIN_USERNAME/PASSWORD, if set."""
-    seed = config.admin_bootstrap_credentials()
-    if seed is None:
-        return
-    username, password = seed
+def is_password_valid(password: str, confirmation: str) -> bool:
+    return password == confirmation and len(password) >= _MIN_PASSWORD_LENGTH
 
-    admin = session.query(AdminUser).filter_by(username=username).first()
-    if admin is None:
-        session.add(AdminUser(username=username, password_hash=hash_password(password)))
-    else:
-        admin.password_hash = hash_password(password)
+
+def admin_exists(session: Session) -> bool:
+    return session.query(AdminUser).first() is not None
+
+
+def create_admin_account(session: Session, username: str, password: str) -> None:
+    session.add(AdminUser(username=username, password_hash=hash_password(password)))
     session.commit()
+
+
+def change_password(session: Session, admin_username: str, current_password: str, new_password: str) -> bool:
+    """Verifies current_password before writing; returns False (no write) on mismatch."""
+    admin = session.query(AdminUser).filter_by(username=admin_username).first()
+    if admin is None or not verify_password(current_password, admin.password_hash):
+        return False
+    admin.password_hash = hash_password(new_password)
+    session.commit()
+    return True
 
 
 def authenticate(session: Session, username: str, password: str) -> bool:
@@ -107,3 +119,21 @@ def require_admin(request: Request) -> str:
     if not username:
         raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/login"})
     return username
+
+
+def require_registered(session: Session = Depends(get_session)) -> None:
+    """No admin account exists yet — redirect every route except /register there. Caches True forever
+    once an account exists, since nothing in this app ever deletes it, to skip the query afterward."""
+    global _admin_exists_cache
+    if _admin_exists_cache:
+        return
+    if admin_exists(session):
+        _admin_exists_cache = True
+        return
+    raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/register"})
+
+
+def _reset_admin_exists_cache() -> None:
+    """Test-only: clears the process-local cache between tests sharing the same app instance."""
+    global _admin_exists_cache
+    _admin_exists_cache = False

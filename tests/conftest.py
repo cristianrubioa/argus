@@ -25,6 +25,13 @@ def _reset_login_attempts():
     auth._reset_login_attempts()
 
 
+@pytest.fixture(autouse=True)
+def _reset_admin_exists_cache():
+    auth._reset_admin_exists_cache()
+    yield
+    auth._reset_admin_exists_cache()
+
+
 @pytest.fixture()
 def session():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)

@@ -17,9 +17,10 @@ def test_single_submit_commits_all_fields_together(logged_in_client, session):
     assert profiles.get_font_size(session) == "lg"
 
 
-def test_settings_page_has_a_single_form(logged_in_client, session):
+def test_settings_config_fields_are_a_single_form(logged_in_client, session):
     # Action
     response = logged_in_client.get("/settings")
-    # Expected
+    # Expected — the config fields (profile/language/theme/font size) share one form;
+    # change-password is deliberately a separate form, so this doesn't count total <form> tags
     assert response.status_code == status.HTTP_200_OK
-    assert response.text.count("<form") == 1
+    assert response.text.count('action="/settings"') == 1

@@ -17,15 +17,6 @@ def session_https_only() -> bool:
     return os.environ.get("ARGUS_SESSION_HTTPS_ONLY", "").lower() in ("1", "true", "yes")
 
 
-def admin_bootstrap_credentials() -> tuple[str, str] | None:
-    """Admin seed from the environment, or None if unconfigured (falls back to the stored admin)."""
-    username = os.environ.get("ARGUS_ADMIN_USERNAME")
-    password = os.environ.get("ARGUS_ADMIN_PASSWORD")
-    if not username or not password:
-        return None
-    return username, password
-
-
 def log_retention_days() -> int | None:
     """Days of device_events/applied whitelist actions to keep, or None to keep forever (default)."""
     days = os.environ.get("ARGUS_LOG_RETENTION_DAYS")

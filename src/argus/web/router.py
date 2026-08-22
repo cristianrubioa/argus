@@ -23,8 +23,12 @@ from argus.models import Theme
 from argus.models import UsbguardAction
 from argus.models import WhitelistEntry
 from argus.web import listing
+from argus.web.auth import admin_exists
 from argus.web.auth import authenticate
+from argus.web.auth import change_password
+from argus.web.auth import create_admin_account
 from argus.web.auth import is_locked_out
+from argus.web.auth import is_password_valid
 from argus.web.auth import record_failure
 from argus.web.auth import record_success
 from argus.web.auth import require_admin
@@ -33,6 +37,7 @@ from argus.web.i18n import SUPPORTED_LANGUAGES
 from argus.web.i18n import t as translate
 
 router = APIRouter()
+register_router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 _RECENT_EVENTS_LIMIT = 20
@@ -55,6 +60,31 @@ def render(request: Request, session: Session, name: str, context: dict):
 
 
 # --- Auth ---
+
+
+@register_router.get("/register")
+def register_form(request: Request, session: Session = Depends(get_session)):
+    if admin_exists(session):
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    return render(request, session, "register.html", {"error": None})
+
+
+@register_router.post("/register")
+def register_submit(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    if admin_exists(session):
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    if not is_password_valid(password, confirm_password):
+        error = "password_error_mismatch" if password != confirm_password else "password_error_too_short"
+        return render(request, session, "register.html", {"error": error})
+    create_admin_account(session, username, password)
+    request.session["admin"] = username
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/login")
@@ -367,7 +397,12 @@ def logs_partial(
 @router.get("/settings")
 def settings_page(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     current = profiles.get_settings(session)
-    return render(request, session, "settings.html", {"admin": admin, "settings": current, "active": "settings"})
+    return render(
+        request,
+        session,
+        "settings.html",
+        {"admin": admin, "settings": current, "active": "settings", "password_error": None, "password_success": False},
+    )
 
 
 @router.post("/settings")
@@ -395,3 +430,36 @@ def update_settings(
     if font_size in FontSize:
         profiles.set_font_size(session, font_size)
     return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/settings/password")
+def update_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    password_error = None
+    password_success = False
+    if not is_password_valid(new_password, confirm_password):
+        password_error = "password_error_mismatch" if new_password != confirm_password else "password_error_too_short"
+    elif not change_password(session, admin, current_password, new_password):
+        password_error = "settings_password_error_current_incorrect"
+    else:
+        password_success = True
+
+    current = profiles.get_settings(session)
+    return render(
+        request,
+        session,
+        "settings.html",
+        {
+            "admin": admin,
+            "settings": current,
+            "active": "settings",
+            "password_error": password_error,
+            "password_success": password_success,
+        },
+    )

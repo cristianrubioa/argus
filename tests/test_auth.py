@@ -34,7 +34,10 @@ def test_login_wrong_password(client, session):
     assert "Invalid username or password" in response.text
 
 
-def test_unauthenticated_request_redirects_to_login(client):
+def test_unauthenticated_request_redirects_to_login(client, session):
+    # Setup
+    session.add(AdminUser(username="admin", password_hash=hash_password("secret")))
+    session.commit()
     # Action
     response = client.get("/")
     # Expected

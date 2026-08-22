@@ -91,6 +91,7 @@ if [ -f "$CONFIG_DIR/agent.env" ]; then
     echo "Done. argus-agent and argus-web are running."
 else
     echo "Done, but $CONFIG_DIR/agent.env doesn't exist yet. Create it (see .env.example for the" >&2
-    echo "required keys: ARGUS_SESSION_SECRET, ARGUS_ADMIN_USERNAME, ARGUS_ADMIN_PASSWORD), then:" >&2
+    echo "required key: ARGUS_SESSION_SECRET), then:" >&2
     echo "  systemctl restart $UNITS" >&2
+    echo "The admin account itself is created in the browser on first visit." >&2
 fi
