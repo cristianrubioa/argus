@@ -5,16 +5,11 @@ help:
 	@echo "  make install          Install argus-agent + argus-web on this host, from the latest release (needs sudo)"
 	@echo "  make update           Same as install — re-fetches the latest release and restarts (needs sudo)"
 	@echo "  make uninstall        Remove argus-agent + argus-web from this host, keeping /var/lib/argus and /etc/argus (needs sudo)"
-	@echo "  make restart-agent    Restart the argus-agent service, e.g. after Ajustes shows it Stale (needs sudo)"
+	@echo "  make restart-agent    Restart the argus-agent service, e.g. after Settings shows it Stale (needs sudo)"
 	@echo "  make agent-logs       Tail argus-agent's systemd journal"
 	@echo "  make monitor-mode     Force USBGuard to stop blocking, right now (needs sudo)"
 	@echo "  make mqtt-broker      Start a throwaway local Mosquitto broker for testing"
 	@echo "  make mqtt-watch       Watch messages on the local test broker"
-	@echo ""
-	@echo "  make run              (optional) Run argus-web in Docker instead (port 8420, live reload)"
-	@echo "  make down             Stop the Docker argus-web container"
-	@echo "  make build            Build the Docker image"
-	@echo "  make logs             View the argus-web Docker container logs"
 	@echo ""
 	@echo "  make lint             Check style with ruff"
 	@echo "  make format           Format code with ruff"
@@ -23,20 +18,6 @@ help:
 	@echo "  make check            Check without modifying (used by CI)"
 	@echo "  make test             Run tests with pytest"
 	@echo "  make clean            Remove __pycache__ and .pyc files"
-
-run:
-	docker compose up --build -d
-
-down:
-	docker compose down
-
-build:
-	poetry lock
-	poetry install
-	docker compose build
-
-logs:
-	docker compose logs -f argus-web
 
 install update:
 	chmod +x ./scripts/install.sh
