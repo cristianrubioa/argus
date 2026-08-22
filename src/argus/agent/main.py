@@ -128,6 +128,11 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO)
     init_db()
     usbguard_cli.warn_if_untested_version()
+    with SessionLocal() as session:
+        try:
+            profiles.reconcile_profile(session)
+        except usbguard_cli.UsbguardCliError:
+            logger.exception("Failed to reconcile security profile at startup")
     threading.Thread(target=_watch_loop, daemon=True).start()
     _reconcile_loop()
 
