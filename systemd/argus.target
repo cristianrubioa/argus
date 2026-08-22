@@ -1,0 +1,7 @@
+[Unit]
+Description=Argus (agent + dashboard)
+Wants=argus-agent.service argus-web.service
+Documentation=https://github.com/cristianrubioa/argus
+
+[Install]
+WantedBy=multi-user.target

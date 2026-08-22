@@ -5,19 +5,27 @@ USB device monitoring and control, built on [USBGuard](https://usbguard.github.i
 ## Layout
 
 - **`argus-agent`** — host, outside Docker, systemd service. Only thing that calls the `usbguard` CLI.
-- **`argus-web`** — FastAPI dashboard, in Docker. Only touches SQLite.
+- **`argus-web`** — FastAPI dashboard, systemd service on the host by default. Only touches SQLite.
 
-Shared SQLite file via bind mount.
+Shared SQLite file, same host.
+
+Requires Debian/Ubuntu and Python 3.12+.
 
 ## Install
 
 ```
-cp .env.example .env   # fill in admin creds + session secret
-make install-agent     # USBGuard + argus-agent user + IPC grant + own venv + systemd unit, starts argus-agent
-make run                # argus-web, in Docker
+curl -fsSL https://raw.githubusercontent.com/cristianrubioa/argus/main/scripts/install.sh | sudo bash
 ```
 
-Log in, pick a profile (Monitor/Enforce) under Ajustes.
+Installs USBGuard, `argus-agent`, and `argus-web`, and starts both (`systemctl status argus`). From a clone, `make install` does the same.
+
+Then create `/etc/argus/agent.env` (see `.env.example` for the required keys) and `systemctl restart argus`.
+
+Log in at `http://<host>:8420`, pick a profile (Monitor/Enforce) under Ajustes.
+
+Prefer Docker for `argus-web`? `cp .env.example .env && make run` still works — `argus-agent` still needs the install step above either way.
+
+To remove: `make uninstall` (from a clone) or the same `curl` with `uninstall.sh`. Keeps `/var/lib/argus` and `/etc/argus`; `rm -rf` them yourself for a full wipe.
 
 ## Development
 

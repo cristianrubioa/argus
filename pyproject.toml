@@ -24,6 +24,7 @@ factory-boy = "^3.3.3"
 
 [tool.poetry.scripts]
 argus-agent = "argus.agent.main:main"
+argus-web = "argus.web.main:main"
 
 [tool.ruff]
 target-version = "py312"

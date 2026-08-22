@@ -1,17 +1,14 @@
 [Unit]
-Description=Argus USB event capture agent
-Wants=usbguard.service
-After=usbguard.service
+Description=Argus dashboard
 PartOf=argus.target
 Documentation=https://github.com/cristianrubioa/argus
 
 [Service]
 Type=simple
 User=argus-agent
-# Must come after EnvironmentFile= so this host path always wins (later directive wins).
 EnvironmentFile=-/etc/argus/agent.env
 Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
-ExecStart=/opt/argus/bin/argus-agent
+ExecStart=/opt/argus/bin/argus-web
 Restart=on-failure
 
 [Install]
