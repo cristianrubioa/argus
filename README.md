@@ -17,9 +17,9 @@ Requires Debian/Ubuntu and Python 3.12+.
 curl -fsSL https://raw.githubusercontent.com/cristianrubioa/argus/main/scripts/install.sh | sudo bash
 ```
 
-Installs USBGuard, `argus-agent`, and `argus-web`, and starts both (`systemctl status argus`). From a clone, `make install` does the same.
+Installs USBGuard, `argus-agent`, and `argus-web`, and starts both (`systemctl status argus.target`). From a clone, `make install` does the same.
 
-Then create `/etc/argus/agent.env` (see `.env.example` for the required keys) and `systemctl restart argus`.
+Then create `/etc/argus/agent.env` (see `.env.example` for the required keys) and `systemctl restart argus.target`.
 
 Log in at `http://<host>:8420`, pick a profile (Monitor/Enforce) under Ajustes.
 
