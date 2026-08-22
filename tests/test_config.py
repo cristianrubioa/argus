@@ -1,14 +1,16 @@
-import pytest
-
 from argus import config
 
 
-def test_session_secret_raises_when_unset(monkeypatch):
+def test_session_secret_generates_and_persists_when_unset(monkeypatch, tmp_path):
     # Setup
     monkeypatch.delenv("ARGUS_SESSION_SECRET", raising=False)
-    # Action & Expected
-    with pytest.raises(RuntimeError):
-        config.session_secret()
+    monkeypatch.setenv("ARGUS_DB_PATH", str(tmp_path / "argus.db"))
+    # Action
+    first = config.session_secret()
+    second = config.session_secret()
+    # Expected
+    assert first == second
+    assert (tmp_path / "session_secret").read_text().strip() == first
 
 
 def test_session_secret_returns_configured_value(monkeypatch):

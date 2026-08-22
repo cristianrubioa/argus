@@ -76,7 +76,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_last_seen_label": "Last heartbeat:",
         "settings_automation_heading": "Automation (MQTT)",
         "mqtt_config_note": (
-            "Configured via ARGUS_MQTT_HOST and related environment variables — see .env.example. "
+            "Configured via ARGUS_MQTT_HOST and related environment variables — see agent.env.example. "
             "Optional: leave unset to disable."
         ),
         "mqtt_status_never": "No publish attempted yet",
@@ -186,7 +186,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_last_seen_label": "Último latido:",
         "settings_automation_heading": "Automatización (MQTT)",
         "mqtt_config_note": (
-            "Se configura con ARGUS_MQTT_HOST y variables de entorno relacionadas — ver .env.example. "
+            "Se configura con ARGUS_MQTT_HOST y variables de entorno relacionadas — ver agent.env.example. "
             "Opcional: dejalo sin definir para desactivarlo."
         ),
         "mqtt_status_never": "Todavía no se intentó publicar",
@@ -296,7 +296,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_last_seen_label": "Última pulsação:",
         "settings_automation_heading": "Automação (MQTT)",
         "mqtt_config_note": (
-            "Configurado via ARGUS_MQTT_HOST e variáveis de ambiente relacionadas — veja .env.example. "
+            "Configurado via ARGUS_MQTT_HOST e variáveis de ambiente relacionadas — veja agent.env.example. "
             "Opcional: deixe sem definir para desativar."
         ),
         "mqtt_status_never": "Ainda nenhuma publicação tentada",
@@ -406,7 +406,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_last_seen_label": "Dernier battement :",
         "settings_automation_heading": "Automatisation (MQTT)",
         "mqtt_config_note": (
-            "Configuré via ARGUS_MQTT_HOST et les variables d'environnement associées — voir .env.example. "
+            "Configuré via ARGUS_MQTT_HOST et les variables d'environnement associées — voir agent.env.example. "
             "Optionnel : laissez non défini pour désactiver."
         ),
         "mqtt_status_never": "Aucune publication tentée pour l'instant",
@@ -516,7 +516,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_last_seen_label": "Letzter Herzschlag:",
         "settings_automation_heading": "Automatisierung (MQTT)",
         "mqtt_config_note": (
-            "Konfiguriert über ARGUS_MQTT_HOST und zugehörige Umgebungsvariablen — siehe .env.example. "
+            "Konfiguriert über ARGUS_MQTT_HOST und zugehörige Umgebungsvariablen — siehe agent.env.example. "
             "Optional: leer lassen, um zu deaktivieren."
         ),
         "mqtt_status_never": "Noch kein Veröffentlichungsversuch",

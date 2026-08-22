@@ -1,8 +1,7 @@
 #!/bin/sh
-# Idempotent host-side install of argus-agent + argus-web (design.md decision #1: argus-agent stays
-# outside Docker). Works both from a cloned repo (./scripts/install.sh) and piped via curl
-# (curl -fsSL .../install.sh | sudo bash) — falls back to fetching files from GitHub when there's no
-# local checkout to read them from.
+# Idempotent host-side install of argus-agent + argus-web. Works both from a cloned repo
+# (./scripts/install.sh) and piped via curl (curl -fsSL .../install.sh | sudo bash) — falls back
+# to fetching files from GitHub when there's no local checkout to read them from.
 # Usage: make install
 
 set -e
@@ -87,7 +86,7 @@ if [ ! -f "$CONFIG_DIR/agent.env" ] && [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR
 fi
 
 if [ ! -f "$CONFIG_DIR/agent.env" ]; then
-    echo "ARGUS_SESSION_SECRET=$(python3.12 -c 'import secrets; print(secrets.token_hex(32))')" >"$CONFIG_DIR/agent.env"
+    _fetch agent.env.example "$CONFIG_DIR/agent.env"
     chmod 600 "$CONFIG_DIR/agent.env"
 fi
 
