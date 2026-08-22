@@ -16,12 +16,8 @@
 - DRF validation lives in the serializer, never in the view
 
 ## Deployment
-- Native install via systemd (`scripts/install.sh`/`uninstall.sh`, or `make install`/`make update`/`make uninstall`) is the primary path — not Docker. `docker-compose.yml` is an optional, isolated secondary path (own port `8421`, own data volume) that won't see real `argus-agent` events.
-- `argus-agent` + `argus-web` run under `argus.target` (`Wants=`/`PartOf=`) — always control both as `argus.target`; the bare name `argus` resolves to the nonexistent `argus.service` and fails.
-- Releases: push a `vX.Y.Z` tag → CI builds a wheel-only release (`poetry build --format wheel`, no sdist) and publishes it to GitHub Releases. Poetry is dev/CI-only — the host installs via `pipx` from the published wheel, never `poetry install`.
-- Shell scripts touching systemd: disable/stop units one at a time in a loop, never as one multi-unit command — a single nonexistent unit aborts the whole call and silently skips the rest.
-- `chown` on `/var/lib/argus` must be `-R` — a recreated `argus-agent` system user gets a new UID, orphaning existing files' ownership.
-- Port-availability pre-checks (e.g. `argus-web`'s bind probe) need `SO_REUSEADDR`, or a recent restart's lingering `TIME_WAIT` connections cause a false "port already in use".
+- Release: push a `vX.Y.Z` tag → CI builds `poetry build --format wheel` and publishes it to GitHub Releases. Poetry is dev/CI-only, never installed on the target host.
+- Install/uninstall: `scripts/install.sh` / `scripts/uninstall.sh` (or `make install` / `make update` / `make uninstall`).
 
 ## Testing
 - `assert`, not `self.assert*` · structure each test with `# Setup` / `# Action` / `# Expected`, no extra blank lines
