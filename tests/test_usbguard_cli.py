@@ -36,6 +36,13 @@ def test_generate_policy_applies_every_line_via_append_rule(monkeypatch):
     assert calls[2] == ("append-rule", 'allow id 046d:c542 serial "" name "Wireless Receiver"')
 
 
+def test_get_implicit_policy_target_strips_and_lowercases(monkeypatch):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: "Block\n")
+    # Action & Expected
+    assert usbguard_cli.get_implicit_policy_target() == "block"
+
+
 def test_warn_if_untested_version_logs_on_mismatch(monkeypatch, caplog):
     # Setup
     monkeypatch.setattr(usbguard_cli, "_run", lambda *a: "usbguard 9.9.9\n")

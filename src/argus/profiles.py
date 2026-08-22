@@ -154,15 +154,20 @@ def refresh_version_check(session: Session) -> None:
 
 
 def reconcile_profile(session: Session) -> None:
-    """Called from argus-agent's poll loop; applies a pending profile change to USBGuard."""
+    """Called from argus-agent's poll loop; applies a pending profile change to USBGuard, and
+    re-applies the implicit policy target if USBGuard's live state has drifted from it."""
     settings = get_settings(session)
-    if settings.profile == settings.applied_profile:
+    desired_target = "block" if settings.profile == Profile.ENFORCE else "allow"
+
+    if settings.profile != settings.applied_profile:
+        if settings.profile == Profile.ENFORCE and settings.enforce_bootstrapped_at is None:
+            usbguard_cli.generate_policy()
+            settings.enforce_bootstrapped_at = _utcnow()
+
+        usbguard_cli.set_implicit_policy_target(desired_target)
+        settings.applied_profile = settings.profile
+        session.commit()
         return
 
-    if settings.profile == Profile.ENFORCE and settings.enforce_bootstrapped_at is None:
-        usbguard_cli.generate_policy()
-        settings.enforce_bootstrapped_at = _utcnow()
-
-    usbguard_cli.set_implicit_policy_target("block" if settings.profile == Profile.ENFORCE else "allow")
-    settings.applied_profile = settings.profile
-    session.commit()
+    if usbguard_cli.get_implicit_policy_target() != desired_target:
+        usbguard_cli.set_implicit_policy_target(desired_target)

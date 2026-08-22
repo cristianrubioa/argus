@@ -48,6 +48,12 @@ def set_implicit_policy_target(target: str) -> None:
     _run("set-parameter", "ImplicitPolicyTarget", target)
 
 
+def get_implicit_policy_target() -> str:
+    """set-parameter is runtime-only — a restart of usbguard.service outside of us reverts
+    this to whatever's in usbguard-daemon.conf, regardless of what Argus last applied."""
+    return _run("get-parameter", "ImplicitPolicyTarget").strip().lower()
+
+
 def generate_policy() -> None:
     """Authorizes every connected device via IPC — bootstraps the whitelist on first switch to Enforce (decision #6)."""
     for line in _run("generate-policy").splitlines():
