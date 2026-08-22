@@ -4,14 +4,13 @@
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_account_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('signed_in_as') }} <span class="text-gray-900 dark:text-gray-200">{{ admin }}</span></p>
 
-<h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-4 mb-2">{{ t('settings_change_password_heading') }}</h2>
 {% if password_error %}
-<div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2 mb-3 max-w-md">{{ t(password_error) }}</div>
+<div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2 mt-4 mb-3 max-w-md">{{ t(password_error) }}</div>
 {% endif %}
 {% if password_success %}
-<div class="text-sm text-green-700 bg-green-100 border border-green-300 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800 rounded px-3 py-2 mb-3 max-w-md">{{ t('settings_password_changed') }}</div>
+<div class="text-sm text-green-700 bg-green-100 border border-green-300 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800 rounded px-3 py-2 mt-4 mb-3 max-w-md">{{ t('settings_password_changed') }}</div>
 {% endif %}
-<form method="post" action="/settings/password" class="space-y-3 max-w-md">
+<form method="post" action="/settings/password" class="space-y-3 max-w-md mt-4">
   <div>
     <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_current_password_label') }}</label>
     <input type="password" name="current_password" required
@@ -50,9 +49,6 @@
       </span>
     </label>
   </div>
-  <p class="text-xs text-gray-500 mt-3">
-    {{ t('applied_profile_label') }} {{ settings.applied_profile.value if settings.applied_profile else t('applied_profile_pending') }}
-  </p>
 
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_language_heading') }}</h1>
   <select name="language"
@@ -91,10 +87,6 @@
   <span>{{ t('agent_last_seen_label') }} {{ settings.agent_last_heartbeat_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
   {% endif %}
 </p>
-{% if agent_status != 'live' %}
-<p class="text-xs text-gray-500 mt-2">{{ t('agent_restart_hint') }}</p>
-{% endif %}
-
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_automation_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('mqtt_config_note') }}</p>
 <p class="text-xs text-gray-500 mt-2">

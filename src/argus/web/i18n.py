@@ -67,8 +67,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor_desc": "Logs every device but never blocks. Unrecognized devices are flagged only.",
         "profile_enforce_desc": "Blocks anything not on the whitelist at the kernel level.",
         "action_save": "Save",
-        "applied_profile_label": "Applied profile:",
-        "applied_profile_pending": "pending — argus-agent will reconcile shortly",
         "settings_account_heading": "Account",
         "signed_in_as": "Signed in as",
         "agent_status_heading": "Agent",
@@ -76,10 +74,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_stale": "Stale",
         "agent_status_never": "Never seen",
         "agent_last_seen_label": "Last heartbeat:",
-        "agent_restart_hint": (
-            "If this stays Stale or Never seen, run `sudo systemctl restart argus-agent` on the host, "
-            "or check `journalctl -u argus-agent -f`."
-        ),
         "settings_automation_heading": "Automation (MQTT)",
         "mqtt_config_note": (
             "Configured via ARGUS_MQTT_HOST and related environment variables — see .env.example. "
@@ -108,7 +102,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "register_submit": "Create account",
         "password_error_too_short": "Password must be at least 8 characters",
         "password_error_mismatch": "Passwords don't match",
-        "settings_change_password_heading": "Change password",
         "settings_current_password_label": "Current password",
         "settings_new_password_label": "New password",
         "settings_confirm_new_password_label": "Confirm new password",
@@ -184,8 +177,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor_desc": "Registra cada dispositivo pero nunca bloquea. Solo se marcan los no reconocidos.",
         "profile_enforce_desc": "Bloquea a nivel del kernel todo lo que no esté en la lista blanca.",
         "action_save": "Guardar",
-        "applied_profile_label": "Perfil aplicado:",
-        "applied_profile_pending": "pendiente — argus-agent lo aplicará en breve",
         "settings_account_heading": "Cuenta",
         "signed_in_as": "Sesión iniciada como",
         "agent_status_heading": "Agente",
@@ -193,10 +184,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_stale": "Desactualizado",
         "agent_status_never": "Nunca visto",
         "agent_last_seen_label": "Último latido:",
-        "agent_restart_hint": (
-            "Si esto queda en Desactualizado o Nunca visto, corré `sudo systemctl restart argus-agent` en el host, "
-            "o revisá `journalctl -u argus-agent -f`."
-        ),
         "settings_automation_heading": "Automatización (MQTT)",
         "mqtt_config_note": (
             "Se configura con ARGUS_MQTT_HOST y variables de entorno relacionadas — ver .env.example. "
@@ -225,7 +212,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "register_submit": "Crear cuenta",
         "password_error_too_short": "La contraseña debe tener al menos 8 caracteres",
         "password_error_mismatch": "Las contraseñas no coinciden",
-        "settings_change_password_heading": "Cambiar contraseña",
         "settings_current_password_label": "Contraseña actual",
         "settings_new_password_label": "Nueva contraseña",
         "settings_confirm_new_password_label": "Confirmar nueva contraseña",
@@ -301,8 +287,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor_desc": "Registra todos os dispositivos, mas nunca bloqueia. Só sinaliza os não reconhecidos.",
         "profile_enforce_desc": "Bloqueia no nível do kernel tudo que não estiver na lista branca.",
         "action_save": "Salvar",
-        "applied_profile_label": "Perfil aplicado:",
-        "applied_profile_pending": "pendente — argus-agent aplicará em breve",
         "settings_account_heading": "Conta",
         "signed_in_as": "Conectado como",
         "agent_status_heading": "Agente",
@@ -310,10 +294,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_stale": "Desatualizado",
         "agent_status_never": "Nunca visto",
         "agent_last_seen_label": "Última pulsação:",
-        "agent_restart_hint": (
-            "Se isso ficar Desatualizado ou Nunca visto, execute `sudo systemctl restart argus-agent` no host, "
-            "ou verifique `journalctl -u argus-agent -f`."
-        ),
         "settings_automation_heading": "Automação (MQTT)",
         "mqtt_config_note": (
             "Configurado via ARGUS_MQTT_HOST e variáveis de ambiente relacionadas — veja .env.example. "
@@ -342,7 +322,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "register_submit": "Criar conta",
         "password_error_too_short": "A senha deve ter pelo menos 8 caracteres",
         "password_error_mismatch": "As senhas não coincidem",
-        "settings_change_password_heading": "Alterar senha",
         "settings_current_password_label": "Senha atual",
         "settings_new_password_label": "Nova senha",
         "settings_confirm_new_password_label": "Confirmar nova senha",
@@ -418,8 +397,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor_desc": "Journalise chaque appareil sans jamais bloquer. Signale seulement les non reconnus.",
         "profile_enforce_desc": "Bloque au niveau du noyau tout ce qui n'est pas sur la liste blanche.",
         "action_save": "Enregistrer",
-        "applied_profile_label": "Profil appliqué :",
-        "applied_profile_pending": "en attente — argus-agent l'appliquera sous peu",
         "settings_account_heading": "Compte",
         "signed_in_as": "Connecté en tant que",
         "agent_status_heading": "Agent",
@@ -427,10 +404,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_stale": "Obsolète",
         "agent_status_never": "Jamais vu",
         "agent_last_seen_label": "Dernier battement :",
-        "agent_restart_hint": (
-            "Si cela reste Obsolète ou Jamais vu, exécutez `sudo systemctl restart argus-agent` sur l'hôte, "
-            "ou consultez `journalctl -u argus-agent -f`."
-        ),
         "settings_automation_heading": "Automatisation (MQTT)",
         "mqtt_config_note": (
             "Configuré via ARGUS_MQTT_HOST et les variables d'environnement associées — voir .env.example. "
@@ -459,7 +432,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "register_submit": "Créer le compte",
         "password_error_too_short": "Le mot de passe doit contenir au moins 8 caractères",
         "password_error_mismatch": "Les mots de passe ne correspondent pas",
-        "settings_change_password_heading": "Changer le mot de passe",
         "settings_current_password_label": "Mot de passe actuel",
         "settings_new_password_label": "Nouveau mot de passe",
         "settings_confirm_new_password_label": "Confirmer le nouveau mot de passe",
@@ -535,8 +507,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor_desc": "Protokolliert jedes Gerät, blockiert aber nie. Nicht erkannte werden nur markiert.",
         "profile_enforce_desc": "Blockiert auf Kernel-Ebene alles, was nicht auf der Whitelist steht.",
         "action_save": "Speichern",
-        "applied_profile_label": "Angewendetes Profil:",
-        "applied_profile_pending": "ausstehend — argus-agent gleicht in Kürze ab",
         "settings_account_heading": "Konto",
         "signed_in_as": "Angemeldet als",
         "agent_status_heading": "Agent",
@@ -544,10 +514,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "agent_status_stale": "Veraltet",
         "agent_status_never": "Nie gesehen",
         "agent_last_seen_label": "Letzter Herzschlag:",
-        "agent_restart_hint": (
-            "Wenn dies Veraltet oder Nie gesehen bleibt, führen Sie `sudo systemctl restart argus-agent` auf dem "
-            "Host aus, oder prüfen Sie `journalctl -u argus-agent -f`."
-        ),
         "settings_automation_heading": "Automatisierung (MQTT)",
         "mqtt_config_note": (
             "Konfiguriert über ARGUS_MQTT_HOST und zugehörige Umgebungsvariablen — siehe .env.example. "
@@ -576,7 +542,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "register_submit": "Konto erstellen",
         "password_error_too_short": "Das Passwort muss mindestens 8 Zeichen lang sein",
         "password_error_mismatch": "Die Passwörter stimmen nicht überein",
-        "settings_change_password_heading": "Passwort ändern",
         "settings_current_password_label": "Aktuelles Passwort",
         "settings_new_password_label": "Neues Passwort",
         "settings_confirm_new_password_label": "Neues Passwort bestätigen",
