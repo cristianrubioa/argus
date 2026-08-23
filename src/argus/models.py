@@ -88,6 +88,8 @@ class DeviceEvent(Base):
     decision: Mapped[Decision] = mapped_column(Enum(Decision))
     profile: Mapped[Profile] = mapped_column(Enum(Profile))
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    # USBGuard's own per-connection id — how PolicyApplied finds the row its Insert already created.
+    usbguard_connection_id: Mapped[int | None] = mapped_column(nullable=True)
 
     device: Mapped["Device"] = relationship(back_populates="events")
 

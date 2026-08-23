@@ -76,6 +76,14 @@ _POLICY_APPLIED_NO_SERIAL_ALLOW = (
     " rule_id=4294967294"
 )
 
+# A different connection id than any Insert fixture above — no event should ever match it.
+_POLICY_APPLIED_UNKNOWN_CONNECTION = (
+    "[device] PolicyApplied: id=999\n"
+    " target_new=allow\n"
+    ' device_rule=allow id 058f:6387 serial "AAE9055C" name "Mass Storage"\n'
+    " rule_id=4294967294"
+)
+
 
 def test_event_recorded_with_full_device_attributes(session):
     # Action
@@ -90,8 +98,6 @@ def test_event_recorded_with_full_device_attributes(session):
 
 
 def test_rapid_duplicate_inserts_recorded_once(session):
-    # Setup — a composite device (e.g. a wireless mouse dongle) can fire several
-    # PresenceChanged/Insert blocks milliseconds apart for the same physical connect
     # Action
     handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
     handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
@@ -142,7 +148,7 @@ def test_ipc_status_line_is_ignored(session):
 
 
 def test_policy_applied_corrects_provisional_block_to_unrecognized(session):
-    # Setup — USBGuard's own Insert decision is provisional, settled moments later
+    # Setup
     handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
     # Action
     handle_event(session, _POLICY_APPLIED_SETTLED_ALLOW)
@@ -163,7 +169,7 @@ def test_policy_applied_matching_the_recorded_decision_is_a_no_op(session):
 
 
 def test_policy_applied_never_downgrades_an_authorized_device(session):
-    # Setup — device is on the whitelist, so its Insert is recorded AUTHORIZED regardless of usbguard's target
+    # Setup
     handle_event(session, _INSERT_BLOCKED_NO_SERIAL)
     device = session.query(Device).one()
     session.add(WhitelistEntry(device_id=device.id, added_by="admin"))
@@ -177,7 +183,17 @@ def test_policy_applied_never_downgrades_an_authorized_device(session):
     assert event.decision == Decision.AUTHORIZED
 
 
-def test_policy_applied_with_no_matching_device_is_a_no_op(session):
+def test_policy_applied_with_unknown_connection_id_is_a_no_op(session):
+    # Setup
+    handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
+    # Action
+    handle_event(session, _POLICY_APPLIED_UNKNOWN_CONNECTION)
+    # Expected
+    event = session.query(DeviceEvent).one()
+    assert event.decision == Decision.BLOCKED
+
+
+def test_policy_applied_with_no_events_recorded_yet_is_a_no_op(session):
     # Action
     handle_event(session, _POLICY_APPLIED_SETTLED_ALLOW)
     # Expected
@@ -185,14 +201,14 @@ def test_policy_applied_with_no_matching_device_is_a_no_op(session):
     assert session.query(DeviceEvent).count() == 0
 
 
-def test_policy_applied_outside_the_correlation_window_is_ignored(session):
+def test_policy_applied_applies_even_after_a_long_delay(session):
     # Setup
     handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
     event = session.query(DeviceEvent).one()
-    event.occurred_at = datetime.now(timezone.utc) - timedelta(seconds=10)
+    event.occurred_at = datetime.now(timezone.utc) - timedelta(minutes=5)
     session.commit()
     # Action
     handle_event(session, _POLICY_APPLIED_SETTLED_ALLOW)
     # Expected
     event = session.query(DeviceEvent).one()
-    assert event.decision == Decision.BLOCKED
+    assert event.decision == Decision.UNRECOGNIZED

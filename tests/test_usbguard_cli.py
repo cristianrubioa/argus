@@ -6,7 +6,7 @@ from argus.agent import usbguard_cli
 
 
 def test_run_raises_on_ipc_error_despite_exit_code_zero(monkeypatch):
-    # Setup — usbguard append-rule prints "IPC ERROR: ... Permission denied" but exits 0
+    # Setup
     fake_result = subprocess.CompletedProcess(
         args=["usbguard"], returncode=0, stdout="IPC ERROR: Permission denied", stderr=""
     )

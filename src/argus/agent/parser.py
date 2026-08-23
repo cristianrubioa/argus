@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 _PRESENCE_CHANGED_RE = re.compile(r"^\[device\] PresenceChanged:")
 _POLICY_APPLIED_RE = re.compile(r"^\[device\] PolicyApplied:")
+_CONNECTION_ID_RE = re.compile(r"id=(\d+)")
 _EVENT_RE = re.compile(r"^\s*event=(\w+)", re.MULTILINE)
 _TARGET_RE = re.compile(r"^\s*target=(\w+)", re.MULTILINE)
 _TARGET_NEW_RE = re.compile(r"^\s*target_new=(\w+)", re.MULTILINE)
@@ -17,6 +18,7 @@ _SERIAL_RE = re.compile(r'\bserial\s+"([^"]*)"')
 
 @dataclass(frozen=True)
 class ParsedEvent:
+    connection_id: int
     vid: str
     pid: str
     name: str
@@ -34,8 +36,9 @@ def parse_event_block(block: str) -> ParsedEvent | None:
     if event_match is None or event_match.group(1) != "Insert":
         return None
 
+    connection_id_match = _CONNECTION_ID_RE.search(first_line)
     id_match = _ID_RE.search(block)
-    if id_match is None:
+    if connection_id_match is None or id_match is None:
         return None
 
     target_match = _TARGET_RE.search(block)
@@ -45,6 +48,7 @@ def parse_event_block(block: str) -> ParsedEvent | None:
     serial = serial_match.group(1) if serial_match else None
 
     return ParsedEvent(
+        connection_id=int(connection_id_match.group(1)),
         vid=id_match.group(1).lower(),
         pid=id_match.group(2).lower(),
         name=name_match.group(1) if name_match else "Unknown device",
@@ -55,9 +59,7 @@ def parse_event_block(block: str) -> ParsedEvent | None:
 
 @dataclass(frozen=True)
 class ParsedPolicyApplied:
-    vid: str
-    pid: str
-    serial: str | None
+    connection_id: int
     usbguard_blocked: bool
 
 
@@ -67,18 +69,14 @@ def parse_policy_applied_block(block: str) -> ParsedPolicyApplied | None:
     if not _POLICY_APPLIED_RE.match(first_line):
         return None
 
-    id_match = _ID_RE.search(block)
-    if id_match is None:
+    connection_id_match = _CONNECTION_ID_RE.search(first_line)
+    if connection_id_match is None:
         return None
 
     target_match = _TARGET_NEW_RE.search(block)
     target = target_match.group(1).lower() if target_match else "allow"
-    serial_match = _SERIAL_RE.search(block)
-    serial = serial_match.group(1) if serial_match else None
 
     return ParsedPolicyApplied(
-        vid=id_match.group(1).lower(),
-        pid=id_match.group(2).lower(),
-        serial=serial if serial else None,
+        connection_id=int(connection_id_match.group(1)),
         usbguard_blocked=target in ("block", "reject"),
     )

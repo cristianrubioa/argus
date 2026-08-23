@@ -31,10 +31,6 @@ _PENDING_ACTIONS_POLL_SECONDS = 2
 # Covers composite-device bursts (~20-50ms) and slow storage enumeration (observed: 805ms).
 _DEDUPE_WINDOW_SECONDS = 1.5
 
-# USBGuard's Insert decision is often provisional; PolicyApplied settles it moments later.
-# Window to correlate that correction back to the event its Insert already recorded.
-_POLICY_APPLIED_WINDOW_SECONDS = 3.0
-
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -66,7 +62,6 @@ def handle_event(session: Session, block: str) -> None:
 def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
     device = _get_or_create_device(session, parsed)
     if _recently_recorded(session, device):
-        logger.info("DIAG insert dedup-skipped device_id=%s vid_pid=%s:%s", device.id, parsed.vid, parsed.pid)
         session.commit()
         return
 
@@ -79,58 +74,17 @@ def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
     else:
         decision = Decision.UNRECOGNIZED
 
-    event = _record_event(session, device, decision)
+    event = _record_event(session, device, decision, parsed.connection_id)
     session.commit()
-    logger.info(
-        "DIAG insert recorded event_id=%s device_id=%s vid_pid=%s:%s serial=%r decision=%s occurred_at=%s",
-        event.id,
-        device.id,
-        parsed.vid,
-        parsed.pid,
-        parsed.serial,
-        decision,
-        event.occurred_at,
-    )
     publish_event(event, session)
 
 
 def _handle_policy_applied(session: Session, applied: ParsedPolicyApplied) -> None:
-    logger.info(
-        "DIAG policy_applied received vid_pid=%s:%s serial=%r usbguard_blocked=%s",
-        applied.vid,
-        applied.pid,
-        applied.serial,
-        applied.usbguard_blocked,
-    )
-    device = session.query(Device).filter_by(vid=applied.vid, pid=applied.pid, serial=applied.serial).first()
-    if device is None:
-        logger.info(
-            "DIAG policy_applied no matching device vid_pid=%s:%s serial=%r", applied.vid, applied.pid, applied.serial
-        )
-        return
-
-    cutoff = _utcnow() - timedelta(seconds=_POLICY_APPLIED_WINDOW_SECONDS)
-    event = (
-        session.query(DeviceEvent)
-        .filter(DeviceEvent.device_id == device.id, DeviceEvent.occurred_at > cutoff)
-        .order_by(DeviceEvent.occurred_at.desc())
-        .first()
-    )
-    if event is None:
-        logger.info("DIAG policy_applied no recent event device_id=%s cutoff=%s", device.id, cutoff)
-        return
-    if event.decision == Decision.AUTHORIZED:
-        logger.info("DIAG policy_applied skipped, event_id=%s already AUTHORIZED", event.id)
+    event = session.query(DeviceEvent).filter_by(usbguard_connection_id=applied.connection_id).first()
+    if event is None or event.decision == Decision.AUTHORIZED:
         return
 
     settled = Decision.BLOCKED if applied.usbguard_blocked else Decision.UNRECOGNIZED
-    logger.info(
-        "DIAG policy_applied matched event_id=%s current=%s settled=%s occurred_at=%s",
-        event.id,
-        event.decision,
-        settled,
-        event.occurred_at,
-    )
     if event.decision != settled:
         event.decision = settled
         session.commit()
@@ -145,9 +99,9 @@ def _recently_recorded(session: Session, device: Device) -> bool:
     )
 
 
-def _record_event(session: Session, device: Device, decision: Decision) -> DeviceEvent:
+def _record_event(session: Session, device: Device, decision: Decision, connection_id: int) -> DeviceEvent:
     active_profile = profiles.get_active_profile(session)
-    event = DeviceEvent(device=device, decision=decision, profile=active_profile)
+    event = DeviceEvent(device=device, decision=decision, profile=active_profile, usbguard_connection_id=connection_id)
     session.add(event)
     session.flush()
     return event
