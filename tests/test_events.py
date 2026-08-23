@@ -131,12 +131,14 @@ def test_remove_event_is_ignored(session):
     assert session.query(DeviceEvent).count() == 0
 
 
-def test_policy_changed_event_is_ignored(session):
+def test_policy_changed_alone_corrects_provisional_block_to_unrecognized(session):
+    # Setup
+    handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
     # Action
     handle_event(session, _POLICY_CHANGED)
     # Expected
-    assert session.query(Device).count() == 0
-    assert session.query(DeviceEvent).count() == 0
+    event = session.query(DeviceEvent).one()
+    assert event.decision == Decision.UNRECOGNIZED
 
 
 def test_ipc_status_line_is_ignored(session):

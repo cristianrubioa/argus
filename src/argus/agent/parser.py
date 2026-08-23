@@ -1,12 +1,13 @@
 """Parses `usbguard watch` event blocks (format confirmed on a real host, see tests/test_events.py for a sample).
-`PresenceChanged`/`event=Insert` starts a connection; its decision is provisional until `PolicyApplied` settles it.
+`PresenceChanged`/`event=Insert` starts a connection; its decision is provisional until `PolicyChanged`/`PolicyApplied`
+settles it — USBGuard doesn't reliably emit both for every connection, so either one is treated as authoritative.
 """
 
 import re
 from dataclasses import dataclass
 
 _PRESENCE_CHANGED_RE = re.compile(r"^\[device\] PresenceChanged:")
-_POLICY_APPLIED_RE = re.compile(r"^\[device\] PolicyApplied:")
+_POLICY_SETTLED_RE = re.compile(r"^\[device\] (?:PolicyChanged|PolicyApplied):")
 _CONNECTION_ID_RE = re.compile(r"id=(\d+)")
 _EVENT_RE = re.compile(r"^\s*event=(\w+)", re.MULTILINE)
 _TARGET_RE = re.compile(r"^\s*target=(\w+)", re.MULTILINE)
@@ -58,15 +59,15 @@ def parse_event_block(block: str) -> ParsedEvent | None:
 
 
 @dataclass(frozen=True)
-class ParsedPolicyApplied:
+class ParsedPolicySettled:
     connection_id: int
     usbguard_blocked: bool
 
 
-def parse_policy_applied_block(block: str) -> ParsedPolicyApplied | None:
+def parse_policy_settled_block(block: str) -> ParsedPolicySettled | None:
     """The settled decision for a connection already recorded from its Insert event."""
     first_line = block.splitlines()[0]
-    if not _POLICY_APPLIED_RE.match(first_line):
+    if not _POLICY_SETTLED_RE.match(first_line):
         return None
 
     connection_id_match = _CONNECTION_ID_RE.search(first_line)
@@ -76,7 +77,7 @@ def parse_policy_applied_block(block: str) -> ParsedPolicyApplied | None:
     target_match = _TARGET_NEW_RE.search(block)
     target = target_match.group(1).lower() if target_match else "allow"
 
-    return ParsedPolicyApplied(
+    return ParsedPolicySettled(
         connection_id=int(connection_id_match.group(1)),
         usbguard_blocked=target in ("block", "reject"),
     )

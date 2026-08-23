@@ -12,9 +12,9 @@ from argus.agent import usbguard_cli
 from argus.agent import watcher
 from argus.agent.mqtt_bridge import publish_event
 from argus.agent.parser import ParsedEvent
-from argus.agent.parser import ParsedPolicyApplied
+from argus.agent.parser import ParsedPolicySettled
 from argus.agent.parser import parse_event_block
-from argus.agent.parser import parse_policy_applied_block
+from argus.agent.parser import parse_policy_settled_block
 from argus.db import SessionLocal
 from argus.db import init_db
 from argus.models import Decision
@@ -54,9 +54,9 @@ def handle_event(session: Session, block: str) -> None:
         _handle_insert(session, parsed)
         return
 
-    applied = parse_policy_applied_block(block)
-    if applied is not None:
-        _handle_policy_applied(session, applied)
+    settled = parse_policy_settled_block(block)
+    if settled is not None:
+        _handle_policy_settled(session, settled)
 
 
 def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
@@ -79,14 +79,14 @@ def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
     publish_event(event, session)
 
 
-def _handle_policy_applied(session: Session, applied: ParsedPolicyApplied) -> None:
-    event = session.query(DeviceEvent).filter_by(usbguard_connection_id=applied.connection_id).first()
+def _handle_policy_settled(session: Session, settled: ParsedPolicySettled) -> None:
+    event = session.query(DeviceEvent).filter_by(usbguard_connection_id=settled.connection_id).first()
     if event is None or event.decision == Decision.AUTHORIZED:
         return
 
-    settled = Decision.BLOCKED if applied.usbguard_blocked else Decision.UNRECOGNIZED
-    if event.decision != settled:
-        event.decision = settled
+    decision = Decision.BLOCKED if settled.usbguard_blocked else Decision.UNRECOGNIZED
+    if event.decision != decision:
+        event.decision = decision
         session.commit()
         publish_event(event, session)
 

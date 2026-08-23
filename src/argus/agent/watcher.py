@@ -6,8 +6,10 @@ from collections.abc import Iterator
 
 def watch_events() -> Iterator[str]:
     """Yields one joined event block per device event. Restart the loop on exit — this runs until the subprocess exits."""
+    # usbguard fully block-buffers its stdout when it isn't a tty (i.e. always, piped here) — stdbuf
+    # forces line buffering so events arrive as they happen instead of whenever its internal buffer fills.
     process = subprocess.Popen(
-        ["usbguard", "watch", "-w"],
+        ["stdbuf", "-oL", "usbguard", "watch", "-w"],
         stdout=subprocess.PIPE,
         text=True,
         bufsize=1,
