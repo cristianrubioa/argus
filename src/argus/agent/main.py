@@ -66,6 +66,7 @@ def handle_event(session: Session, block: str) -> None:
 def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
     device = _get_or_create_device(session, parsed)
     if _recently_recorded(session, device):
+        logger.info("DIAG insert dedup-skipped device_id=%s vid_pid=%s:%s", device.id, parsed.vid, parsed.pid)
         session.commit()
         return
 
@@ -80,12 +81,32 @@ def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
 
     event = _record_event(session, device, decision)
     session.commit()
+    logger.info(
+        "DIAG insert recorded event_id=%s device_id=%s vid_pid=%s:%s serial=%r decision=%s occurred_at=%s",
+        event.id,
+        device.id,
+        parsed.vid,
+        parsed.pid,
+        parsed.serial,
+        decision,
+        event.occurred_at,
+    )
     publish_event(event, session)
 
 
 def _handle_policy_applied(session: Session, applied: ParsedPolicyApplied) -> None:
+    logger.info(
+        "DIAG policy_applied received vid_pid=%s:%s serial=%r usbguard_blocked=%s",
+        applied.vid,
+        applied.pid,
+        applied.serial,
+        applied.usbguard_blocked,
+    )
     device = session.query(Device).filter_by(vid=applied.vid, pid=applied.pid, serial=applied.serial).first()
     if device is None:
+        logger.info(
+            "DIAG policy_applied no matching device vid_pid=%s:%s serial=%r", applied.vid, applied.pid, applied.serial
+        )
         return
 
     cutoff = _utcnow() - timedelta(seconds=_POLICY_APPLIED_WINDOW_SECONDS)
@@ -95,10 +116,21 @@ def _handle_policy_applied(session: Session, applied: ParsedPolicyApplied) -> No
         .order_by(DeviceEvent.occurred_at.desc())
         .first()
     )
-    if event is None or event.decision == Decision.AUTHORIZED:
+    if event is None:
+        logger.info("DIAG policy_applied no recent event device_id=%s cutoff=%s", device.id, cutoff)
+        return
+    if event.decision == Decision.AUTHORIZED:
+        logger.info("DIAG policy_applied skipped, event_id=%s already AUTHORIZED", event.id)
         return
 
     settled = Decision.BLOCKED if applied.usbguard_blocked else Decision.UNRECOGNIZED
+    logger.info(
+        "DIAG policy_applied matched event_id=%s current=%s settled=%s occurred_at=%s",
+        event.id,
+        event.decision,
+        settled,
+        event.occurred_at,
+    )
     if event.decision != settled:
         event.decision = settled
         session.commit()
