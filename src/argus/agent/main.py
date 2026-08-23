@@ -12,7 +12,9 @@ from argus.agent import usbguard_cli
 from argus.agent import watcher
 from argus.agent.mqtt_bridge import publish_event
 from argus.agent.parser import ParsedEvent
+from argus.agent.parser import ParsedPolicyApplied
 from argus.agent.parser import parse_event_block
+from argus.agent.parser import parse_policy_applied_block
 from argus.db import SessionLocal
 from argus.db import init_db
 from argus.models import Decision
@@ -28,6 +30,10 @@ _PENDING_ACTIONS_POLL_SECONDS = 2
 
 # Covers composite-device bursts (~20-50ms) and slow storage enumeration (observed: 805ms).
 _DEDUPE_WINDOW_SECONDS = 1.5
+
+# USBGuard's Insert decision is often provisional; PolicyApplied settles it moments later.
+# Window to correlate that correction back to the event its Insert already recorded.
+_POLICY_APPLIED_WINDOW_SECONDS = 3.0
 
 
 def _utcnow() -> datetime:
@@ -48,9 +54,16 @@ def _get_or_create_device(session: Session, parsed: ParsedEvent) -> Device:
 
 def handle_event(session: Session, block: str) -> None:
     parsed = parse_event_block(block)
-    if parsed is None:
+    if parsed is not None:
+        _handle_insert(session, parsed)
         return
 
+    applied = parse_policy_applied_block(block)
+    if applied is not None:
+        _handle_policy_applied(session, applied)
+
+
+def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
     device = _get_or_create_device(session, parsed)
     if _recently_recorded(session, device):
         session.commit()
@@ -68,6 +81,28 @@ def handle_event(session: Session, block: str) -> None:
     event = _record_event(session, device, decision)
     session.commit()
     publish_event(event, session)
+
+
+def _handle_policy_applied(session: Session, applied: ParsedPolicyApplied) -> None:
+    device = session.query(Device).filter_by(vid=applied.vid, pid=applied.pid, serial=applied.serial).first()
+    if device is None:
+        return
+
+    cutoff = _utcnow() - timedelta(seconds=_POLICY_APPLIED_WINDOW_SECONDS)
+    event = (
+        session.query(DeviceEvent)
+        .filter(DeviceEvent.device_id == device.id, DeviceEvent.occurred_at > cutoff)
+        .order_by(DeviceEvent.occurred_at.desc())
+        .first()
+    )
+    if event is None or event.decision == Decision.AUTHORIZED:
+        return
+
+    settled = Decision.BLOCKED if applied.usbguard_blocked else Decision.UNRECOGNIZED
+    if event.decision != settled:
+        event.decision = settled
+        session.commit()
+        publish_event(event, session)
 
 
 def _recently_recorded(session: Session, device: Device) -> bool:
