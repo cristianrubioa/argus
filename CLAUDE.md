@@ -27,7 +27,7 @@
 - `assert`, not `self.assert*` · structure each test with `# Setup` / `# Action` / `# Expected`, no extra blank lines
 - Those three comments stand alone, nothing appended after them — no inline rationale. If the test name doesn't already make the "why" obvious, fix the name instead of explaining it in a comment
 - Build test data with factories (`src/factories.py`, factory-boy) — not raw `Model.objects.create(...)` inline
-- JSON responses: assert the full body (`response.json() == {...}`), not membership of individual keys
+- Assert the full signature of a multi-field object in one comparison, not one `assert` per field — for JSON responses, `response.json() == {...}`; for anything else under test, a tuple of its relevant fields against the expected tuple
 - One identity per test class: shared login goes in `setUp`, not repeated per test — split into separate classes when tests need different identities
 - Always mock `usbguard_cli` calls in tests, never let one reach the real subprocess — this dev machine has `usbguard` installed and will mask a missing mock that fails in CI. Sanity-check with `usbguard` stripped from `PATH` before trusting a green local run.
 
