@@ -59,36 +59,55 @@ def handle_event(session: Session, block: str) -> None:
         _handle_policy_settled(session, settled)
 
 
+def _decide(session: Session, device: Device, usbguard_blocked: bool) -> Decision:
+    is_whitelisted = session.query(WhitelistEntry).filter_by(device_id=device.id).first() is not None
+    if is_whitelisted:
+        return Decision.AUTHORIZED
+    return Decision.BLOCKED if usbguard_blocked else Decision.UNRECOGNIZED
+
+
 def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
     device = _get_or_create_device(session, parsed)
     if _recently_recorded(session, device):
         session.commit()
         return
 
-    is_whitelisted = session.query(WhitelistEntry).filter_by(device_id=device.id).first() is not None
-
-    if is_whitelisted:
-        decision = Decision.AUTHORIZED
-    elif parsed.usbguard_blocked:
-        decision = Decision.BLOCKED
-    else:
-        decision = Decision.UNRECOGNIZED
-
+    decision = _decide(session, device, parsed.usbguard_blocked)
     event = _record_event(session, device, decision, parsed.connection_id)
     session.commit()
     publish_event(event, session)
 
 
 def _handle_policy_settled(session: Session, settled: ParsedPolicySettled) -> None:
-    event = session.query(DeviceEvent).filter_by(usbguard_connection_id=settled.connection_id).first()
-    if event is None or event.decision == Decision.AUTHORIZED:
+    """The first PolicyChanged/PolicyApplied for a connection settles its still-provisional Insert
+    decision in place. Once settled, a row is never mutated again — a later change (e.g. an admin
+    authorizing or revoking the device while it stays connected) creates a new row instead, so the
+    settled row keeps its original decision as a permanent record of what happened."""
+    event = (
+        session.query(DeviceEvent)
+        .filter_by(usbguard_connection_id=settled.connection_id)
+        .order_by(DeviceEvent.id.desc())
+        .first()
+    )
+    if event is None:
         return
 
-    decision = Decision.BLOCKED if settled.usbguard_blocked else Decision.UNRECOGNIZED
+    decision = _decide(session, event.device, settled.usbguard_blocked)
+
+    if event.settled_at is None:
+        event.settled_at = _utcnow()
+        if event.decision != decision:
+            event.decision = decision
+            session.commit()
+            publish_event(event, session)
+        else:
+            session.commit()
+        return
+
     if event.decision != decision:
-        event.decision = decision
+        new_event = _record_event(session, event.device, decision, settled.connection_id, settled_at=_utcnow())
         session.commit()
-        publish_event(event, session)
+        publish_event(new_event, session)
 
 
 def _recently_recorded(session: Session, device: Device) -> bool:
@@ -99,9 +118,17 @@ def _recently_recorded(session: Session, device: Device) -> bool:
     )
 
 
-def _record_event(session: Session, device: Device, decision: Decision, connection_id: int) -> DeviceEvent:
+def _record_event(
+    session: Session, device: Device, decision: Decision, connection_id: int, settled_at: datetime | None = None
+) -> DeviceEvent:
     active_profile = profiles.get_active_profile(session)
-    event = DeviceEvent(device=device, decision=decision, profile=active_profile, usbguard_connection_id=connection_id)
+    event = DeviceEvent(
+        device=device,
+        decision=decision,
+        profile=active_profile,
+        usbguard_connection_id=connection_id,
+        settled_at=settled_at,
+    )
     session.add(event)
     session.flush()
     return event
@@ -114,7 +141,7 @@ def apply_pending_actions(session: Session) -> None:
             if action.action == UsbguardAction.ALLOW:
                 usbguard_cli.allow_device(action.device)
             else:
-                usbguard_cli.block_device(action.device)
+                usbguard_cli.deauthorize_device(action.device)
             action.applied_at = _utcnow()
         except usbguard_cli.UsbguardCliError:
             logger.exception("Failed to apply pending USBGuard action for device %s", action.device.vid_pid)

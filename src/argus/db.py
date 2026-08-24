@@ -51,7 +51,12 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
 
 _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = ("ALTER TABLE devices ADD COLUMN custom_name VARCHAR(255)",)
 
-_DEVICE_EVENTS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = ("ALTER TABLE device_events ADD COLUMN usbguard_connection_id INTEGER",)
+_DEVICE_EVENTS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
+    "ALTER TABLE device_events ADD COLUMN usbguard_connection_id INTEGER",
+    # DEFAULT CURRENT_TIMESTAMP backfills every pre-existing row as already-settled (never eligible for
+    # the one-time provisional correction again) — new rows leave this NULL until they actually settle.
+    "ALTER TABLE device_events ADD COLUMN settled_at DATETIME DEFAULT CURRENT_TIMESTAMP",
+)
 
 _ADMIN_ACTIONS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE admin_actions ADD COLUMN vid_pid VARCHAR(9)",

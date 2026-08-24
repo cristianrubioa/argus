@@ -76,6 +76,13 @@ _POLICY_APPLIED_NO_SERIAL_ALLOW = (
     " rule_id=4294967294"
 )
 
+_POLICY_APPLIED_NO_SERIAL_BLOCK = (
+    "[device] PolicyApplied: id=21\n"
+    " target_new=block\n"
+    ' device_rule=block id 046d:c542 serial "" name "Wireless Receiver"\n'
+    " rule_id=4294967294"
+)
+
 # A different connection id than any Insert fixture above — no event should ever match it.
 _POLICY_APPLIED_UNKNOWN_CONNECTION = (
     "[device] PolicyApplied: id=999\n"
@@ -170,19 +177,56 @@ def test_policy_applied_matching_the_recorded_decision_is_a_no_op(session):
     assert event.decision == Decision.BLOCKED
 
 
-def test_policy_applied_never_downgrades_an_authorized_device(session):
+def test_first_settle_reaches_authorized_when_device_is_whitelisted(session):
     # Setup
     handle_event(session, _INSERT_BLOCKED_NO_SERIAL)
     device = session.query(Device).one()
     session.add(WhitelistEntry(device_id=device.id, added_by="admin"))
-    session.commit()
-    device.events[0].decision = Decision.AUTHORIZED
     session.commit()
     # Action
     handle_event(session, _POLICY_APPLIED_NO_SERIAL_ALLOW)
     # Expected
     event = session.query(DeviceEvent).one()
     assert event.decision == Decision.AUTHORIZED
+    assert event.settled_at is not None
+
+
+def test_settled_event_is_never_overwritten_a_new_row_is_created_instead(session):
+    # Setup
+    handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
+    handle_event(session, _POLICY_APPLIED_SETTLED_BLOCK)
+    device = session.query(Device).one()
+    session.add(WhitelistEntry(device_id=device.id, added_by="admin"))
+    session.commit()
+    # Action
+    handle_event(session, _POLICY_APPLIED_SETTLED_ALLOW)
+    # Expected
+    events = session.query(DeviceEvent).order_by(DeviceEvent.id).all()
+    assert len(events) == 2
+    assert events[0].decision == Decision.BLOCKED
+    assert events[0].usbguard_connection_id == 20
+    assert events[1].decision == Decision.AUTHORIZED
+    assert events[1].usbguard_connection_id == 20
+    assert events[1].settled_at is not None
+
+
+def test_revoking_a_connected_authorized_device_creates_a_new_blocked_row(session):
+    # Setup
+    handle_event(session, _INSERT_BLOCKED_NO_SERIAL)
+    device = session.query(Device).one()
+    session.add(WhitelistEntry(device_id=device.id, added_by="admin"))
+    session.commit()
+    handle_event(session, _POLICY_APPLIED_NO_SERIAL_ALLOW)
+    session.query(WhitelistEntry).filter_by(device_id=device.id).delete()
+    session.commit()
+    # Action
+    handle_event(session, _POLICY_APPLIED_NO_SERIAL_BLOCK)
+    # Expected
+    events = session.query(DeviceEvent).order_by(DeviceEvent.id).all()
+    assert len(events) == 2
+    assert events[0].decision == Decision.AUTHORIZED
+    assert events[1].decision == Decision.BLOCKED
+    assert events[1].usbguard_connection_id == 21
 
 
 def test_policy_applied_with_unknown_connection_id_is_a_no_op(session):

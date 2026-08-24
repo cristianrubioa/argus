@@ -10,8 +10,9 @@ from argus.models import Device
 logger = logging.getLogger(__name__)
 
 # e.g. `12: allow id 046d:c542 serial "" name "Wireless Receiver" hash "..." ... with-connect-type "hotplug"`
-_LIST_DEVICE_RE = re.compile(
-    r"^\d+:\s+(?P<target>\w+)\s+id\s+(?P<vid>[0-9a-fA-F]{4}):(?P<pid>[0-9a-fA-F]{4})"
+# Shared by list-devices and list-rules — both usbguard subcommands emit the same line shape.
+_RULE_LINE_RE = re.compile(
+    r"^(?P<id>\d+):\s+(?P<target>\w+)\s+id\s+(?P<vid>[0-9a-fA-F]{4}):(?P<pid>[0-9a-fA-F]{4})"
     r'.*?\bserial\s+"(?P<serial>[^"]*)".*?\bwith-connect-type\s+"(?P<connect_type>[^"]*)"'
 )
 
@@ -47,10 +48,6 @@ def allow_device(device: Device) -> None:
     _run("allow-device", "--permanent", _partial_rule(device))
 
 
-def block_device(device: Device) -> None:
-    _run("block-device", "--permanent", _partial_rule(device))
-
-
 def allow_device_live(device: Device) -> None:
     """Non-permanent allow — corrects live runtime authorization without touching the saved rule.
     Accepts the same vid:pid/serial partial-rule spec as the --permanent form (confirmed via
@@ -77,7 +74,7 @@ def list_devices() -> list[ListedDevice]:
     without one subprocess call per whitelist entry."""
     devices = []
     for line in _run("list-devices").splitlines():
-        match = _LIST_DEVICE_RE.match(line.strip())
+        match = _RULE_LINE_RE.match(line.strip())
         if match is None:
             continue
         devices.append(
@@ -90,6 +87,48 @@ def list_devices() -> list[ListedDevice]:
             )
         )
     return devices
+
+
+@dataclass(frozen=True)
+class ListedRule:
+    id: int
+    vid: str
+    pid: str
+    serial: str | None
+    target: str
+
+
+def list_rules() -> list[ListedRule]:
+    """Runs `usbguard list-rules` once, for finding a device's existing permanent rule(s) to remove."""
+    rules = []
+    for line in _run("list-rules").splitlines():
+        match = _RULE_LINE_RE.match(line.strip())
+        if match is None:
+            continue
+        rules.append(
+            ListedRule(
+                id=int(match.group("id")),
+                vid=match.group("vid").lower(),
+                pid=match.group("pid").lower(),
+                serial=match.group("serial") or None,
+                target=match.group("target").lower(),
+            )
+        )
+    return rules
+
+
+def remove_rule(rule_id: int) -> None:
+    _run("remove-rule", str(rule_id))
+
+
+def deauthorize_device(device: Device) -> None:
+    """Removes every existing permanent rule matching this device's identity, instead of writing an
+    explicit block rule: confirmed live that `block-device --permanent` silently no-ops against a
+    pre-existing conflicting `allow` rule (no error, rule left unchanged). With no rule left matching
+    the device, Enforce's ImplicitPolicyTarget blocks it by default."""
+    for rule in list_rules():
+        if rule.vid == device.vid and rule.pid == device.pid and rule.serial == device.serial:
+            remove_rule(rule.id)
 
 
 def set_implicit_policy_target(target: str) -> None:

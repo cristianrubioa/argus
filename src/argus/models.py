@@ -90,6 +90,9 @@ class DeviceEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     # USBGuard's own per-connection id — how PolicyApplied finds the row its Insert already created.
     usbguard_connection_id: Mapped[int | None] = mapped_column(nullable=True)
+    # Null until the provisional Insert decision is corrected once; after that, never touched again —
+    # a later policy change for the same connection creates a new row instead (main.py::_handle_policy_settled).
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     device: Mapped["Device"] = relationship(back_populates="events")
 
