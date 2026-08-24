@@ -10,10 +10,12 @@ from argus.agent import usbguard_cli
 from argus.models import AdminAction
 from argus.models import AdminActionType
 from argus.models import AgentStatus
+from argus.models import Device
 from argus.models import DeviceEvent
 from argus.models import PendingUsbguardAction
 from argus.models import Profile
 from argus.models import Settings
+from argus.models import WhitelistEntry
 
 _SETTINGS_ID = 1
 _HEARTBEAT_STALE_SECONDS = 30
@@ -154,20 +156,52 @@ def refresh_version_check(session: Session) -> None:
 
 
 def reconcile_profile(session: Session) -> None:
-    """Called from argus-agent's poll loop; applies a pending profile change to USBGuard, and
-    re-applies the implicit policy target if USBGuard's live state has drifted from it."""
+    """Called from argus-agent's poll loop; applies a pending profile change to USBGuard (syncing every
+    whitelist entry to a real rule on switch to Enforce), re-applies the implicit policy target if
+    USBGuard's live state has drifted from it, and reconciles live authorization drift for whitelisted
+    external devices."""
     settings = get_settings(session)
     desired_target = "block" if settings.profile == Profile.ENFORCE else "allow"
 
     if settings.profile != settings.applied_profile:
-        if settings.profile == Profile.ENFORCE and settings.enforce_bootstrapped_at is None:
-            usbguard_cli.generate_policy()
-            settings.enforce_bootstrapped_at = _utcnow()
+        if settings.profile == Profile.ENFORCE:
+            for entry in session.query(WhitelistEntry).all():
+                usbguard_cli.allow_device(entry.device)
 
         usbguard_cli.set_implicit_policy_target(desired_target)
         settings.applied_profile = settings.profile
         session.commit()
+    elif usbguard_cli.get_implicit_policy_target() != desired_target:
+        usbguard_cli.set_implicit_policy_target(desired_target)
+
+    _reconcile_whitelist_drift(session)
+
+
+def _reconcile_whitelist_drift(session: Session) -> None:
+    """Re-asserts live authorization for whitelisted external (hotplug) devices whose runtime state has
+    drifted from `allow`, without touching their saved rule. Internal/hardwired devices are never
+    touched, whitelisted or not (design.md decision #4)."""
+    entries = session.query(WhitelistEntry).all()
+    if not entries:
         return
 
-    if usbguard_cli.get_implicit_policy_target() != desired_target:
-        usbguard_cli.set_implicit_policy_target(desired_target)
+    listed_by_identity = {(d.vid, d.pid, d.serial): d for d in usbguard_cli.list_devices()}
+    for entry in entries:
+        device = entry.device
+        listed = listed_by_identity.get((device.vid, device.pid, device.serial))
+        if listed is None or not listed.hotplug:
+            continue
+        if listed.target != "allow":
+            usbguard_cli.allow_device_live(device)
+
+
+def unreviewed_devices(session: Session) -> list[Device]:
+    """Devices with at least one DeviceEvent but no WhitelistEntry — surfaced by the Enforce-transition
+    review modal before switching to Enforce."""
+    return (
+        session.query(Device)
+        .filter(Device.events.any())
+        .filter(~Device.whitelist_entry.has())
+        .order_by(Device.last_seen_at.desc())
+        .all()
+    )

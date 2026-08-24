@@ -1,11 +1,19 @@
 """Thin wrapper around the `usbguard` CLI — writes go through IPC, never rules.conf directly (decision #3)."""
 
 import logging
+import re
 import subprocess
+from dataclasses import dataclass
 
 from argus.models import Device
 
 logger = logging.getLogger(__name__)
+
+# e.g. `12: allow id 046d:c542 serial "" name "Wireless Receiver" hash "..." ... with-connect-type "hotplug"`
+_LIST_DEVICE_RE = re.compile(
+    r"^\d+:\s+(?P<target>\w+)\s+id\s+(?P<vid>[0-9a-fA-F]{4}):(?P<pid>[0-9a-fA-F]{4})"
+    r'.*?\bserial\s+"(?P<serial>[^"]*)".*?\bwith-connect-type\s+"(?P<connect_type>[^"]*)"'
+)
 
 # Ubuntu Noble's usbguard 1.1.2+ds-6build2 — the version parser.py and this module were validated against.
 TESTED_VERSION = "1.1.2"
@@ -43,6 +51,47 @@ def block_device(device: Device) -> None:
     _run("block-device", "--permanent", _partial_rule(device))
 
 
+def allow_device_live(device: Device) -> None:
+    """Non-permanent allow — corrects live runtime authorization without touching the saved rule.
+    Accepts the same vid:pid/serial partial-rule spec as the --permanent form (confirmed via
+    `usbguard allow-device --help` on the tested version: both take `<id> | <rule> | <partial-rule>`)."""
+    _run("allow-device", _partial_rule(device))
+
+
+def block_device_live(device: Device) -> None:
+    """Non-permanent block — see allow_device_live()."""
+    _run("block-device", _partial_rule(device))
+
+
+@dataclass(frozen=True)
+class ListedDevice:
+    vid: str
+    pid: str
+    serial: str | None
+    target: str
+    hotplug: bool
+
+
+def list_devices() -> list[ListedDevice]:
+    """Runs `usbguard list-devices` once, for reconciling live authorization against saved rules
+    without one subprocess call per whitelist entry."""
+    devices = []
+    for line in _run("list-devices").splitlines():
+        match = _LIST_DEVICE_RE.match(line.strip())
+        if match is None:
+            continue
+        devices.append(
+            ListedDevice(
+                vid=match.group("vid").lower(),
+                pid=match.group("pid").lower(),
+                serial=match.group("serial") or None,
+                target=match.group("target").lower(),
+                hotplug=match.group("connect_type") == "hotplug",
+            )
+        )
+    return devices
+
+
 def set_implicit_policy_target(target: str) -> None:
     """target is 'allow' (Monitor profile) or 'block' (Enforce profile)."""
     _run("set-parameter", "ImplicitPolicyTarget", target)
@@ -52,14 +101,6 @@ def get_implicit_policy_target() -> str:
     """set-parameter is runtime-only — a restart of usbguard.service outside of us reverts
     this to whatever's in usbguard-daemon.conf, regardless of what Argus last applied."""
     return _run("get-parameter", "ImplicitPolicyTarget").strip().lower()
-
-
-def generate_policy() -> None:
-    """Authorizes every connected device via IPC — bootstraps the whitelist on first switch to Enforce (decision #6)."""
-    for line in _run("generate-policy").splitlines():
-        line = line.strip()
-        if line:
-            _run("append-rule", line)
 
 
 def warn_if_untested_version() -> None:

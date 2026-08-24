@@ -3,6 +3,7 @@ import subprocess
 import pytest
 
 from argus.agent import usbguard_cli
+from argus.models import Device
 
 
 def test_run_raises_on_ipc_error_despite_exit_code_zero(monkeypatch):
@@ -16,24 +17,33 @@ def test_run_raises_on_ipc_error_despite_exit_code_zero(monkeypatch):
         usbguard_cli._run("append-rule", "allow id 1234:5678")
 
 
-def test_generate_policy_applies_every_line_via_append_rule(monkeypatch):
+def test_list_devices_parses_hotplug_and_hardwired_entries(monkeypatch):
     # Setup
-    policy_text = (
-        'allow id 058f:6387 serial "AAE9055C" name "Mass Storage"\nallow id 046d:c542 serial "" name "Wireless Receiver"\n'
+    output = (
+        '8: allow id 1d6b:0002 serial "0000:00:0d.0" name "xHCI Host Controller" hash "x" parent-hash "y" '
+        'via-port "usb1" with-interface 09:00:00 with-connect-type ""\n'
+        '12: block id 046d:c542 serial "" name "Wireless Receiver" hash "x" parent-hash "y" via-port "3-5" '
+        'with-interface 03:01:02 with-connect-type "hotplug"\n'
     )
-    calls = []
-
-    def fake_run(*args):
-        calls.append(args)
-        return policy_text if args[0] == "generate-policy" else ""
-
-    monkeypatch.setattr(usbguard_cli, "_run", fake_run)
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: output)
     # Action
-    usbguard_cli.generate_policy()
+    devices = usbguard_cli.list_devices()
     # Expected
-    assert calls[0] == ("generate-policy",)
-    assert calls[1] == ("append-rule", 'allow id 058f:6387 serial "AAE9055C" name "Mass Storage"')
-    assert calls[2] == ("append-rule", 'allow id 046d:c542 serial "" name "Wireless Receiver"')
+    assert devices == [
+        usbguard_cli.ListedDevice(vid="1d6b", pid="0002", serial="0000:00:0d.0", target="allow", hotplug=False),
+        usbguard_cli.ListedDevice(vid="046d", pid="c542", serial=None, target="block", hotplug=True),
+    ]
+
+
+def test_allow_device_live_omits_permanent_flag(monkeypatch):
+    # Setup
+    calls = []
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
+    device = Device(vid="046d", pid="c542", name="Wireless Receiver")
+    # Action
+    usbguard_cli.allow_device_live(device)
+    # Expected
+    assert calls == [("allow-device", "id 046d:c542")]
 
 
 def test_get_implicit_policy_target_strips_and_lowercases(monkeypatch):

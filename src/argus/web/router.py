@@ -179,8 +179,7 @@ def whitelist(request: Request, admin: str = Depends(require_admin), session: Se
     return render(request, session, "whitelist.html", {"admin": admin, "entries": entries, "active": "whitelist"})
 
 
-@router.post("/whitelist/authorize/{device_id}")
-def authorize_device(device_id: int, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+def _authorize_device(session: Session, admin: str, device_id: int) -> None:
     device = session.get(Device, device_id)
     if device is not None and device.whitelist_entry is None:
         session.add(WhitelistEntry(device_id=device.id, added_by=admin))
@@ -195,6 +194,11 @@ def authorize_device(device_id: int, admin: str = Depends(require_admin), sessio
             vid_pid=device.vid_pid,
             serial=device.serial,
         )
+
+
+@router.post("/whitelist/authorize/{device_id}")
+def authorize_device(device_id: int, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+    _authorize_device(session, admin, device_id)
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -416,7 +420,14 @@ def settings_page(request: Request, admin: str = Depends(require_admin), session
         request,
         session,
         "settings.html",
-        {"admin": admin, "settings": current, "active": "settings", "password_error": None, "password_success": False},
+        {
+            "admin": admin,
+            "settings": current,
+            "active": "settings",
+            "password_error": None,
+            "password_success": False,
+            "review_devices": None,
+        },
     )
 
 
@@ -430,9 +441,29 @@ def update_settings(
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
-    """Single confirm gate for the whole Settings form — every field commits together, or not at all."""
+    """Single confirm gate for the whole Settings form — every field commits together, or not at all.
+    Switching to Enforce with unreviewed devices in Monitor's history interrupts that gate: nothing in
+    this submission is saved yet, and the review modal is shown instead (design.md decision #2)."""
     old_profile = profiles.get_active_profile(session)
     new_profile = Profile(profile)
+    if new_profile == Profile.ENFORCE and old_profile != Profile.ENFORCE:
+        pending_review = profiles.unreviewed_devices(session)
+        if pending_review:
+            current = profiles.get_settings(session)
+            return render(
+                request,
+                session,
+                "settings.html",
+                {
+                    "admin": admin,
+                    "settings": current,
+                    "active": "settings",
+                    "password_error": None,
+                    "password_success": False,
+                    "review_devices": pending_review,
+                },
+            )
+
     profiles.request_profile(session, new_profile)
     if new_profile != old_profile:
         profiles.record_admin_action(
@@ -444,6 +475,25 @@ def update_settings(
         profiles.set_theme(session, theme)
     if font_size in FontSize:
         profiles.set_font_size(session, font_size)
+    return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/settings/enforce-review")
+def enforce_review(
+    request: Request,
+    device_ids: list[int] = Form(default=[]),
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    """Resolves the Enforce-transition review modal: authorizes whatever the admin checked (same path
+    as /whitelist/authorize), then applies the switch to Enforce. No second confirmation step."""
+    old_profile = profiles.get_active_profile(session)
+    for device_id in device_ids:
+        _authorize_device(session, admin, device_id)
+    profiles.request_profile(session, Profile.ENFORCE)
+    profiles.record_admin_action(
+        session, admin, AdminActionType.PROFILE_SWITCH, Profile.ENFORCE.value, source=old_profile.value
+    )
     return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -476,5 +526,6 @@ def update_password(
             "active": "settings",
             "password_error": password_error,
             "password_success": password_success,
+            "review_devices": None,
         },
     )
