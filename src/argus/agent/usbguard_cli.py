@@ -130,14 +130,21 @@ def deauthorize_device(device: Device) -> None:
     Also cuts the device's live authorization immediately if it's currently connected — confirmed live
     that removing the backing rule alone doesn't affect an already-authorized connection, only the next
     one. Unlike the drift-reconcile's external-only restriction, this isn't filtered by connect-type:
-    revoke is always a direct admin decision about one specific already-whitelisted device."""
-    for rule in list_rules():
-        if rule.vid == device.vid and rule.pid == device.pid and rule.serial == device.serial:
-            remove_rule(rule.id)
+    revoke is always a direct admin decision about one specific already-whitelisted device.
 
+    The live block runs *before* the rule removal, deliberately: removing the rule first (while the
+    connection is still live-allowed) produces one spurious event settling to UNRECOGNIZED — a real
+    but noisy intermediate state — before the live block produces a second event settling to BLOCKED.
+    Doing the live block first means there's one real transition (AUTHORIZED -> BLOCKED); if the rule
+    removal still triggers a notification afterward, it reports the state as already BLOCKED, which
+    main.py's settled-event handling treats as no change and doesn't duplicate."""
     is_connected = any(d.vid == device.vid and d.pid == device.pid and d.serial == device.serial for d in list_devices())
     if is_connected:
         block_device_live(device)
+
+    for rule in list_rules():
+        if rule.vid == device.vid and rule.pid == device.pid and rule.serial == device.serial:
+            remove_rule(rule.id)
 
 
 def set_implicit_policy_target(target: str) -> None:
