@@ -11,6 +11,10 @@ help:
 	@echo "  make mqtt-broker      Start a throwaway local Mosquitto broker for testing"
 	@echo "  make mqtt-watch       Watch messages on the local test broker"
 	@echo ""
+	@echo "  make deps             Install dependencies via Poetry (dev)"
+	@echo "  make run-web          Run argus-web locally with live reload (dev)"
+	@echo "  make run-agent        Run argus-agent locally (dev, needs usbguard installed)"
+	@echo ""
 	@echo "  make lint             Check style with ruff"
 	@echo "  make format           Format code with ruff"
 	@echo "  make fix              Auto-fix and format (also rebuilds static/app.css)"
@@ -41,6 +45,15 @@ mqtt-broker:
 
 mqtt-watch:
 	docker run --rm --network host eclipse-mosquitto mosquitto_sub -h localhost -t 'argus/#' -v
+
+deps:
+	poetry install
+
+run-web:
+	poetry run uvicorn argus.web.main:app --reload
+
+run-agent:
+	poetry run argus-agent
 
 lint:
 	ruff check .

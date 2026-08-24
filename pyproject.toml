@@ -3,6 +3,7 @@ name = "argus"
 version = "0.1.15"
 description = "USB device monitoring and control for home lab and workstation environments"
 authors = ["Cristian Rubio <cristianrubioa@gmail.com>"]
+license = "MIT"
 readme = "README.md"
 packages = [{include = "argus", from = "src"}]
 
