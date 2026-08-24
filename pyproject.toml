@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "argus"
-version = "0.1.9"
+version = "0.1.10"
 description = "USB device monitoring and control for home lab and workstation environments"
 authors = ["Cristian Rubio <cristianrubioa@gmail.com>"]
 readme = "README.md"
