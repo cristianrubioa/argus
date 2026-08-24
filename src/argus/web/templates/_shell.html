@@ -3,17 +3,22 @@
 <div class="flex flex-col h-screen">
 
   <header class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-6 flex items-center gap-3 shrink-0" style="height: var(--header-h)">
-    <div class="flex items-center gap-3 shrink-0" style="width: calc(var(--panel-w) - 1.5rem)">
+    <button id="sidebar-toggle" type="button" class="-ml-2 p-2 text-gray-700 dark:text-gray-300" aria-label="{{ t('nav_toggle_menu') }}" aria-expanded="false" aria-controls="sidebar">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div id="brand-block" class="flex items-center gap-3 shrink-0" style="width: calc(var(--panel-w) - 1.5rem)">
       <i class="fa-solid fa-eye text-2xl text-blue-500 dark:text-blue-400"></i>
       <span class="font-semibold tracking-wide leading-none" style="font-size: var(--app-name-size)">Argus</span>
       <span class="text-sm text-gray-600 dark:text-gray-500 font-normal">USB Device Monitor</span>
     </div>
-    <a class="crubio-home-link ml-auto" href="https://crubio.fyi">crubio.fyi</a>
+    <a class="crubio-home-link ml-auto text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300" href="https://crubio.fyi">crubio.fyi</a>
   </header>
 
   <div class="flex flex-1 min-h-0">
 
-    <aside class="flex flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900" style="width: var(--panel-w)">
+    <div id="sidebar-backdrop"></div>
+
+    <aside id="sidebar" class="flex flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900" style="width: var(--panel-w)">
       <nav class="flex-1 p-4 space-y-1">
         {% set nav_items = [
           ("/", "fa-gauge", t('nav_dashboard'), "dashboard"),
@@ -59,4 +64,24 @@
 
   </div>
 </div>
+
+<script>
+  (function () {
+    var toggleBtn = document.getElementById('sidebar-toggle');
+    var backdrop = document.getElementById('sidebar-backdrop');
+
+    function setOpen(open) {
+      document.body.classList.toggle('sidebar-open', open);
+      toggleBtn.setAttribute('aria-expanded', String(open));
+    }
+
+    toggleBtn.addEventListener('click', function () {
+      setOpen(!document.body.classList.contains('sidebar-open'));
+    });
+    backdrop.addEventListener('click', function () { setOpen(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
 {% endblock %}
