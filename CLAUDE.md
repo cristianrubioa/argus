@@ -29,6 +29,7 @@
 - Build test data with factories (`src/factories.py`, factory-boy) — not raw `Model.objects.create(...)` inline
 - JSON responses: assert the full body (`response.json() == {...}`), not membership of individual keys
 - One identity per test class: shared login goes in `setUp`, not repeated per test — split into separate classes when tests need different identities
+- Always mock `usbguard_cli` calls in tests, never let one reach the real subprocess — this dev machine has `usbguard` installed and will mask a missing mock that fails in CI. Sanity-check with `usbguard` stripped from `PATH` before trusting a green local run.
 
 
 ## Language
