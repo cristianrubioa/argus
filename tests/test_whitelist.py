@@ -32,7 +32,9 @@ def test_whitelist_page_labels_the_action_column(logged_in_client, session):
     assert '<th class="py-2 pr-4"></th>' not in response.text
 
 
-def test_authorize_in_monitor_profile_does_not_enqueue_usbguard_action(logged_in_client, session):
+def test_authorize_in_monitor_profile_still_enqueues_an_action(logged_in_client, session):
+    """Queuing happens regardless of profile now — apply_pending_actions() decides at apply time whether
+    to write a USBGuard rule (Enforce) or just log the resulting event (Monitor)."""
     # Setup
     device = DeviceFactory()
     # Action
@@ -40,7 +42,8 @@ def test_authorize_in_monitor_profile_does_not_enqueue_usbguard_action(logged_in
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert session.query(WhitelistEntry).filter_by(device_id=device.id).count() == 1
-    assert session.query(PendingUsbguardAction).count() == 0
+    pending = session.query(PendingUsbguardAction).filter_by(device_id=device.id).one()
+    assert pending.action == UsbguardAction.ALLOW
 
 
 def test_authorize_in_enforce_profile_enqueues_allow_action(logged_in_client, session):

@@ -158,8 +158,9 @@ def refresh_version_check(session: Session) -> None:
 def reconcile_profile(session: Session) -> None:
     """Called from argus-agent's poll loop; applies a pending profile change to USBGuard (syncing every
     whitelist entry to a real rule and cutting live access for every connected non-whitelisted device on
-    switch to Enforce), re-applies the implicit policy target if USBGuard's live state has drifted from
-    it, and reconciles live authorization drift for whitelisted external devices."""
+    switch to Enforce, or restoring live access to everything connected on switch to Monitor), re-applies
+    the implicit policy target if USBGuard's live state has drifted from it, and reconciles live
+    authorization drift for whitelisted external devices."""
     settings = get_settings(session)
     desired_target = "block" if settings.profile == Profile.ENFORCE else "allow"
 
@@ -173,6 +174,11 @@ def reconcile_profile(session: Session) -> None:
             # anything connected and not whitelisted before flipping the target, same ordering reason.
             whitelisted_identities = {(e.device.vid, e.device.pid, e.device.serial) for e in entries}
             usbguard_cli.block_live_devices_except(whitelisted_identities)
+        else:
+            # Same reasoning, mirrored: Monitor never blocks, so restore live access to everything
+            # connected before flipping the target — nothing should stay blocked from a prior Enforce
+            # session just because it hasn't reconnected yet.
+            usbguard_cli.allow_live_devices()
 
         usbguard_cli.set_implicit_policy_target(desired_target)
         settings.applied_profile = settings.profile
@@ -202,12 +208,28 @@ def _reconcile_whitelist_drift(session: Session) -> None:
 
 
 def unreviewed_devices(session: Session) -> list[Device]:
-    """Devices with at least one DeviceEvent but no WhitelistEntry — surfaced by the Enforce-transition
-    review modal before switching to Enforce."""
-    return (
+    """Devices with at least one DeviceEvent but no WhitelistEntry, and known (or currently confirmed) to
+    be external (hotplug) — internal/hardwired devices, and devices whose connect-type is unknown and not
+    currently connected, are never surfaced for review. Argus has no business managing authorization for
+    hardware that isn't a removable peripheral."""
+    candidates = (
         session.query(Device)
         .filter(Device.events.any())
         .filter(~Device.whitelist_entry.has())
         .order_by(Device.last_seen_at.desc())
         .all()
     )
+    unknown = [d for d in candidates if d.connect_type is None]
+    live_hotplug_identities: set[tuple[str, str, str | None]] = set()
+    if unknown:
+        try:
+            live_hotplug_identities = {(d.vid, d.pid, d.serial) for d in usbguard_cli.list_devices() if d.hotplug}
+        except usbguard_cli.UsbguardCliError:
+            pass
+
+    return [
+        device
+        for device in candidates
+        if device.connect_type == "hotplug"
+        or (device.connect_type is None and (device.vid, device.pid, device.serial) in live_hotplug_identities)
+    ]

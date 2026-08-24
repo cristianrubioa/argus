@@ -30,8 +30,8 @@ def test_list_devices_parses_hotplug_and_hardwired_entries(monkeypatch):
     devices = usbguard_cli.list_devices()
     # Expected
     assert devices == [
-        usbguard_cli.ListedDevice(vid="1d6b", pid="0002", serial="0000:00:0d.0", target="allow", hotplug=False),
-        usbguard_cli.ListedDevice(vid="046d", pid="c542", serial=None, target="block", hotplug=True),
+        usbguard_cli.ListedDevice(vid="1d6b", pid="0002", serial="0000:00:0d.0", target="allow", hotplug=False, id=8),
+        usbguard_cli.ListedDevice(vid="046d", pid="c542", serial=None, target="block", hotplug=True, id=12),
     ]
 
 
@@ -155,6 +155,36 @@ def test_block_live_devices_except_spares_only_whitelisted_identities(monkeypatc
     usbguard_cli.block_live_devices_except({("046d", "c542", None)})
     # Expected
     assert calls == [("block-device", 'id 058f:6387 serial "AAE9055C"')]
+
+
+def test_allow_live_devices_allows_only_non_allow_hotplug_devices(monkeypatch):
+    # Setup
+    devices = [
+        usbguard_cli.ListedDevice(vid="046d", pid="c542", serial=None, target="block", hotplug=True, id=1),
+        usbguard_cli.ListedDevice(vid="058f", pid="6387", serial="AAE9055C", target="allow", hotplug=True, id=2),
+    ]
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: devices)
+    calls = []
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
+    # Action
+    usbguard_cli.allow_live_devices()
+    # Expected
+    assert calls == [("allow-device", "id 046d:c542")]
+
+
+def test_allow_live_devices_never_touches_hardwired_devices(monkeypatch):
+    # Setup
+    devices = [
+        usbguard_cli.ListedDevice(vid="1d6b", pid="0002", serial="0000:00:0d.0", target="block", hotplug=False, id=8),
+        usbguard_cli.ListedDevice(vid="046d", pid="c542", serial=None, target="block", hotplug=True, id=1),
+    ]
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: devices)
+    calls = []
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
+    # Action
+    usbguard_cli.allow_live_devices()
+    # Expected
+    assert calls == [("allow-device", "id 046d:c542")]
 
 
 def test_block_live_devices_except_never_touches_hardwired_devices(monkeypatch):

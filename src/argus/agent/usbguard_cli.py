@@ -67,6 +67,9 @@ class ListedDevice:
     serial: str | None
     target: str
     hotplug: bool
+    # The live connection id list-devices reports for this device right now — defaults to 0 for callers
+    # that only care about identity/authorization, not correlating a new DeviceEvent to this connection.
+    id: int = 0
 
 
 def list_devices() -> list[ListedDevice]:
@@ -84,6 +87,7 @@ def list_devices() -> list[ListedDevice]:
                 serial=match.group("serial") or None,
                 target=match.group("target").lower(),
                 hotplug=match.group("connect_type") == "hotplug",
+                id=int(match.group("id")),
             )
         )
     return devices
@@ -165,6 +169,20 @@ def block_live_devices_except(whitelisted: set[tuple[str, str, str | None]]) -> 
         identity = (listed.vid, listed.pid, listed.serial)
         if identity not in whitelisted:
             _run("block-device", _partial_rule(listed.vid, listed.pid, listed.serial))
+
+
+def allow_live_devices() -> None:
+    """Restores live access for every currently-connected EXTERNAL (hotplug) device not already `allow`
+    — used when switching to Monitor, which never blocks anything. Mirrors block_live_devices_except():
+    USBGuard doesn't retroactively re-evaluate an already-connected device just because the implicit
+    policy target changed, so a device live-blocked under Enforce would otherwise stay blocked until it's
+    unplugged and reconnected. Filtered to hotplug only, same restriction and same reason as everywhere
+    else in this module — see CLAUDE.md's USBGuard Safety rule."""
+    for listed in list_devices():
+        if not listed.hotplug:
+            continue
+        if listed.target != "allow":
+            _run("allow-device", _partial_rule(listed.vid, listed.pid, listed.serial))
 
 
 def set_implicit_policy_target(target: str) -> None:

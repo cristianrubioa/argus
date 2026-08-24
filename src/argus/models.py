@@ -65,6 +65,8 @@ class Device(Base):
     name: Mapped[str] = mapped_column(String(255))
     serial: Mapped[str | None] = mapped_column(String(255), nullable=True)
     custom_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # USBGuard's own with-connect-type ("hotplug"/"hardwired"/""), captured from an Insert event.
+    connect_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 

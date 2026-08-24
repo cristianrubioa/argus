@@ -21,6 +21,7 @@ from argus.models import Decision
 from argus.models import Device
 from argus.models import DeviceEvent
 from argus.models import PendingUsbguardAction
+from argus.models import Profile
 from argus.models import UsbguardAction
 from argus.models import WhitelistEntry
 
@@ -39,12 +40,15 @@ def _utcnow() -> datetime:
 def _get_or_create_device(session: Session, parsed: ParsedEvent) -> Device:
     device = session.query(Device).filter_by(vid=parsed.vid, pid=parsed.pid, serial=parsed.serial).first()
     if device is None:
-        device = Device(vid=parsed.vid, pid=parsed.pid, name=parsed.name, serial=parsed.serial)
+        device = Device(
+            vid=parsed.vid, pid=parsed.pid, name=parsed.name, serial=parsed.serial, connect_type=parsed.connect_type
+        )
         session.add(device)
         session.flush()
     else:
         device.last_seen_at = _utcnow()
         device.name = parsed.name
+        device.connect_type = parsed.connect_type
     return device
 
 
@@ -80,34 +84,27 @@ def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
 
 def _handle_policy_settled(session: Session, settled: ParsedPolicySettled) -> None:
     """The first PolicyChanged/PolicyApplied for a connection settles its still-provisional Insert
-    decision in place. Once settled, a row is never mutated again — a later change (e.g. an admin
-    authorizing or revoking the device while it stays connected) creates a new row instead, so the
-    settled row keeps its original decision as a permanent record of what happened."""
+    decision in place. Once settled, a row is never mutated again by this path — a later change caused
+    by an admin action is recorded synchronously by apply_pending_actions() instead (not reactively here),
+    since nothing guarantees this watch-stream notification arrives in the same order Argus issued the
+    IPC calls that caused it (confirmed live: it doesn't)."""
     event = (
         session.query(DeviceEvent)
         .filter_by(usbguard_connection_id=settled.connection_id)
         .order_by(DeviceEvent.id.desc())
         .first()
     )
-    if event is None:
+    if event is None or event.settled_at is not None:
         return
 
     decision = _decide(session, event.device, settled.usbguard_blocked)
-
-    if event.settled_at is None:
-        event.settled_at = _utcnow()
-        if event.decision != decision:
-            event.decision = decision
-            session.commit()
-            publish_event(event, session)
-        else:
-            session.commit()
-        return
-
+    event.settled_at = _utcnow()
     if event.decision != decision:
-        new_event = _record_event(session, event.device, decision, settled.connection_id, settled_at=_utcnow())
+        event.decision = decision
         session.commit()
-        publish_event(new_event, session)
+        publish_event(event, session)
+    else:
+        session.commit()
 
 
 def _recently_recorded(session: Session, device: Device) -> bool:
@@ -134,14 +131,51 @@ def _record_event(
     return event
 
 
+def _record_resulting_event(session: Session, device: Device) -> None:
+    """After an admin authorize/revoke has been applied — a real USBGuard write in Enforce, or nothing
+    at all in Monitor — record the resulting event directly and synchronously, rather than waiting for
+    a usbguard watch notification. That notification isn't guaranteed to arrive in any particular order
+    relative to the IPC calls that caused it (confirmed live), so reacting to it here would race. A
+    no-op if the device isn't currently connected — nothing happened at the USB level to log yet."""
+    live = next(
+        (
+            d
+            for d in usbguard_cli.list_devices()
+            if d.vid == device.vid and d.pid == device.pid and d.serial == device.serial
+        ),
+        None,
+    )
+    if live is None:
+        return
+
+    decision = _decide(session, device, live.target == "block")
+    event = session.query(DeviceEvent).filter_by(usbguard_connection_id=live.id).order_by(DeviceEvent.id.desc()).first()
+
+    if event is not None and event.decision == decision:
+        return
+
+    if event is not None and event.settled_at is None:
+        event.decision = decision
+        event.settled_at = _utcnow()
+        session.commit()
+        publish_event(event, session)
+        return
+
+    new_event = _record_event(session, device, decision, live.id, settled_at=_utcnow())
+    session.commit()
+    publish_event(new_event, session)
+
+
 def apply_pending_actions(session: Session) -> None:
     pending = session.query(PendingUsbguardAction).filter_by(applied_at=None).all()
     for action in pending:
         try:
-            if action.action == UsbguardAction.ALLOW:
-                usbguard_cli.allow_device(action.device)
-            else:
-                usbguard_cli.deauthorize_device(action.device)
+            if profiles.get_active_profile(session) == Profile.ENFORCE:
+                if action.action == UsbguardAction.ALLOW:
+                    usbguard_cli.allow_device(action.device)
+                else:
+                    usbguard_cli.deauthorize_device(action.device)
+            _record_resulting_event(session, action.device)
             action.applied_at = _utcnow()
         except usbguard_cli.UsbguardCliError:
             logger.exception("Failed to apply pending USBGuard action for device %s", action.device.vid_pid)

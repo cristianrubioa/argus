@@ -15,6 +15,7 @@ _TARGET_NEW_RE = re.compile(r"^\s*target_new=(\w+)", re.MULTILINE)
 _ID_RE = re.compile(r"\bid\s+([0-9a-fA-F]{4}):([0-9a-fA-F]{4})\b")
 _NAME_RE = re.compile(r'\bname\s+"([^"]*)"')
 _SERIAL_RE = re.compile(r'\bserial\s+"([^"]*)"')
+_CONNECT_TYPE_RE = re.compile(r'\bwith-connect-type\s+"([^"]*)"')
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,7 @@ class ParsedEvent:
     name: str
     serial: str | None
     usbguard_blocked: bool
+    connect_type: str | None
 
 
 def parse_event_block(block: str) -> ParsedEvent | None:
@@ -47,6 +49,7 @@ def parse_event_block(block: str) -> ParsedEvent | None:
     name_match = _NAME_RE.search(block)
     serial_match = _SERIAL_RE.search(block)
     serial = serial_match.group(1) if serial_match else None
+    connect_type_match = _CONNECT_TYPE_RE.search(block)
 
     return ParsedEvent(
         connection_id=int(connection_id_match.group(1)),
@@ -55,6 +58,7 @@ def parse_event_block(block: str) -> ParsedEvent | None:
         name=name_match.group(1) if name_match else "Unknown device",
         serial=serial if serial else None,
         usbguard_blocked=target in ("block", "reject"),
+        connect_type=connect_type_match.group(1) if connect_type_match else None,
     )
 
 

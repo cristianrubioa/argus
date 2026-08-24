@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from argus import profiles
 from argus import version_check
+from argus.agent import usbguard_cli
 from argus.db import get_session
 from argus.models import AdminAction
 from argus.models import AdminActionType
@@ -183,8 +184,7 @@ def _authorize_device(session: Session, admin: str, device_id: int) -> None:
     device = session.get(Device, device_id)
     if device is not None and device.whitelist_entry is None:
         session.add(WhitelistEntry(device_id=device.id, added_by=admin))
-        if profiles.get_active_profile(session) == Profile.ENFORCE:
-            session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
+        session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
         session.commit()
         profiles.record_admin_action(
             session,
@@ -208,8 +208,7 @@ def revoke_device(device_id: int, admin: str = Depends(require_admin), session: 
     if device is not None and device.whitelist_entry is not None:
         vid_pid, serial, target = device.vid_pid, device.serial, device.display_name
         session.delete(device.whitelist_entry)
-        if profiles.get_active_profile(session) == Profile.ENFORCE:
-            session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.BLOCK))
+        session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.BLOCK))
         session.commit()
         profiles.record_admin_action(
             session, admin, AdminActionType.WHITELIST_REVOKE, target, vid_pid=vid_pid, serial=serial
@@ -431,6 +430,13 @@ def settings_page(request: Request, admin: str = Depends(require_admin), session
     )
 
 
+def _connected_identities() -> set[tuple[str, str, str | None]]:
+    try:
+        return {(d.vid, d.pid, d.serial) for d in usbguard_cli.list_devices()}
+    except usbguard_cli.UsbguardCliError:
+        return set()
+
+
 @router.post("/settings")
 def update_settings(
     request: Request,
@@ -449,6 +455,8 @@ def update_settings(
     if new_profile == Profile.ENFORCE and old_profile != Profile.ENFORCE:
         pending_review = profiles.unreviewed_devices(session)
         if pending_review:
+            connected = _connected_identities()
+            review_devices = [(d, (d.vid, d.pid, d.serial) in connected) for d in pending_review]
             current = profiles.get_settings(session)
             return render(
                 request,
@@ -460,7 +468,7 @@ def update_settings(
                     "active": "settings",
                     "password_error": None,
                     "password_success": False,
-                    "review_devices": pending_review,
+                    "review_devices": review_devices,
                 },
             )
 

@@ -17,6 +17,7 @@ class DeviceFactory(factory.alchemy.SQLAlchemyModelFactory):
     pid = factory.Sequence(lambda n: f"{(n * 7) % 0xFFFF:04x}")
     name = factory.Sequence(lambda n: f"Test Device {n}")
     serial = factory.Sequence(lambda n: f"SN{n}")
+    connect_type = "hotplug"
 
 
 class DeviceEventFactory(factory.alchemy.SQLAlchemyModelFactory):
