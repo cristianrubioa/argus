@@ -33,8 +33,6 @@ def test_whitelist_page_labels_the_action_column(logged_in_client, session):
 
 
 def test_authorize_in_monitor_profile_still_enqueues_an_action(logged_in_client, session):
-    """Queuing happens regardless of profile now — apply_pending_actions() decides at apply time whether
-    to write a USBGuard rule (Enforce) or just log the resulting event (Monitor)."""
     # Setup
     device = DeviceFactory()
     # Action

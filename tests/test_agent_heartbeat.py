@@ -38,6 +38,7 @@ def test_reconcile_failure_does_not_prevent_heartbeat(session, monkeypatch):
         raise usbguard_cli.UsbguardCliError("denied")
 
     monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: _fail())
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
     profiles.request_profile(session, Profile.ENFORCE)
     # Action
     profiles.record_agent_heartbeat(session)

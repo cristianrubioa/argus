@@ -194,10 +194,6 @@ def test_first_settle_reaches_authorized_when_device_is_whitelisted(session):
 
 
 def test_handle_policy_settled_never_touches_an_already_settled_event(session):
-    """A later policy-change notification for an already-settled connection is no longer this function's
-    job to react to — that's handled synchronously by apply_pending_actions() instead (see
-    tests/test_pending_actions.py), since nothing guarantees this notification's arrival order relative
-    to the IPC calls that caused it."""
     # Setup
     handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
     handle_event(session, _POLICY_APPLIED_SETTLED_BLOCK)

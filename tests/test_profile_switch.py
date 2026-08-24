@@ -115,6 +115,7 @@ def _stub_reconcile_noop(monkeypatch):
     monkeypatch.setattr(usbguard_cli, "allow_device", lambda device: None)
     monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
     monkeypatch.setattr(usbguard_cli, "get_implicit_policy_target", lambda: "allow")
+    monkeypatch.setattr(usbguard_cli, "allow_live_devices", lambda: None)
 
 
 def test_reconcile_reasserts_drifted_hotplug_device(session, monkeypatch):

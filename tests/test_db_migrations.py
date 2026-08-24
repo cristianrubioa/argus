@@ -9,7 +9,6 @@ from argus.models import Profile
 
 
 def _engine_missing_settled_at():
-    """A DB shaped like one that existed before settled_at was added to the model, with one pre-existing event."""
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     with engine.begin() as conn:
@@ -53,7 +52,7 @@ def test_settled_at_migration_is_idempotent_and_does_not_clobber_unsettled_rows(
             ),
             {"dec": Decision.BLOCKED.value, "p": Profile.ENFORCE.value},
         )
-    # Action — a second init_db must not raise, and must leave the freshly-inserted unsettled row alone
+    # Action
     init_db(bind_engine=engine)
     # Expected
     with engine.connect() as conn:
