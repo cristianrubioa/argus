@@ -64,7 +64,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_security_heading": "Security Profile",
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
-        "profile_monitor_desc": "Logs every device but never blocks. Unrecognized devices are flagged only.",
+        "profile_monitor_desc": (
+            "Logs every device but never blocks. Unrecognized devices are flagged only. "
+            "Switching here restores access to everything currently connected."
+        ),
         "profile_enforce_desc": "Blocks anything not on the whitelist at the kernel level.",
         "action_save": "Save",
         "settings_account_heading": "Account",
@@ -119,10 +122,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_heading": "Review unreviewed devices",
         "enforce_review_desc": (
             "These devices were seen while monitoring but were never added to the whitelist. "
-            "Whitelist the ones you want to keep working — anything left unchecked will be blocked once Enforce is active."
+            "Whitelist the ones you want to keep working — anything left unchecked will be "
+            "<strong>blocked</strong> once <strong>Enforce</strong> is active."
         ),
-        "enforce_review_whitelist_selected": "Whitelist selected & continue",
-        "enforce_review_continue": "Continue anyway",
+        "enforce_review_continue": "Continue",
+        "enforce_review_connected": "Connected now",
+        "enforce_review_not_connected": "Not connected",
     },
     "es": {
         "nav_dashboard": "Panel",
@@ -181,7 +186,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_security_heading": "Perfil de seguridad",
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
-        "profile_monitor_desc": "Registra cada dispositivo pero nunca bloquea. Solo se marcan los no reconocidos.",
+        "profile_monitor_desc": (
+            "Registra cada dispositivo pero nunca bloquea. Solo se marcan los no reconocidos. "
+            "Cambiar acá restaura el acceso a todo lo que esté conectado ahora mismo."
+        ),
         "profile_enforce_desc": "Bloquea a nivel del kernel todo lo que no esté en la lista blanca.",
         "action_save": "Guardar",
         "settings_account_heading": "Cuenta",
@@ -236,10 +244,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_heading": "Revisar dispositivos no revisados",
         "enforce_review_desc": (
             "Estos dispositivos se vieron durante el monitoreo pero nunca se agregaron a la lista blanca. "
-            "Poné en la lista blanca los que quieras conservar — los que dejes sin marcar se bloquearán al activar Enforce."
+            "Poné en la lista blanca los que quieras conservar — los que dejes sin marcar se "
+            "<strong>bloquearán</strong> al activar <strong>Enforce</strong>."
         ),
-        "enforce_review_whitelist_selected": "Poner en lista blanca y continuar",
-        "enforce_review_continue": "Continuar de todos modos",
+        "enforce_review_continue": "Continuar",
+        "enforce_review_connected": "Conectado ahora",
+        "enforce_review_not_connected": "No conectado",
     },
     "pt": {
         "nav_dashboard": "Painel",
@@ -298,7 +308,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_security_heading": "Perfil de segurança",
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
-        "profile_monitor_desc": "Registra todos os dispositivos, mas nunca bloqueia. Só sinaliza os não reconhecidos.",
+        "profile_monitor_desc": (
+            "Registra todos os dispositivos, mas nunca bloqueia. Só sinaliza os não reconhecidos. "
+            "Mudar para cá restaura o acesso a tudo que estiver conectado agora."
+        ),
         "profile_enforce_desc": "Bloqueia no nível do kernel tudo que não estiver na lista branca.",
         "action_save": "Salvar",
         "settings_account_heading": "Conta",
@@ -353,10 +366,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_heading": "Revisar dispositivos não revisados",
         "enforce_review_desc": (
             "Esses dispositivos foram vistos durante o monitoramento, mas nunca foram adicionados à lista branca. "
-            "Coloque na lista branca os que quiser manter — os desmarcados serão bloqueados quando o Enforce estiver ativo."
+            "Coloque na lista branca os que quiser manter — os desmarcados serão "
+            "<strong>bloqueados</strong> quando o <strong>Enforce</strong> estiver ativo."
         ),
-        "enforce_review_whitelist_selected": "Colocar na lista branca e continuar",
-        "enforce_review_continue": "Continuar mesmo assim",
+        "enforce_review_continue": "Continuar",
+        "enforce_review_connected": "Conectado agora",
+        "enforce_review_not_connected": "Não conectado",
     },
     "fr": {
         "nav_dashboard": "Tableau de bord",
@@ -415,7 +430,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_security_heading": "Profil de sécurité",
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
-        "profile_monitor_desc": "Journalise chaque appareil sans jamais bloquer. Signale seulement les non reconnus.",
+        "profile_monitor_desc": (
+            "Journalise chaque appareil sans jamais bloquer. Signale seulement les non reconnus. "
+            "Passer ici restaure l'accès à tout ce qui est actuellement connecté."
+        ),
         "profile_enforce_desc": "Bloque au niveau du noyau tout ce qui n'est pas sur la liste blanche.",
         "action_save": "Enregistrer",
         "settings_account_heading": "Compte",
@@ -470,10 +488,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_heading": "Vérifier les appareils non examinés",
         "enforce_review_desc": (
             "Ces appareils ont été détectés en mode surveillance mais n'ont jamais été ajoutés à la liste blanche. "
-            "Ajoutez ceux que vous voulez conserver — ceux qui restent décochés seront bloqués une fois Enforce actif."
+            "Ajoutez ceux que vous voulez conserver — ceux qui restent décochés seront "
+            "<strong>bloqués</strong> une fois <strong>Enforce</strong> actif."
         ),
-        "enforce_review_whitelist_selected": "Ajouter à la liste blanche et continuer",
-        "enforce_review_continue": "Continuer quand même",
+        "enforce_review_continue": "Continuer",
+        "enforce_review_connected": "Connecté actuellement",
+        "enforce_review_not_connected": "Non connecté",
     },
     "de": {
         "nav_dashboard": "Übersicht",
@@ -532,7 +552,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_security_heading": "Sicherheitsprofil",
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
-        "profile_monitor_desc": "Protokolliert jedes Gerät, blockiert aber nie. Nicht erkannte werden nur markiert.",
+        "profile_monitor_desc": (
+            "Protokolliert jedes Gerät, blockiert aber nie. Nicht erkannte werden nur markiert. "
+            "Der Wechsel hierher stellt den Zugriff auf alles derzeit Verbundene wieder her."
+        ),
         "profile_enforce_desc": "Blockiert auf Kernel-Ebene alles, was nicht auf der Whitelist steht.",
         "action_save": "Speichern",
         "settings_account_heading": "Konto",
@@ -587,10 +610,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_heading": "Nicht überprüfte Geräte überprüfen",
         "enforce_review_desc": (
             "Diese Geräte wurden während der Überwachung gesehen, aber nie zur Whitelist hinzugefügt. "
-            "Setzen Sie die auf die Whitelist, die Sie behalten möchten — unmarkierte werden bei Enforce blockiert."
+            "Setzen Sie die auf die Whitelist, die Sie behalten möchten — unmarkierte werden bei "
+            "<strong>Enforce</strong> <strong>blockiert</strong>."
         ),
-        "enforce_review_whitelist_selected": "Auf Whitelist setzen und fortfahren",
-        "enforce_review_continue": "Trotzdem fortfahren",
+        "enforce_review_continue": "Fortfahren",
+        "enforce_review_connected": "Jetzt verbunden",
+        "enforce_review_not_connected": "Nicht verbunden",
     },
 }
 
