@@ -10,6 +10,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Argus — Install</title>
+  <meta name="description" content="Argus is an open-source USB device monitor for Linux homelabs, built on USBGuard — every device that connects gets seen, approved, or blocked automatically." />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233b82f6' fill-rule='evenodd' d='M12 4C5 4 1 12 1 12s4 8 11 8 11-8 11-8-4-8-11-8Zm0 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -100,9 +101,9 @@
     /* ── Main ───────────────────────────────────────────── */
     main {
       flex: 1;
-      max-width: 880px;
+      max-width: 960px;
       margin: 0 auto;
-      padding: 3vh 1.5rem;
+      padding: 1.5vh 1.5rem 3vh;
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -112,7 +113,7 @@
     /* ── Hero ───────────────────────────────────────────── */
     .hero { margin-bottom: 3.75rem; text-align: center; }
     .hero-icon {
-      font-size: 2.75rem;
+      font-size: 3.25rem;
       color: var(--accent);
       margin-bottom: 1rem;
     }
@@ -131,7 +132,6 @@
       line-height: 1.25;
       margin-bottom: 0.75rem;
       letter-spacing: -0.02em;
-      white-space: nowrap;
     }
     .hero .tagline .accent { color: var(--accent); }
     .hero .sub { font-size: 1.1rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; }
@@ -239,6 +239,7 @@
       transition: color 0.2s, border-color 0.2s;
     }
     .link-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .link-btn i { font-size: 1rem; }
 
     /* ── Footer ─────────────────────────────────────────── */
     footer {
@@ -253,7 +254,7 @@
 
     /* ── Responsive ─────────────────────────────────────── */
     @media (max-width: 520px) {
-      .hero .tagline { font-size: 1.5rem; white-space: normal; }
+      .hero .tagline { font-size: 1.5rem; }
       .terminal-body { flex-direction: column; }
       .terminal-tab { font-size: 0.66rem; padding: 0.18rem 0.45rem; }
     }
@@ -315,7 +316,7 @@
 
   <footer>
     <p>
-      Made with <span style="color: #e55;">♥</span> by
+      Made with <span style="color: #e55; font-size: 1rem;">♥</span> by
       <a href="https://github.com/cristianrubioa" target="_blank" rel="noopener">@cristianrubioa</a>
     </p>
   </footer>
