@@ -125,10 +125,19 @@ def deauthorize_device(device: Device) -> None:
     """Removes every existing permanent rule matching this device's identity, instead of writing an
     explicit block rule: confirmed live that `block-device --permanent` silently no-ops against a
     pre-existing conflicting `allow` rule (no error, rule left unchanged). With no rule left matching
-    the device, Enforce's ImplicitPolicyTarget blocks it by default."""
+    the device, Enforce's ImplicitPolicyTarget blocks it by default on its next connection.
+
+    Also cuts the device's live authorization immediately if it's currently connected — confirmed live
+    that removing the backing rule alone doesn't affect an already-authorized connection, only the next
+    one. Unlike the drift-reconcile's external-only restriction, this isn't filtered by connect-type:
+    revoke is always a direct admin decision about one specific already-whitelisted device."""
     for rule in list_rules():
         if rule.vid == device.vid and rule.pid == device.pid and rule.serial == device.serial:
             remove_rule(rule.id)
+
+    is_connected = any(d.vid == device.vid and d.pid == device.pid and d.serial == device.serial for d in list_devices())
+    if is_connected:
+        block_device_live(device)
 
 
 def set_implicit_policy_target(target: str) -> None:

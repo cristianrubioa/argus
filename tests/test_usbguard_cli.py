@@ -72,6 +72,7 @@ def test_deauthorize_device_removes_every_matching_rule(monkeypatch):
         usbguard_cli.ListedRule(id=5, vid="046d", pid="c542", serial=None, target="allow"),
     ]
     monkeypatch.setattr(usbguard_cli, "list_rules", lambda: rules)
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
     removed = []
     monkeypatch.setattr(usbguard_cli, "remove_rule", lambda rule_id: removed.append(rule_id))
     # Action
@@ -85,12 +86,60 @@ def test_deauthorize_device_is_a_no_op_when_nothing_matches(monkeypatch):
     device = Device(vid="058f", pid="6387", name="Mass Storage", serial="AAE9055C")
     other_rule = usbguard_cli.ListedRule(id=5, vid="046d", pid="c542", serial=None, target="allow")
     monkeypatch.setattr(usbguard_cli, "list_rules", lambda: [other_rule])
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
     removed = []
     monkeypatch.setattr(usbguard_cli, "remove_rule", lambda rule_id: removed.append(rule_id))
     # Action
     usbguard_cli.deauthorize_device(device)
     # Expected
     assert removed == []
+
+
+def test_deauthorize_device_blocks_live_when_currently_connected(monkeypatch):
+    # Setup
+    device = Device(vid="058f", pid="6387", name="Mass Storage", serial="AAE9055C")
+    monkeypatch.setattr(usbguard_cli, "list_rules", lambda: [])
+    monkeypatch.setattr(
+        usbguard_cli,
+        "list_devices",
+        lambda: [usbguard_cli.ListedDevice(vid="058f", pid="6387", serial="AAE9055C", target="allow", hotplug=True)],
+    )
+    blocked = []
+    monkeypatch.setattr(usbguard_cli, "block_device_live", lambda d: blocked.append(d.vid_pid))
+    # Action
+    usbguard_cli.deauthorize_device(device)
+    # Expected
+    assert blocked == ["058f:6387"]
+
+
+def test_deauthorize_device_does_not_block_live_when_not_connected(monkeypatch):
+    # Setup
+    device = Device(vid="058f", pid="6387", name="Mass Storage", serial="AAE9055C")
+    monkeypatch.setattr(usbguard_cli, "list_rules", lambda: [])
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
+    blocked = []
+    monkeypatch.setattr(usbguard_cli, "block_device_live", lambda d: blocked.append(d.vid_pid))
+    # Action
+    usbguard_cli.deauthorize_device(device)
+    # Expected
+    assert blocked == []
+
+
+def test_deauthorize_device_blocks_live_for_internal_device_too(monkeypatch):
+    # Setup
+    device = Device(vid="30c9", pid="00ca", name="Integrated Camera", serial="0001")
+    monkeypatch.setattr(usbguard_cli, "list_rules", lambda: [])
+    monkeypatch.setattr(
+        usbguard_cli,
+        "list_devices",
+        lambda: [usbguard_cli.ListedDevice(vid="30c9", pid="00ca", serial="0001", target="allow", hotplug=False)],
+    )
+    blocked = []
+    monkeypatch.setattr(usbguard_cli, "block_device_live", lambda d: blocked.append(d.vid_pid))
+    # Action
+    usbguard_cli.deauthorize_device(device)
+    # Expected
+    assert blocked == ["30c9:00ca"]
 
 
 def test_allow_device_live_omits_permanent_flag(monkeypatch):
