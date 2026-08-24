@@ -1,6 +1,7 @@
 {% extends "_shell.html" %}
 {% block title %}Argus — {{ t('nav_settings') }}{% endblock %}
 {% block content %}
+{% include "_enforce_review_modal.html" %}
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_account_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('signed_in_as') }} <span class="text-gray-900 dark:text-gray-200">{{ admin }}</span></p>
 

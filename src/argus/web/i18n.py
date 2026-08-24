@@ -116,6 +116,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Update available:",
         "settings_software_unknown": "Version status unknown.",
         "settings_software_copy": "Copy",
+        "enforce_review_heading": "Review unreviewed devices",
+        "enforce_review_desc": (
+            "These devices were seen while monitoring but were never added to the whitelist. "
+            "Whitelist the ones you want to keep working — anything left unchecked will be blocked once Enforce is active."
+        ),
+        "enforce_review_whitelist_selected": "Whitelist selected & continue",
+        "enforce_review_continue": "Continue anyway",
     },
     "es": {
         "nav_dashboard": "Panel",
@@ -226,6 +233,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Actualización disponible:",
         "settings_software_unknown": "No se pudo verificar la versión.",
         "settings_software_copy": "Copiar",
+        "enforce_review_heading": "Revisar dispositivos no revisados",
+        "enforce_review_desc": (
+            "Estos dispositivos se vieron durante el monitoreo pero nunca se agregaron a la lista blanca. "
+            "Poné en la lista blanca los que quieras conservar — los que dejes sin marcar se bloquearán al activar Enforce."
+        ),
+        "enforce_review_whitelist_selected": "Poner en lista blanca y continuar",
+        "enforce_review_continue": "Continuar de todos modos",
     },
     "pt": {
         "nav_dashboard": "Painel",
@@ -336,6 +350,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Atualização disponível:",
         "settings_software_unknown": "Não foi possível verificar a versão.",
         "settings_software_copy": "Copiar",
+        "enforce_review_heading": "Revisar dispositivos não revisados",
+        "enforce_review_desc": (
+            "Esses dispositivos foram vistos durante o monitoramento, mas nunca foram adicionados à lista branca. "
+            "Coloque na lista branca os que quiser manter — os desmarcados serão bloqueados quando o Enforce estiver ativo."
+        ),
+        "enforce_review_whitelist_selected": "Colocar na lista branca e continuar",
+        "enforce_review_continue": "Continuar mesmo assim",
     },
     "fr": {
         "nav_dashboard": "Tableau de bord",
@@ -446,6 +467,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Mise à jour disponible :",
         "settings_software_unknown": "Impossible de vérifier la version.",
         "settings_software_copy": "Copier",
+        "enforce_review_heading": "Vérifier les appareils non examinés",
+        "enforce_review_desc": (
+            "Ces appareils ont été détectés en mode surveillance mais n'ont jamais été ajoutés à la liste blanche. "
+            "Ajoutez ceux que vous voulez conserver — ceux qui restent décochés seront bloqués une fois Enforce actif."
+        ),
+        "enforce_review_whitelist_selected": "Ajouter à la liste blanche et continuer",
+        "enforce_review_continue": "Continuer quand même",
     },
     "de": {
         "nav_dashboard": "Übersicht",
@@ -556,6 +584,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Update verfügbar:",
         "settings_software_unknown": "Version konnte nicht geprüft werden.",
         "settings_software_copy": "Kopieren",
+        "enforce_review_heading": "Nicht überprüfte Geräte überprüfen",
+        "enforce_review_desc": (
+            "Diese Geräte wurden während der Überwachung gesehen, aber nie zur Whitelist hinzugefügt. "
+            "Setzen Sie die auf die Whitelist, die Sie behalten möchten — unmarkierte werden bei Enforce blockiert."
+        ),
+        "enforce_review_whitelist_selected": "Auf Whitelist setzen und fortfahren",
+        "enforce_review_continue": "Trotzdem fortfahren",
     },
 }
 
