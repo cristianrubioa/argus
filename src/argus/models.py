@@ -56,6 +56,12 @@ class FontSize(enum.StrEnum):
     LG = "lg"
 
 
+class VersionStatus(enum.StrEnum):
+    UNKNOWN = "unknown"
+    UPDATE_AVAILABLE = "update_available"
+    UP_TO_DATE = "up_to_date"
+
+
 class Device(Base):
     __tablename__ = "devices"
 

@@ -62,7 +62,7 @@ def test_sort_by_serial_descending(logged_in_client, session):
 
 
 def test_second_page_returns_the_next_20_excluding_the_first_page(logged_in_client, session):
-    # Setup — 25 events, newest (Device 0) first under the default occurred_at desc sort
+    # Setup
     _seed_events(25)
     # Action
     first_page = logged_in_client.get("/logs")
@@ -81,18 +81,18 @@ def test_request_without_page_param_defaults_to_page_1(logged_in_client, session
     _seed_events(25)
     # Action
     response = logged_in_client.get("/logs", params={"q": "Device"})
-    # Expected — a filter submission (no page param) always lands on page 1
+    # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Device 00" in response.text
     assert "Device 20" not in response.text
 
 
 def test_sort_is_preserved_on_the_next_page(logged_in_client, session):
-    # Setup — zero-padded names 00..24 so ascending lexical order matches numeric order
+    # Setup
     _seed_events(25)
     # Action
     response = logged_in_client.get("/logs", params={"sort": "name", "dir": "asc", "page": 2})
-    # Expected — page 2 of an ascending sort holds the last 5 (20..24), not the first 20
+    # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Device 20" in response.text
     assert "Device 24" in response.text

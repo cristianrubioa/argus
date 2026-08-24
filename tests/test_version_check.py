@@ -69,7 +69,7 @@ def test_refresh_failure_preserves_previous_value(session, monkeypatch):
     monkeypatch.setattr(version_check, "fetch_latest_version", lambda: None)
     # Action
     profiles.refresh_version_check(session)
-    # Expected — the failed attempt didn't clear the last known good value, but did record the attempt
+    # Expected
     settings = profiles.get_settings(session)
     assert settings.latest_version_available == "0.4.0"
     assert profiles._as_aware(settings.version_checked_at) > datetime.now(timezone.utc) - timedelta(seconds=5)

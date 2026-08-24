@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from dataclasses import replace
 
 from argus.models import Device
+from argus.models import UsbguardAction
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +174,7 @@ def block_live_devices_except(whitelisted: set[tuple[str, str, str | None]]) -> 
         if identity not in whitelisted:
             _run("block-device", _partial_rule(listed.vid, listed.pid, listed.serial))
             # listed.target still reflects the pre-write read — the caller needs the post-write state.
-            blocked.append(replace(listed, target="block"))
+            blocked.append(replace(listed, target=UsbguardAction.BLOCK))
     return blocked
 
 
@@ -191,7 +192,7 @@ def allow_live_devices() -> list[ListedDevice]:
         if listed.target != "allow":
             _run("allow-device", _partial_rule(listed.vid, listed.pid, listed.serial))
             # listed.target still reflects the pre-write read — the caller needs the post-write state.
-            restored.append(replace(listed, target="allow"))
+            restored.append(replace(listed, target=UsbguardAction.ALLOW))
     return restored
 
 

@@ -90,6 +90,6 @@ def test_second_prune_within_a_day_is_a_no_op(session, monkeypatch):
     first_prune_at = profiles.get_settings(session).last_log_prune_at
     DeviceEventFactory(occurred_at=_days_ago(31))
     profiles.prune_old_events(session)
-    # Expected — the second call is a no-op: the newly added old event survives, timestamp unchanged
+    # Expected
     assert session.query(DeviceEvent).count() == 1
     assert profiles.get_settings(session).last_log_prune_at == first_prune_at

@@ -51,7 +51,7 @@ def test_lockout_after_max_failed_attempts(client, session):
     session.commit()
     for _ in range(5):
         client.post("/login", data={"username": "admin", "password": "wrong"})
-    # Action — correct password, but the source is already locked out
+    # Action
     response = client.post("/login", data={"username": "admin", "password": "secret"})
     # Expected
     assert response.status_code == status.HTTP_200_OK
@@ -66,7 +66,7 @@ def test_successful_login_resets_failure_count(client, session):
     for _ in range(4):
         client.post("/login", data={"username": "admin", "password": "wrong"})
     client.post("/login", data={"username": "admin", "password": "secret"})
-    # Action — 4 more failures after the reset shouldn't reach the lockout threshold
+    # Action
     for _ in range(3):
         client.post("/login", data={"username": "admin", "password": "wrong"})
     response = client.post("/login", data={"username": "admin", "password": "wrong"})
@@ -96,11 +96,11 @@ def test_login_error_is_localized(client, session):
     assert "Usuario o contraseña incorrectos" in response.text
 
 
-def test_stale_login_attempts_are_pruned():
-    # Setup — a source with no activity in over an hour
+def test_stale_login_attempts_are_pruned_opportunistically_by_any_failure():
+    # Setup
     old_attempt_at = datetime.now(timezone.utc) - timedelta(hours=2)
     auth._login_attempts["1.2.3.4"] = (1, None, old_attempt_at)
-    # Action — a failure from a different source opportunistically prunes stale entries
+    # Action
     auth.record_failure("5.6.7.8")
     # Expected
     assert "1.2.3.4" not in auth._login_attempts

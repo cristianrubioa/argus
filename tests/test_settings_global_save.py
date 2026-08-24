@@ -11,16 +11,17 @@ def test_single_submit_commits_all_fields_together(logged_in_client, session):
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert profiles.get_active_profile(session) == Profile.ENFORCE
-    assert profiles.get_language(session) == "es"
-    assert profiles.get_theme(session) == "light"
-    assert profiles.get_font_size(session) == "lg"
+    assert (
+        profiles.get_active_profile(session),
+        profiles.get_language(session),
+        profiles.get_theme(session),
+        profiles.get_font_size(session),
+    ) == (Profile.ENFORCE, "es", "light", "lg")
 
 
-def test_settings_config_fields_are_a_single_form(logged_in_client, session):
+def test_settings_config_fields_share_one_form_separate_from_the_password_form(logged_in_client, session):
     # Action
     response = logged_in_client.get("/settings")
-    # Expected — the config fields (profile/language/theme/font size) share one form;
-    # change-password is deliberately a separate form, so this doesn't count total <form> tags
+    # Expected
     assert response.status_code == status.HTTP_200_OK
     assert response.text.count('action="/settings"') == 1

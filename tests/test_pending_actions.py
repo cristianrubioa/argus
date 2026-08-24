@@ -64,6 +64,21 @@ def test_enforce_block_calls_deauthorize_device_and_records_blocked(session, mon
     assert event.decision == Decision.BLOCKED
 
 
+def test_reject_target_is_recorded_as_blocked(session, monkeypatch):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "deauthorize_device", lambda device: None)
+    device = DeviceFactory()
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [_listed(device, "reject")])
+    profiles.request_profile(session, Profile.ENFORCE)
+    session.add(PendingUsbguardAction(device=device, action=UsbguardAction.BLOCK))
+    session.commit()
+    # Action
+    apply_pending_actions(session)
+    # Expected
+    event = session.query(DeviceEvent).one()
+    assert event.decision == Decision.BLOCKED
+
+
 def test_monitor_allow_writes_no_rule_and_records_authorized(session, monkeypatch):
     # Setup
     monkeypatch.setattr(usbguard_cli, "allow_device", _fail_if_called)

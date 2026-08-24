@@ -5,6 +5,12 @@ from argus import version_check
 from argus.web import i18n
 
 
+def _force_version_recheck(session):
+    """logged_in_client's login already consumed the first (unset) version check; clear it so the next request re-checks."""
+    profiles.get_settings(session).version_checked_at = None
+    session.commit()
+
+
 def test_sidebar_shows_bare_version_with_no_pill_by_default(logged_in_client):
     # Action
     response = logged_in_client.get("/")
@@ -16,10 +22,9 @@ def test_sidebar_shows_bare_version_with_no_pill_by_default(logged_in_client):
 
 
 def test_sidebar_shows_up_to_date_pill(logged_in_client, session, monkeypatch):
-    # Setup — logged_in_client's login already consumed the first (unset) check, so force a re-check
+    # Setup
     monkeypatch.setattr(version_check, "fetch_latest_version", lambda: version_check.installed_version())
-    profiles.get_settings(session).version_checked_at = None
-    session.commit()
+    _force_version_recheck(session)
     # Action
     response = logged_in_client.get("/")
     # Expected
@@ -29,10 +34,9 @@ def test_sidebar_shows_up_to_date_pill(logged_in_client, session, monkeypatch):
 
 
 def test_sidebar_shows_update_available_pill_linking_to_settings(logged_in_client, session, monkeypatch):
-    # Setup — logged_in_client's login already consumed the first (unset) check, so force a re-check
+    # Setup
     monkeypatch.setattr(version_check, "fetch_latest_version", lambda: "99.0.0")
-    profiles.get_settings(session).version_checked_at = None
-    session.commit()
+    _force_version_recheck(session)
     # Action
     response = logged_in_client.get("/")
     # Expected
@@ -44,8 +48,7 @@ def test_sidebar_shows_update_available_pill_linking_to_settings(logged_in_clien
 def test_footer_renders_after_version_badge(logged_in_client):
     # Action
     response = logged_in_client.get("/")
-    # Expected — the footer signature must appear after the version badge in document order,
-    # confirming it's still the last sidebar element (mt-auto keeps it pinned to the bottom)
+    # Expected
     text = response.text
     version_index = text.index(f"v{version_check.installed_version()}")
     footer_index = text.index(i18n.TRANSLATIONS["en"]["footer_made_with"])
@@ -53,10 +56,9 @@ def test_footer_renders_after_version_badge(logged_in_client):
 
 
 def test_stale_cache_is_refreshed_on_page_load(logged_in_client, session, monkeypatch):
-    # Setup — logged_in_client's login already consumed the first (unset) check, so force a re-check
+    # Setup
     monkeypatch.setattr(version_check, "fetch_latest_version", lambda: "0.9.0")
-    profiles.get_settings(session).version_checked_at = None
-    session.commit()
+    _force_version_recheck(session)
     # Action
     logged_in_client.get("/")
     # Expected

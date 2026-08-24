@@ -25,20 +25,20 @@ def test_publish_skipped_when_no_broker_configured(session, monkeypatch):
 def test_publish_failure_does_not_raise(session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
 
     def _boom(*args, **kwargs):
         raise ConnectionError("broker unreachable")
 
     monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", _boom)
-    # Action & Expected: must not raise
+    # Action & Expected
     mqtt_bridge.publish_event(event, session)
 
 
 def test_topic_includes_hostname(session, monkeypatch):
     # Setup
     event = DeviceEventFactory(decision=Decision.BLOCKED)
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
     calls = []
     monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda topic, **k: calls.append(topic))
     # Action
@@ -50,7 +50,7 @@ def test_topic_includes_hostname(session, monkeypatch):
 def test_payload_includes_timestamp_and_profile(session, monkeypatch):
     # Setup
     event = DeviceEventFactory(decision=Decision.AUTHORIZED, profile=Profile.ENFORCE)
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
     calls = []
     monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda topic, payload, **k: calls.append(payload))
     # Action
@@ -65,21 +65,20 @@ def test_payload_includes_timestamp_and_profile(session, monkeypatch):
 def test_successful_publish_records_ok_status(session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
     monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda *a, **k: None)
     # Action
     mqtt_bridge.publish_event(event, session)
     # Expected
     settings = profiles.get_settings(session)
-    assert settings.mqtt_last_publish_ok is True
-    assert settings.mqtt_last_error is None
+    assert (settings.mqtt_last_publish_ok, settings.mqtt_last_error) == (True, None)
     assert settings.mqtt_last_publish_at is not None
 
 
 def test_failed_publish_records_error(session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
 
     def _boom(*args, **kwargs):
         raise ConnectionError("broker unreachable")
@@ -96,7 +95,7 @@ def test_failed_publish_records_error(session, monkeypatch):
 def test_publish_timeout_does_not_block_and_records_failure(session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
     monkeypatch.setattr(mqtt_bridge, "_PUBLISH_TIMEOUT_SECONDS", 0.05)
 
     def _hang(*args, **kwargs):
@@ -107,7 +106,7 @@ def test_publish_timeout_does_not_block_and_records_failure(session, monkeypatch
     started_at = time.monotonic()
     mqtt_bridge.publish_event(event, session)
     elapsed = time.monotonic() - started_at
-    # Expected — returns promptly instead of blocking for the full hang duration
+    # Expected
     assert elapsed < 1
     settings = profiles.get_settings(session)
     assert settings.mqtt_last_publish_ok is False
@@ -124,7 +123,7 @@ def test_settings_shows_never_attempted_by_default(logged_in_client):
 def test_settings_shows_success_status(logged_in_client, session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
     monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda *a, **k: None)
     mqtt_bridge.publish_event(event, session)
     # Action
@@ -136,7 +135,7 @@ def test_settings_shows_success_status(logged_in_client, session, monkeypatch):
 def test_settings_shows_failure_status(logged_in_client, session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
-    monkeypatch.setattr(config, "mqtt_config", lambda: {"host": "localhost", "port": 1883, "topic_prefix": "argus"})
+    monkeypatch.setattr(config, "mqtt_config", lambda: config.MqttConfig(host="localhost", port=1883, topic_prefix="argus"))
 
     def _boom(*args, **kwargs):
         raise ConnectionError("broker unreachable")

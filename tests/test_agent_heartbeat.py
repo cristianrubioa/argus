@@ -25,7 +25,7 @@ def test_agent_status_is_stale_after_threshold(session):
     # Setup
     profiles.record_agent_heartbeat(session)
     settings = profiles.get_settings(session)
-    # Action — backdate the stored heartbeat past the staleness threshold
+    # Action
     settings.agent_last_heartbeat_at = datetime.now(timezone.utc) - timedelta(seconds=profiles._HEARTBEAT_STALE_SECONDS + 1)
     session.commit()
     # Expected

@@ -1,7 +1,10 @@
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.pool import StaticPool
 
+from argus import db
 from argus.db import Base
 from argus.db import init_db
 from argus.models import Decision
@@ -58,3 +61,25 @@ def test_settled_at_migration_is_idempotent_and_does_not_clobber_unsettled_rows(
     with engine.connect() as conn:
         row = conn.execute(text("SELECT settled_at FROM device_events WHERE id = 2")).one()
     assert row.settled_at is None
+
+
+def test_add_missing_columns_reraises_an_unrelated_operational_error():
+    # Setup
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE admin_actions"))
+    # Action & Expected
+    with pytest.raises(OperationalError, match="no such table"):
+        db._add_missing_columns(engine)
+
+
+def test_add_device_events_settled_at_reraises_an_unrelated_operational_error():
+    # Setup
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE device_events"))
+    # Action & Expected
+    with pytest.raises(OperationalError, match="no such table"):
+        db._add_device_events_settled_at(engine)

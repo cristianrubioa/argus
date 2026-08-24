@@ -90,10 +90,12 @@ def test_event_recorded_with_full_device_attributes(session):
     handle_event(session, _INSERT_BLOCKED_WITH_SERIAL)
     # Expected
     device = session.query(Device).one()
-    assert device.vid_pid == "058f:6387"
-    assert device.serial == "AAE9055C"
-    assert device.name == "Mass Storage"
-    assert device.connect_type == "hotplug"
+    assert (device.vid_pid, device.serial, device.name, device.connect_type) == (
+        "058f:6387",
+        "AAE9055C",
+        "Mass Storage",
+        "hotplug",
+    )
     event = session.query(DeviceEvent).one()
     assert event.decision == Decision.BLOCKED
 

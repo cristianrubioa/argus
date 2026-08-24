@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter
@@ -23,6 +24,7 @@ from argus.models import PendingUsbguardAction
 from argus.models import Profile
 from argus.models import Theme
 from argus.models import UsbguardAction
+from argus.models import VersionStatus
 from argus.models import WhitelistEntry
 from argus.web import listing
 from argus.web.auth import admin_exists
@@ -38,6 +40,8 @@ from argus.web.i18n import LANGUAGE_NAMES
 from argus.web.i18n import SUPPORTED_LANGUAGES
 from argus.web.i18n import t as translate
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 register_router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -51,12 +55,12 @@ def _version_state(session: Session) -> dict:
     settings = profiles.get_settings(session)
     installed = version_check.installed_version()
     if settings.latest_version_available is None:
-        status = "unknown"
+        version_status = VersionStatus.UNKNOWN
     elif version_check.is_newer(settings.latest_version_available, installed):
-        status = "update_available"
+        version_status = VersionStatus.UPDATE_AVAILABLE
     else:
-        status = "up_to_date"
-    return {"installed": installed, "status": status, "latest": settings.latest_version_available}
+        version_status = VersionStatus.UP_TO_DATE
+    return {"installed": installed, "status": version_status, "latest": settings.latest_version_available}
 
 
 def render(request: Request, session: Session, name: str, context: dict):
@@ -412,28 +416,34 @@ def logs_partial(
 # --- Settings ---
 
 
+def _settings_context(
+    admin: str,
+    session: Session,
+    *,
+    review_devices=None,
+    password_error: str | None = None,
+    password_success: bool = False,
+) -> dict:
+    return {
+        "admin": admin,
+        "settings": profiles.get_settings(session),
+        "active": "settings",
+        "password_error": password_error,
+        "password_success": password_success,
+        "review_devices": review_devices,
+    }
+
+
 @router.get("/settings")
 def settings_page(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
-    current = profiles.get_settings(session)
-    return render(
-        request,
-        session,
-        "settings.html",
-        {
-            "admin": admin,
-            "settings": current,
-            "active": "settings",
-            "password_error": None,
-            "password_success": False,
-            "review_devices": None,
-        },
-    )
+    return render(request, session, "settings.html", _settings_context(admin, session))
 
 
 def _connected_identities() -> set[tuple[str, str, str | None]]:
     try:
         return {(d.vid, d.pid, d.serial) for d in usbguard_cli.list_devices()}
     except usbguard_cli.UsbguardCliError:
+        logger.warning("Could not list live USBGuard devices for the enforce-review connected-status check")
         return set()
 
 
@@ -457,19 +467,8 @@ def update_settings(
         if pending_review:
             connected = _connected_identities()
             review_devices = [(d, (d.vid, d.pid, d.serial) in connected) for d in pending_review]
-            current = profiles.get_settings(session)
             return render(
-                request,
-                session,
-                "settings.html",
-                {
-                    "admin": admin,
-                    "settings": current,
-                    "active": "settings",
-                    "password_error": None,
-                    "password_success": False,
-                    "review_devices": review_devices,
-                },
+                request, session, "settings.html", _settings_context(admin, session, review_devices=review_devices)
             )
 
     profiles.request_profile(session, new_profile)
@@ -523,17 +522,9 @@ def update_password(
     else:
         password_success = True
 
-    current = profiles.get_settings(session)
     return render(
         request,
         session,
         "settings.html",
-        {
-            "admin": admin,
-            "settings": current,
-            "active": "settings",
-            "password_error": password_error,
-            "password_success": password_success,
-            "review_devices": None,
-        },
+        _settings_context(admin, session, password_error=password_error, password_success=password_success),
     )

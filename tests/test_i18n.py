@@ -35,7 +35,7 @@ def test_init_db_is_idempotent_on_a_database_that_already_has_language():
     # Setup
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
-    # Action — running init_db again on a DB that already has the column must not raise
+    # Action
     init_db(bind_engine=engine)
     # Expected
     with engine.connect() as conn:

@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -16,7 +17,10 @@ from argus.models import DeviceEvent
 from argus.models import PendingUsbguardAction
 from argus.models import Profile
 from argus.models import Settings
+from argus.models import UsbguardAction
 from argus.models import WhitelistEntry
+
+logger = logging.getLogger(__name__)
 
 _SETTINGS_ID = 1
 _HEARTBEAT_STALE_SECONDS = 30
@@ -182,7 +186,7 @@ def record_event_for_listed(session: Session, device: Device, listed: usbguard_c
     """Given an already-known live match, decide and record the resulting event — correcting a still-
     provisional row in place, creating a new settled row if the most recent one already settled to a
     different decision, or no-op if it already matches. Returns the event created/updated, or None."""
-    computed = decide(session, device, listed.target == "block")
+    computed = decide(session, device, listed.target in ("block", "reject"))
     event = session.query(DeviceEvent).filter_by(usbguard_connection_id=listed.id).order_by(DeviceEvent.id.desc()).first()
 
     if event is not None and event.decision == computed:
@@ -227,7 +231,7 @@ def reconcile_profile(session: Session) -> list[DeviceEvent]:
     sweep, for the caller to publish — this module can't import publish_event (mqtt_bridge already
     imports profiles, so the reverse import would cycle)."""
     settings = get_settings(session)
-    desired_target = "block" if settings.profile == Profile.ENFORCE else "allow"
+    desired_target = UsbguardAction.BLOCK if settings.profile == Profile.ENFORCE else UsbguardAction.ALLOW
     events: list[DeviceEvent] = []
 
     if settings.profile != settings.applied_profile:
@@ -300,7 +304,7 @@ def unreviewed_devices(session: Session) -> list[Device]:
         try:
             live_hotplug_identities = {(d.vid, d.pid, d.serial) for d in usbguard_cli.list_devices() if d.hotplug}
         except usbguard_cli.UsbguardCliError:
-            pass
+            logger.warning("Could not list live USBGuard devices while checking unreviewed devices")
 
     return [
         device

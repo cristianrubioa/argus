@@ -18,12 +18,14 @@ def test_authorize_records_whitelist_authorize_action(logged_in_client, session)
     logged_in_client.post(f"/whitelist/authorize/{device.id}")
     # Expected
     action = session.query(AdminAction).one()
-    assert action.actor == "admin"
-    assert action.action_type == AdminActionType.WHITELIST_AUTHORIZE
-    assert action.vid_pid == device.vid_pid
-    assert action.serial == device.serial
-    assert action.source is None
-    assert action.target == "Mass Storage"
+    assert (action.actor, action.action_type, action.vid_pid, action.serial, action.source, action.target) == (
+        "admin",
+        AdminActionType.WHITELIST_AUTHORIZE,
+        device.vid_pid,
+        device.serial,
+        None,
+        "Mass Storage",
+    )
 
 
 def test_revoke_records_whitelist_revoke_action_that_survives_entry_deletion(logged_in_client, session):
@@ -34,10 +36,12 @@ def test_revoke_records_whitelist_revoke_action_that_survives_entry_deletion(log
     logged_in_client.post(f"/whitelist/revoke/{device.id}")
     # Expected
     revoke_action = session.query(AdminAction).filter_by(action_type=AdminActionType.WHITELIST_REVOKE).one()
-    assert revoke_action.actor == "admin"
-    assert revoke_action.vid_pid == device.vid_pid
-    assert revoke_action.serial == device.serial
-    assert revoke_action.target == "Mass Storage"
+    assert (revoke_action.actor, revoke_action.vid_pid, revoke_action.serial, revoke_action.target) == (
+        "admin",
+        device.vid_pid,
+        device.serial,
+        "Mass Storage",
+    )
     assert device.whitelist_entry is None
 
 
@@ -49,10 +53,12 @@ def test_rename_records_device_rename_action_with_before_and_after(logged_in_cli
     logged_in_client.post(f"/whitelist/rename/{device.id}", data={"custom_name": "Backup SSD"})
     # Expected
     action = session.query(AdminAction).filter_by(action_type=AdminActionType.DEVICE_RENAME).one()
-    assert action.vid_pid == device.vid_pid
-    assert action.serial == device.serial
-    assert action.source == "Mass Storage"
-    assert action.target == "Backup SSD"
+    assert (action.vid_pid, action.serial, action.source, action.target) == (
+        device.vid_pid,
+        device.serial,
+        "Mass Storage",
+        "Backup SSD",
+    )
 
 
 def test_renaming_to_the_same_name_records_nothing(logged_in_client, session):
@@ -60,7 +66,7 @@ def test_renaming_to_the_same_name_records_nothing(logged_in_client, session):
     device = DeviceFactory(name="Mass Storage")
     logged_in_client.post(f"/whitelist/authorize/{device.id}")
     logged_in_client.post(f"/whitelist/rename/{device.id}", data={"custom_name": "Backup SSD"})
-    # Action — renaming to the exact same value again
+    # Action
     logged_in_client.post(f"/whitelist/rename/{device.id}", data={"custom_name": "Backup SSD"})
     # Expected
     assert session.query(AdminAction).filter_by(action_type=AdminActionType.DEVICE_RENAME).count() == 1
@@ -71,22 +77,20 @@ def test_profile_switch_records_profile_switch_action(logged_in_client, session)
     logged_in_client.post("/settings", data={"profile": "enforce", "language": "en", "theme": "dark", "font_size": "md"})
     # Expected
     action = session.query(AdminAction).filter_by(action_type=AdminActionType.PROFILE_SWITCH).one()
-    assert action.vid_pid is None
-    assert action.source == "monitor"
-    assert action.target == "enforce"
+    assert (action.vid_pid, action.source, action.target) == (None, "monitor", "enforce")
 
 
 def test_settings_save_without_profile_change_records_nothing(logged_in_client, session):
-    # Action — only theme changes, profile stays at its default (monitor)
+    # Action
     logged_in_client.post("/settings", data={"profile": "monitor", "language": "en", "theme": "light", "font_size": "md"})
     # Expected
     assert session.query(AdminAction).filter_by(action_type=AdminActionType.PROFILE_SWITCH).count() == 0
 
 
-def test_logs_page_renders_both_tab_panels(logged_in_client, session):
+def test_logs_page_renders_both_tab_panels_since_visibility_is_toggled_client_side(logged_in_client, session):
     # Action
     response = logged_in_client.get("/logs")
-    # Expected — both panels are in the DOM (client-side JS toggles visibility, not the server)
+    # Expected
     assert response.status_code == status.HTTP_200_OK
     assert 'id="events-panel"' in response.text
     assert 'id="actions-panel" class="hidden"' in response.text
@@ -97,7 +101,7 @@ def test_logs_page_renders_both_tab_panels(logged_in_client, session):
 def test_logs_page_reopens_on_the_admin_actions_tab_when_requested(logged_in_client, session):
     # Action
     response = logged_in_client.get("/logs", params={"tab": "actions"})
-    # Expected — events panel is hidden, actions panel is visible, on a fresh page load (not a JS toggle)
+    # Expected
     assert response.status_code == status.HTTP_200_OK
     assert 'id="events-panel" class="hidden"' in response.text
     assert 'id="actions-panel" class=""' in response.text
@@ -106,7 +110,7 @@ def test_logs_page_reopens_on_the_admin_actions_tab_when_requested(logged_in_cli
 def test_logs_page_ignores_an_invalid_tab_value(logged_in_client, session):
     # Action
     response = logged_in_client.get("/logs", params={"tab": "nonsense"})
-    # Expected — falls back to the events tab
+    # Expected
     assert response.status_code == status.HTTP_200_OK
     assert 'id="events-panel" class=""' in response.text
     assert 'id="actions-panel" class="hidden"' in response.text
@@ -143,8 +147,7 @@ def test_admin_actions_filter_narrows_by_action_type(logged_in_client, session):
     device = DeviceFactory(name="Mass Storage")
     logged_in_client.post(f"/whitelist/authorize/{device.id}")
     logged_in_client.post(f"/whitelist/rename/{device.id}", data={"custom_name": "Backup SSD"})
-    # Action — the rename target ("Backup SSD") only ever appears in the rename row, never
-    # in the filter panel's static labels, so its absence proves the row itself was filtered out
+    # Action
     response = logged_in_client.get("/logs", params={"tab": "actions", "a_action": "whitelist_authorize"})
     # Expected
     assert response.status_code == status.HTTP_200_OK
@@ -167,7 +170,7 @@ def test_admin_actions_search_matches_serial(logged_in_client, session):
 
 
 def test_admin_actions_date_range_excludes_actions_outside_it(logged_in_client, session):
-    # Setup — one action outside the default 7-day range, one inside it
+    # Setup
     session.add(
         AdminAction(
             actor="admin",
@@ -200,7 +203,7 @@ def test_admin_actions_sort_by_occurred_at_ascending_orders_oldest_first(logged_
 
 
 def test_admin_actions_pagination_moves_to_the_next_page(logged_in_client, session):
-    # Setup — one more row than fits on a single page
+    # Setup
     for i in range(21):
         session.add(
             AdminAction(

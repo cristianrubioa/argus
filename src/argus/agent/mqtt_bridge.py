@@ -26,7 +26,7 @@ def publish_event(event: DeviceEvent, session: Session) -> None:
         return
 
     device = event.device
-    topic = f"{broker['topic_prefix']}/{socket.gethostname()}/device/{event.decision.value}"
+    topic = f"{broker.topic_prefix}/{socket.gethostname()}/device/{event.decision.value}"
     payload = json.dumps(
         {
             "vid": device.vid,
@@ -41,16 +41,16 @@ def publish_event(event: DeviceEvent, session: Session) -> None:
     # publish.single() has no timeout parameter — a broker that accepts the TCP connection but never
     # sends CONNACK would otherwise block this call forever. Bound it with a worker thread instead.
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(mqtt_publish.single, topic, payload=payload, hostname=broker["host"], port=broker["port"])
+    future = executor.submit(mqtt_publish.single, topic, payload=payload, hostname=broker.host, port=broker.port)
     try:
         future.result(timeout=_PUBLISH_TIMEOUT_SECONDS)
     except concurrent.futures.TimeoutError:
         logger.error(
-            "Timed out publishing to MQTT broker %s:%s after %ss", broker["host"], broker["port"], _PUBLISH_TIMEOUT_SECONDS
+            "Timed out publishing to MQTT broker %s:%s after %ss", broker.host, broker.port, _PUBLISH_TIMEOUT_SECONDS
         )
         _record_attempt(session, ok=False, error=f"Publish timed out after {_PUBLISH_TIMEOUT_SECONDS}s")
     except Exception as exc:
-        logger.exception("Failed to publish device event to MQTT broker %s:%s", broker["host"], broker["port"])
+        logger.exception("Failed to publish device event to MQTT broker %s:%s", broker.host, broker.port)
         _record_attempt(session, ok=False, error=str(exc)[:_MAX_ERROR_LENGTH])
     else:
         _record_attempt(session, ok=True, error=None)

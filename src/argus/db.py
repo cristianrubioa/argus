@@ -63,6 +63,8 @@ _ADMIN_ACTIONS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE admin_actions ADD COLUMN serial VARCHAR(255)",
 )
 
+_DUPLICATE_COLUMN_ERROR = "duplicate column name"
+
 
 def _add_missing_columns(target):
     """Guard for schema changes on a pre-existing database — no migration tool yet (add-ui-localization/design.md)."""
@@ -76,8 +78,9 @@ def _add_missing_columns(target):
         try:
             with target.begin() as conn:
                 conn.execute(text(statement))
-        except OperationalError:
-            pass
+        except OperationalError as exc:
+            if _DUPLICATE_COLUMN_ERROR not in str(exc):
+                raise
 
 
 def _add_device_events_settled_at(target):
@@ -91,8 +94,9 @@ def _add_device_events_settled_at(target):
         with target.begin() as conn:
             conn.execute(text("ALTER TABLE device_events ADD COLUMN settled_at DATETIME"))
             conn.execute(text("UPDATE device_events SET settled_at = CURRENT_TIMESTAMP"))
-    except OperationalError:
-        pass
+    except OperationalError as exc:
+        if _DUPLICATE_COLUMN_ERROR not in str(exc):
+            raise
 
 
 def get_session():
