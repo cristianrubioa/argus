@@ -12,7 +12,7 @@ help:
 	@echo "  make mqtt-watch       Watch messages on the local test broker"
 	@echo ""
 	@echo "  make deps             Install dependencies via Poetry (dev)"
-	@echo "  make run-web          Run argus-web locally with live reload (dev)"
+	@echo "  make run-web          Run argus-web locally with live reload (dev, PORT=8000 by default)"
 	@echo "  make run-agent        Run argus-agent locally (dev, needs usbguard installed)"
 	@echo ""
 	@echo "  make lint             Check style with ruff"
@@ -49,8 +49,10 @@ mqtt-watch:
 deps:
 	poetry install
 
+PORT ?= 8421
+
 run-web:
-	poetry run uvicorn argus.web.main:app --reload
+	poetry run uvicorn argus.web.main:app --reload --port $(PORT)
 
 run-agent:
 	poetry run argus-agent
