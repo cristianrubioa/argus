@@ -157,16 +157,22 @@ def refresh_version_check(session: Session) -> None:
 
 def reconcile_profile(session: Session) -> None:
     """Called from argus-agent's poll loop; applies a pending profile change to USBGuard (syncing every
-    whitelist entry to a real rule on switch to Enforce), re-applies the implicit policy target if
-    USBGuard's live state has drifted from it, and reconciles live authorization drift for whitelisted
-    external devices."""
+    whitelist entry to a real rule and cutting live access for every connected non-whitelisted device on
+    switch to Enforce), re-applies the implicit policy target if USBGuard's live state has drifted from
+    it, and reconciles live authorization drift for whitelisted external devices."""
     settings = get_settings(session)
     desired_target = "block" if settings.profile == Profile.ENFORCE else "allow"
 
     if settings.profile != settings.applied_profile:
         if settings.profile == Profile.ENFORCE:
-            for entry in session.query(WhitelistEntry).all():
+            entries = session.query(WhitelistEntry).all()
+            for entry in entries:
                 usbguard_cli.allow_device(entry.device)
+            # USBGuard doesn't retroactively re-evaluate an already-connected device just because the
+            # implicit target changed (same finding as deauthorize_device) — cut live access for
+            # anything connected and not whitelisted before flipping the target, same ordering reason.
+            whitelisted_identities = {(e.device.vid, e.device.pid, e.device.serial) for e in entries}
+            usbguard_cli.block_live_devices_except(whitelisted_identities)
 
         usbguard_cli.set_implicit_policy_target(desired_target)
         settings.applied_profile = settings.profile

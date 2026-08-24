@@ -142,6 +142,37 @@ def test_deauthorize_device_blocks_live_for_internal_device_too(monkeypatch):
     assert blocked == ["30c9:00ca"]
 
 
+def test_block_live_devices_except_spares_only_whitelisted_identities(monkeypatch):
+    # Setup
+    devices = [
+        usbguard_cli.ListedDevice(vid="046d", pid="c542", serial=None, target="allow", hotplug=True),
+        usbguard_cli.ListedDevice(vid="058f", pid="6387", serial="AAE9055C", target="allow", hotplug=True),
+    ]
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: devices)
+    calls = []
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
+    # Action
+    usbguard_cli.block_live_devices_except({("046d", "c542", None)})
+    # Expected
+    assert calls == [("block-device", 'id 058f:6387 serial "AAE9055C"')]
+
+
+def test_block_live_devices_except_never_touches_hardwired_devices(monkeypatch):
+    # Setup
+    devices = [
+        usbguard_cli.ListedDevice(vid="1d6b", pid="0002", serial="0000:00:0d.0", target="allow", hotplug=False),
+        usbguard_cli.ListedDevice(vid="30c9", pid="00ca", serial="0001", target="allow", hotplug=False),
+        usbguard_cli.ListedDevice(vid="058f", pid="6387", serial="AAE9055C", target="allow", hotplug=True),
+    ]
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: devices)
+    calls = []
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
+    # Action — none of these identities are whitelisted, including the two hardwired ones
+    usbguard_cli.block_live_devices_except(set())
+    # Expected — only the hotplug device gets blocked; the host controller and camera are left alone
+    assert calls == [("block-device", 'id 058f:6387 serial "AAE9055C"')]
+
+
 def test_allow_device_live_omits_permanent_flag(monkeypatch):
     # Setup
     calls = []

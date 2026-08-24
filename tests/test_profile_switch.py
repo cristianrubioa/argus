@@ -66,6 +66,22 @@ def test_switching_back_to_monitor_does_not_resync_whitelist(session, monkeypatc
     assert calls == [f"allow:{entry.device.vid_pid}", "set:block", "set:allow"]
 
 
+def test_switching_to_enforce_blocks_connected_non_whitelisted_devices_live(session, monkeypatch):
+    # Setup
+    calls = []
+    monkeypatch.setattr(usbguard_cli, "allow_device", lambda device: None)
+    monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
+    monkeypatch.setattr(usbguard_cli, "block_live_devices_except", lambda whitelisted: calls.append(whitelisted))
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
+    entry = WhitelistEntryFactory()
+    profiles.request_profile(session, Profile.ENFORCE)
+    # Action
+    profiles.reconcile_profile(session)
+    # Expected
+    device = entry.device
+    assert calls == [{(device.vid, device.pid, device.serial)}]
+
+
 def test_reconcile_failure_during_whitelist_sync_does_not_partially_apply(session, monkeypatch):
     # Setup
     def _fail(device):

@@ -37,27 +37,27 @@ def _run(*args: str) -> str:
     return result.stdout
 
 
-def _partial_rule(device: Device) -> str:
-    rule = f"id {device.vid}:{device.pid}"
-    if device.serial:
-        rule += f' serial "{device.serial}"'
+def _partial_rule(vid: str, pid: str, serial: str | None) -> str:
+    rule = f"id {vid}:{pid}"
+    if serial:
+        rule += f' serial "{serial}"'
     return rule
 
 
 def allow_device(device: Device) -> None:
-    _run("allow-device", "--permanent", _partial_rule(device))
+    _run("allow-device", "--permanent", _partial_rule(device.vid, device.pid, device.serial))
 
 
 def allow_device_live(device: Device) -> None:
     """Non-permanent allow — corrects live runtime authorization without touching the saved rule.
     Accepts the same vid:pid/serial partial-rule spec as the --permanent form (confirmed via
     `usbguard allow-device --help` on the tested version: both take `<id> | <rule> | <partial-rule>`)."""
-    _run("allow-device", _partial_rule(device))
+    _run("allow-device", _partial_rule(device.vid, device.pid, device.serial))
 
 
 def block_device_live(device: Device) -> None:
     """Non-permanent block — see allow_device_live()."""
-    _run("block-device", _partial_rule(device))
+    _run("block-device", _partial_rule(device.vid, device.pid, device.serial))
 
 
 @dataclass(frozen=True)
@@ -145,6 +145,26 @@ def deauthorize_device(device: Device) -> None:
     for rule in list_rules():
         if rule.vid == device.vid and rule.pid == device.pid and rule.serial == device.serial:
             remove_rule(rule.id)
+
+
+def block_live_devices_except(whitelisted: set[tuple[str, str, str | None]]) -> None:
+    """Cuts live access for every currently-connected EXTERNAL (hotplug) device whose identity isn't in
+    `whitelisted` — used when switching to Enforce. Confirmed live (same finding as deauthorize_device):
+    USBGuard doesn't retroactively re-evaluate an already-connected device just because the implicit
+    policy target changed — only whitelisted identities are spared, everything else already connected
+    is blocked immediately instead of only on its next reconnect.
+
+    Filtered to hotplug only, same as _reconcile_whitelist_drift and for the same reason: internal /
+    hardwired devices (host controllers, integrated camera, onboard Bluetooth) are never whitelisted by
+    anyone, so an unfiltered sweep blocks them too — confirmed live, and it's severe: blocking a host
+    controller itself takes every device on that bus down with it, indistinguishable from unplugging.
+    Argus has no business touching authorization for hardware that isn't a removable peripheral."""
+    for listed in list_devices():
+        if not listed.hotplug:
+            continue
+        identity = (listed.vid, listed.pid, listed.serial)
+        if identity not in whitelisted:
+            _run("block-device", _partial_rule(listed.vid, listed.pid, listed.serial))
 
 
 def set_implicit_policy_target(target: str) -> None:
