@@ -17,13 +17,11 @@ from argus.agent.parser import parse_event_block
 from argus.agent.parser import parse_policy_settled_block
 from argus.db import SessionLocal
 from argus.db import init_db
-from argus.models import Decision
 from argus.models import Device
 from argus.models import DeviceEvent
 from argus.models import PendingUsbguardAction
 from argus.models import Profile
 from argus.models import UsbguardAction
-from argus.models import WhitelistEntry
 
 logger = logging.getLogger(__name__)
 
@@ -63,21 +61,14 @@ def handle_event(session: Session, block: str) -> None:
         _handle_policy_settled(session, settled)
 
 
-def _decide(session: Session, device: Device, usbguard_blocked: bool) -> Decision:
-    is_whitelisted = session.query(WhitelistEntry).filter_by(device_id=device.id).first() is not None
-    if is_whitelisted:
-        return Decision.AUTHORIZED
-    return Decision.BLOCKED if usbguard_blocked else Decision.UNRECOGNIZED
-
-
 def _handle_insert(session: Session, parsed: ParsedEvent) -> None:
     device = _get_or_create_device(session, parsed)
     if _recently_recorded(session, device):
         session.commit()
         return
 
-    decision = _decide(session, device, parsed.usbguard_blocked)
-    event = _record_event(session, device, decision, parsed.connection_id)
+    decision = profiles.decide(session, device, parsed.usbguard_blocked)
+    event = profiles.record_event(session, device, decision, parsed.connection_id)
     session.commit()
     publish_event(event, session)
 
@@ -97,7 +88,7 @@ def _handle_policy_settled(session: Session, settled: ParsedPolicySettled) -> No
     if event is None or event.settled_at is not None:
         return
 
-    decision = _decide(session, event.device, settled.usbguard_blocked)
+    decision = profiles.decide(session, event.device, settled.usbguard_blocked)
     event.settled_at = _utcnow()
     if event.decision != decision:
         event.decision = decision
@@ -115,57 +106,6 @@ def _recently_recorded(session: Session, device: Device) -> bool:
     )
 
 
-def _record_event(
-    session: Session, device: Device, decision: Decision, connection_id: int, settled_at: datetime | None = None
-) -> DeviceEvent:
-    active_profile = profiles.get_active_profile(session)
-    event = DeviceEvent(
-        device=device,
-        decision=decision,
-        profile=active_profile,
-        usbguard_connection_id=connection_id,
-        settled_at=settled_at,
-    )
-    session.add(event)
-    session.flush()
-    return event
-
-
-def _record_resulting_event(session: Session, device: Device) -> None:
-    """After an admin authorize/revoke has been applied — a real USBGuard write in Enforce, or nothing
-    at all in Monitor — record the resulting event directly and synchronously, rather than waiting for
-    a usbguard watch notification. That notification isn't guaranteed to arrive in any particular order
-    relative to the IPC calls that caused it (confirmed live), so reacting to it here would race. A
-    no-op if the device isn't currently connected — nothing happened at the USB level to log yet."""
-    live = next(
-        (
-            d
-            for d in usbguard_cli.list_devices()
-            if d.vid == device.vid and d.pid == device.pid and d.serial == device.serial
-        ),
-        None,
-    )
-    if live is None:
-        return
-
-    decision = _decide(session, device, live.target == "block")
-    event = session.query(DeviceEvent).filter_by(usbguard_connection_id=live.id).order_by(DeviceEvent.id.desc()).first()
-
-    if event is not None and event.decision == decision:
-        return
-
-    if event is not None and event.settled_at is None:
-        event.decision = decision
-        event.settled_at = _utcnow()
-        session.commit()
-        publish_event(event, session)
-        return
-
-    new_event = _record_event(session, device, decision, live.id, settled_at=_utcnow())
-    session.commit()
-    publish_event(new_event, session)
-
-
 def apply_pending_actions(session: Session) -> None:
     pending = session.query(PendingUsbguardAction).filter_by(applied_at=None).all()
     for action in pending:
@@ -175,7 +115,9 @@ def apply_pending_actions(session: Session) -> None:
                     usbguard_cli.allow_device(action.device)
                 else:
                     usbguard_cli.deauthorize_device(action.device)
-            _record_resulting_event(session, action.device)
+            event = profiles.record_resulting_event(session, action.device)
+            if event is not None:
+                publish_event(event, session)
             action.applied_at = _utcnow()
         except usbguard_cli.UsbguardCliError:
             logger.exception("Failed to apply pending USBGuard action for device %s", action.device.vid_pid)
@@ -193,6 +135,11 @@ def _watch_loop() -> None:
         logger.warning("usbguard watch exited; restarting")
 
 
+def _reconcile_and_publish(session: Session) -> None:
+    for event in profiles.reconcile_profile(session):
+        publish_event(event, session)
+
+
 def _reconcile_loop() -> None:
     while True:
         with SessionLocal() as session:
@@ -200,7 +147,7 @@ def _reconcile_loop() -> None:
             profiles.prune_old_events(session)
             apply_pending_actions(session)
             try:
-                profiles.reconcile_profile(session)
+                _reconcile_and_publish(session)
             except usbguard_cli.UsbguardCliError:
                 logger.exception("Failed to reconcile security profile")
         time.sleep(_PENDING_ACTIONS_POLL_SECONDS)
@@ -212,7 +159,7 @@ def main() -> None:
     usbguard_cli.warn_if_untested_version()
     with SessionLocal() as session:
         try:
-            profiles.reconcile_profile(session)
+            _reconcile_and_publish(session)
         except usbguard_cli.UsbguardCliError:
             logger.exception("Failed to reconcile security profile at startup")
     threading.Thread(target=_watch_loop, daemon=True).start()

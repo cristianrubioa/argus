@@ -1,4 +1,5 @@
 import subprocess
+from dataclasses import replace
 
 import pytest
 
@@ -152,9 +153,10 @@ def test_block_live_devices_except_spares_only_whitelisted_identities(monkeypatc
     calls = []
     monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
     # Action
-    usbguard_cli.block_live_devices_except({("046d", "c542", None)})
+    blocked = usbguard_cli.block_live_devices_except({("046d", "c542", None)})
     # Expected
     assert calls == [("block-device", 'id 058f:6387 serial "AAE9055C"')]
+    assert blocked == [replace(devices[1], target="block")]
 
 
 def test_allow_live_devices_allows_only_non_allow_hotplug_devices(monkeypatch):
@@ -167,9 +169,10 @@ def test_allow_live_devices_allows_only_non_allow_hotplug_devices(monkeypatch):
     calls = []
     monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
     # Action
-    usbguard_cli.allow_live_devices()
+    restored = usbguard_cli.allow_live_devices()
     # Expected
     assert calls == [("allow-device", "id 046d:c542")]
+    assert restored == [replace(devices[0], target="allow")]
 
 
 def test_allow_live_devices_never_touches_hardwired_devices(monkeypatch):
@@ -182,9 +185,10 @@ def test_allow_live_devices_never_touches_hardwired_devices(monkeypatch):
     calls = []
     monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
     # Action
-    usbguard_cli.allow_live_devices()
+    restored = usbguard_cli.allow_live_devices()
     # Expected
     assert calls == [("allow-device", "id 046d:c542")]
+    assert restored == [replace(devices[1], target="allow")]
 
 
 def test_block_live_devices_except_never_touches_hardwired_devices(monkeypatch):
@@ -197,10 +201,11 @@ def test_block_live_devices_except_never_touches_hardwired_devices(monkeypatch):
     monkeypatch.setattr(usbguard_cli, "list_devices", lambda: devices)
     calls = []
     monkeypatch.setattr(usbguard_cli, "_run", lambda *a: calls.append(a))
-    # Action — none of these identities are whitelisted, including the two hardwired ones
-    usbguard_cli.block_live_devices_except(set())
-    # Expected — only the hotplug device gets blocked; the host controller and camera are left alone
+    # Action
+    blocked = usbguard_cli.block_live_devices_except(set())
+    # Expected
     assert calls == [("block-device", 'id 058f:6387 serial "AAE9055C"')]
+    assert blocked == [replace(devices[2], target="block")]
 
 
 def test_allow_device_live_omits_permanent_flag(monkeypatch):

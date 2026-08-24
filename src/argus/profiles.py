@@ -10,6 +10,7 @@ from argus.agent import usbguard_cli
 from argus.models import AdminAction
 from argus.models import AdminActionType
 from argus.models import AgentStatus
+from argus.models import Decision
 from argus.models import Device
 from argus.models import DeviceEvent
 from argus.models import PendingUsbguardAction
@@ -155,14 +156,79 @@ def refresh_version_check(session: Session) -> None:
     session.commit()
 
 
-def reconcile_profile(session: Session) -> None:
+def decide(session: Session, device: Device, usbguard_blocked: bool) -> Decision:
+    is_whitelisted = session.query(WhitelistEntry).filter_by(device_id=device.id).first() is not None
+    if is_whitelisted:
+        return Decision.AUTHORIZED
+    return Decision.BLOCKED if usbguard_blocked else Decision.UNRECOGNIZED
+
+
+def record_event(
+    session: Session, device: Device, decision: Decision, connection_id: int, settled_at: datetime | None = None
+) -> DeviceEvent:
+    event = DeviceEvent(
+        device=device,
+        decision=decision,
+        profile=get_active_profile(session),
+        usbguard_connection_id=connection_id,
+        settled_at=settled_at,
+    )
+    session.add(event)
+    session.flush()
+    return event
+
+
+def record_event_for_listed(session: Session, device: Device, listed: usbguard_cli.ListedDevice) -> DeviceEvent | None:
+    """Given an already-known live match, decide and record the resulting event — correcting a still-
+    provisional row in place, creating a new settled row if the most recent one already settled to a
+    different decision, or no-op if it already matches. Returns the event created/updated, or None."""
+    computed = decide(session, device, listed.target == "block")
+    event = session.query(DeviceEvent).filter_by(usbguard_connection_id=listed.id).order_by(DeviceEvent.id.desc()).first()
+
+    if event is not None and event.decision == computed:
+        return None
+
+    if event is not None and event.settled_at is None:
+        event.decision = computed
+        event.settled_at = _utcnow()
+        session.commit()
+        return event
+
+    new_event = record_event(session, device, computed, listed.id, settled_at=_utcnow())
+    session.commit()
+    return new_event
+
+
+def record_resulting_event(session: Session, device: Device) -> DeviceEvent | None:
+    """After an admin authorize/revoke has been applied — a real USBGuard write in Enforce, or nothing
+    at all in Monitor — find the device's current live connection (if any) and record the resulting
+    event, rather than waiting for a usbguard watch notification (confirmed live: its arrival order
+    relative to the IPC calls that caused it isn't guaranteed). Returns None if not currently connected —
+    nothing happened at the USB level to log yet."""
+    live = next(
+        (
+            d
+            for d in usbguard_cli.list_devices()
+            if d.vid == device.vid and d.pid == device.pid and d.serial == device.serial
+        ),
+        None,
+    )
+    if live is None:
+        return None
+    return record_event_for_listed(session, device, live)
+
+
+def reconcile_profile(session: Session) -> list[DeviceEvent]:
     """Called from argus-agent's poll loop; applies a pending profile change to USBGuard (syncing every
     whitelist entry to a real rule and cutting live access for every connected non-whitelisted device on
     switch to Enforce, or restoring live access to everything connected on switch to Monitor), re-applies
     the implicit policy target if USBGuard's live state has drifted from it, and reconciles live
-    authorization drift for whitelisted external devices."""
+    authorization drift for whitelisted external devices. Returns every event recorded as a result of the
+    sweep, for the caller to publish — this module can't import publish_event (mqtt_bridge already
+    imports profiles, so the reverse import would cycle)."""
     settings = get_settings(session)
     desired_target = "block" if settings.profile == Profile.ENFORCE else "allow"
+    events: list[DeviceEvent] = []
 
     if settings.profile != settings.applied_profile:
         if settings.profile == Profile.ENFORCE:
@@ -173,12 +239,20 @@ def reconcile_profile(session: Session) -> None:
             # implicit target changed (same finding as deauthorize_device) — cut live access for
             # anything connected and not whitelisted before flipping the target, same ordering reason.
             whitelisted_identities = {(e.device.vid, e.device.pid, e.device.serial) for e in entries}
-            usbguard_cli.block_live_devices_except(whitelisted_identities)
+            touched = usbguard_cli.block_live_devices_except(whitelisted_identities)
         else:
             # Same reasoning, mirrored: Monitor never blocks, so restore live access to everything
             # connected before flipping the target — nothing should stay blocked from a prior Enforce
             # session just because it hasn't reconnected yet.
-            usbguard_cli.allow_live_devices()
+            touched = usbguard_cli.allow_live_devices()
+
+        for listed in touched:
+            device = session.query(Device).filter_by(vid=listed.vid, pid=listed.pid, serial=listed.serial).first()
+            if device is None:
+                continue
+            event = record_event_for_listed(session, device, listed)
+            if event is not None:
+                events.append(event)
 
         usbguard_cli.set_implicit_policy_target(desired_target)
         settings.applied_profile = settings.profile
@@ -187,6 +261,7 @@ def reconcile_profile(session: Session) -> None:
         usbguard_cli.set_implicit_policy_target(desired_target)
 
     _reconcile_whitelist_drift(session)
+    return events
 
 
 def _reconcile_whitelist_drift(session: Session) -> None:

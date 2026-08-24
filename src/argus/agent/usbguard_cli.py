@@ -4,6 +4,7 @@ import logging
 import re
 import subprocess
 from dataclasses import dataclass
+from dataclasses import replace
 
 from argus.models import Device
 
@@ -151,38 +152,47 @@ def deauthorize_device(device: Device) -> None:
             remove_rule(rule.id)
 
 
-def block_live_devices_except(whitelisted: set[tuple[str, str, str | None]]) -> None:
+def block_live_devices_except(whitelisted: set[tuple[str, str, str | None]]) -> list[ListedDevice]:
     """Cuts live access for every currently-connected EXTERNAL (hotplug) device whose identity isn't in
     `whitelisted` — used when switching to Enforce. Confirmed live (same finding as deauthorize_device):
     USBGuard doesn't retroactively re-evaluate an already-connected device just because the implicit
     policy target changed — only whitelisted identities are spared, everything else already connected
-    is blocked immediately instead of only on its next reconnect.
+    is blocked immediately instead of only on its next reconnect. Returns the entries actually blocked,
+    so the caller can log the result without a second list-devices call.
 
     Filtered to hotplug only, same as _reconcile_whitelist_drift and for the same reason: internal /
     hardwired devices (host controllers, integrated camera, onboard Bluetooth) are never whitelisted by
     anyone, so an unfiltered sweep blocks them too — confirmed live, and it's severe: blocking a host
     controller itself takes every device on that bus down with it, indistinguishable from unplugging.
     Argus has no business touching authorization for hardware that isn't a removable peripheral."""
+    blocked = []
     for listed in list_devices():
         if not listed.hotplug:
             continue
         identity = (listed.vid, listed.pid, listed.serial)
         if identity not in whitelisted:
             _run("block-device", _partial_rule(listed.vid, listed.pid, listed.serial))
+            # listed.target still reflects the pre-write read — the caller needs the post-write state.
+            blocked.append(replace(listed, target="block"))
+    return blocked
 
 
-def allow_live_devices() -> None:
+def allow_live_devices() -> list[ListedDevice]:
     """Restores live access for every currently-connected EXTERNAL (hotplug) device not already `allow`
     — used when switching to Monitor, which never blocks anything. Mirrors block_live_devices_except():
     USBGuard doesn't retroactively re-evaluate an already-connected device just because the implicit
     policy target changed, so a device live-blocked under Enforce would otherwise stay blocked until it's
     unplugged and reconnected. Filtered to hotplug only, same restriction and same reason as everywhere
-    else in this module — see CLAUDE.md's USBGuard Safety rule."""
+    else in this module — see CLAUDE.md's USBGuard Safety rule. Returns the entries actually restored."""
+    restored = []
     for listed in list_devices():
         if not listed.hotplug:
             continue
         if listed.target != "allow":
             _run("allow-device", _partial_rule(listed.vid, listed.pid, listed.serial))
+            # listed.target still reflects the pre-write read — the caller needs the post-write state.
+            restored.append(replace(listed, target="allow"))
+    return restored
 
 
 def set_implicit_policy_target(target: str) -> None:

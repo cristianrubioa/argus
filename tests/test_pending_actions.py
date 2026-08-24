@@ -1,4 +1,5 @@
 from argus import profiles
+from argus.agent import main
 from argus.agent import usbguard_cli
 from argus.agent.main import apply_pending_actions
 from argus.factories import DeviceFactory
@@ -23,7 +24,9 @@ def _fail_if_called(device):
 def test_enforce_allow_calls_allow_device_and_records_authorized(session, monkeypatch):
     # Setup
     calls = []
+    published = []
     monkeypatch.setattr(usbguard_cli, "allow_device", lambda device: calls.append(("allow", device.id)))
+    monkeypatch.setattr(main, "publish_event", lambda event, session: published.append(event))
     entry = WhitelistEntryFactory()
     device = entry.device
     monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [_listed(device, "allow")])
@@ -39,6 +42,7 @@ def test_enforce_allow_calls_allow_device_and_records_authorized(session, monkey
     event = session.query(DeviceEvent).one()
     assert event.decision == Decision.AUTHORIZED
     assert event.settled_at is not None
+    assert published == [event]
 
 
 def test_enforce_block_calls_deauthorize_device_and_records_blocked(session, monkeypatch):
@@ -112,7 +116,9 @@ def test_no_event_recorded_for_a_disconnected_device(session, monkeypatch):
 
 def test_no_duplicate_event_when_decision_already_matches(session, monkeypatch):
     # Setup
+    published = []
     monkeypatch.setattr(usbguard_cli, "allow_device", lambda device: None)
+    monkeypatch.setattr(main, "publish_event", lambda event, session: published.append(event))
     entry = WhitelistEntryFactory()
     device = entry.device
     monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [_listed(device, "allow")])
@@ -124,6 +130,7 @@ def test_no_duplicate_event_when_decision_already_matches(session, monkeypatch):
     apply_pending_actions(session)
     # Expected
     assert session.query(DeviceEvent).count() == 1
+    assert published == []
 
 
 def test_leaves_applied_at_null_on_failure(session, monkeypatch):

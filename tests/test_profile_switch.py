@@ -2,7 +2,10 @@ import pytest
 
 from argus import profiles
 from argus.agent import usbguard_cli
+from argus.factories import DeviceFactory
 from argus.factories import WhitelistEntryFactory
+from argus.models import Decision
+from argus.models import DeviceEvent
 from argus.models import Profile
 
 
@@ -71,7 +74,7 @@ def test_switching_to_enforce_blocks_connected_non_whitelisted_devices_live(sess
     calls = []
     monkeypatch.setattr(usbguard_cli, "allow_device", lambda device: None)
     monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
-    monkeypatch.setattr(usbguard_cli, "block_live_devices_except", lambda whitelisted: calls.append(whitelisted))
+    monkeypatch.setattr(usbguard_cli, "block_live_devices_except", lambda whitelisted: calls.append(whitelisted) or [])
     monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
     entry = WhitelistEntryFactory()
     profiles.request_profile(session, Profile.ENFORCE)
@@ -86,13 +89,71 @@ def test_switching_to_monitor_restores_live_access(session, monkeypatch):
     # Setup
     calls = []
     monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
-    monkeypatch.setattr(usbguard_cli, "allow_live_devices", lambda: calls.append("allow_live"))
+    monkeypatch.setattr(usbguard_cli, "allow_live_devices", lambda: calls.append("allow_live") or [])
     monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
     profiles.request_profile(session, Profile.MONITOR)
     # Action
     profiles.reconcile_profile(session)
     # Expected
     assert calls == ["allow_live"]
+
+
+def test_switching_to_enforce_records_blocked_event_for_swept_device(session, monkeypatch):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "allow_device", lambda device: None)
+    monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
+    device = DeviceFactory()
+    listed = usbguard_cli.ListedDevice(
+        vid=device.vid, pid=device.pid, serial=device.serial, target="block", hotplug=True, id=7
+    )
+    monkeypatch.setattr(usbguard_cli, "block_live_devices_except", lambda whitelisted: [listed])
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
+    profiles.request_profile(session, Profile.ENFORCE)
+    # Action
+    events = profiles.reconcile_profile(session)
+    # Expected
+    assert len(events) == 1
+    assert events[0].decision == Decision.BLOCKED
+    assert events[0].usbguard_connection_id == 7
+    assert session.query(DeviceEvent).one().decision == Decision.BLOCKED
+
+
+def test_switching_to_monitor_records_unrecognized_event_for_swept_device(session, monkeypatch):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
+    device = DeviceFactory()
+    listed = usbguard_cli.ListedDevice(
+        vid=device.vid, pid=device.pid, serial=device.serial, target="allow", hotplug=True, id=9
+    )
+    monkeypatch.setattr(usbguard_cli, "allow_live_devices", lambda: [listed])
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
+    profiles.request_profile(session, Profile.MONITOR)
+    # Action
+    events = profiles.reconcile_profile(session)
+    # Expected
+    assert len(events) == 1
+    assert events[0].decision == Decision.UNRECOGNIZED
+    assert events[0].usbguard_connection_id == 9
+
+
+def test_switching_to_monitor_records_nothing_for_an_already_authorized_device(session, monkeypatch):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
+    entry = WhitelistEntryFactory()
+    device = entry.device
+    listed = usbguard_cli.ListedDevice(
+        vid=device.vid, pid=device.pid, serial=device.serial, target="block", hotplug=True, id=3
+    )
+    session.add(DeviceEvent(device=device, decision=Decision.AUTHORIZED, profile=Profile.ENFORCE, usbguard_connection_id=3))
+    session.commit()
+    monkeypatch.setattr(usbguard_cli, "allow_live_devices", lambda: [listed])
+    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
+    profiles.request_profile(session, Profile.MONITOR)
+    # Action
+    events = profiles.reconcile_profile(session)
+    # Expected
+    assert events == []
+    assert session.query(DeviceEvent).count() == 1
 
 
 def test_reconcile_failure_during_whitelist_sync_does_not_partially_apply(session, monkeypatch):
@@ -115,7 +176,7 @@ def _stub_reconcile_noop(monkeypatch):
     monkeypatch.setattr(usbguard_cli, "allow_device", lambda device: None)
     monkeypatch.setattr(usbguard_cli, "set_implicit_policy_target", lambda target: None)
     monkeypatch.setattr(usbguard_cli, "get_implicit_policy_target", lambda: "allow")
-    monkeypatch.setattr(usbguard_cli, "allow_live_devices", lambda: None)
+    monkeypatch.setattr(usbguard_cli, "allow_live_devices", lambda: [])
 
 
 def test_reconcile_reasserts_drifted_hotplug_device(session, monkeypatch):
