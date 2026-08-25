@@ -114,14 +114,23 @@ def authenticate(session: Session, username: str, password: str) -> bool:
     return admin is not None and verify_password(password, admin.password_hash)
 
 
+def _redirect_exception(request: Request, location: str) -> HTTPException:
+    """A plain 303 makes a normal browser navigate. HTMX's fetch instead follows a 303 automatically and
+    swaps the resulting page into the polling target — so an HTMX-originated request gets an HX-Redirect
+    on a 200 instead, which tells htmx to navigate the whole browser rather than swap a fragment."""
+    if request.headers.get("HX-Request") == "true":
+        return HTTPException(status_code=status.HTTP_200_OK, headers={"HX-Redirect": location})
+    return HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": location})
+
+
 def require_admin(request: Request) -> str:
     username = request.session.get("admin")
     if not username:
-        raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/login"})
+        raise _redirect_exception(request, "/login")
     return username
 
 
-def require_registered(session: Session = Depends(get_session)) -> None:
+def require_registered(request: Request, session: Session = Depends(get_session)) -> None:
     """No admin account exists yet — redirect every route except /register there. Caches True forever
     once an account exists, since nothing in this app ever deletes it, to skip the query afterward."""
     global _admin_exists_cache
@@ -130,7 +139,7 @@ def require_registered(session: Session = Depends(get_session)) -> None:
     if admin_exists(session):
         _admin_exists_cache = True
         return
-    raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/register"})
+    raise _redirect_exception(request, "/register")
 
 
 def _reset_admin_exists_cache() -> None:

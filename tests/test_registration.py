@@ -12,6 +12,20 @@ def test_no_admin_redirects_any_request_to_register(client):
     assert response.url.path == "/register"
 
 
+def test_no_admin_request_gets_a_303_with_register_location(client):
+    # Action
+    response = client.get("/", follow_redirects=False)
+    # Expected
+    assert (response.status_code, response.headers["location"]) == (status.HTTP_303_SEE_OTHER, "/register")
+
+
+def test_htmx_no_admin_request_gets_an_hx_redirect_instead_of_a_303(client):
+    # Action
+    response = client.get("/", headers={"HX-Request": "true"}, follow_redirects=False)
+    # Expected
+    assert (response.status_code, response.headers["hx-redirect"]) == (status.HTTP_200_OK, "/register")
+
+
 def test_successful_registration_creates_account_and_logs_in(client, session):
     # Action
     response = client.post(

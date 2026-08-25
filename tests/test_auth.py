@@ -45,6 +45,26 @@ def test_unauthenticated_request_redirects_to_login(client, session):
     assert response.url.path == "/login"
 
 
+def test_unauthenticated_request_gets_a_303_with_login_location(client, session):
+    # Setup
+    session.add(AdminUser(username="admin", password_hash=hash_password("secret")))
+    session.commit()
+    # Action
+    response = client.get("/", follow_redirects=False)
+    # Expected
+    assert (response.status_code, response.headers["location"]) == (status.HTTP_303_SEE_OTHER, "/login")
+
+
+def test_htmx_unauthenticated_request_gets_an_hx_redirect_instead_of_a_303(client, session):
+    # Setup
+    session.add(AdminUser(username="admin", password_hash=hash_password("secret")))
+    session.commit()
+    # Action
+    response = client.get("/", headers={"HX-Request": "true"}, follow_redirects=False)
+    # Expected
+    assert (response.status_code, response.headers["hx-redirect"]) == (status.HTTP_200_OK, "/login")
+
+
 def test_lockout_after_max_failed_attempts(client, session):
     # Setup
     session.add(AdminUser(username="admin", password_hash=hash_password("secret")))
