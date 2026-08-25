@@ -180,7 +180,7 @@ class Settings(Base):
     mqtt_last_publish_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     mqtt_last_publish_ok: Mapped[bool | None] = mapped_column(nullable=True)
     mqtt_last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    theme: Mapped[str] = mapped_column(String(5), default="dark")
+    theme: Mapped[str] = mapped_column(String(5), default="light")
     font_size: Mapped[str] = mapped_column(String(2), default="md")
     agent_last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_log_prune_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
