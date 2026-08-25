@@ -32,6 +32,34 @@ if ! command -v python3.12 >/dev/null 2>&1; then
     exit 1
 fi
 
+# Only checked on a fresh install — on a reinstall/update, whatever already holds this port is
+# Argus's own running instance, not a conflict.
+WEB_PORT="$DEFAULT_WEB_PORT"
+_port_is_free() {  # _port_is_free <port>
+    python3.12 -c "
+import socket
+import sys
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+try:
+    s.bind(('0.0.0.0', int(sys.argv[1])))
+except OSError:
+    sys.exit(1)
+" "$1" 2>/dev/null
+}
+
+if [ ! -f "$CONFIG_DIR/agent.env" ]; then
+    IS_FRESH_INSTALL=1
+    while ! _port_is_free "$WEB_PORT"; do
+        if [ ! -r /dev/tty ]; then
+            echo "Port $WEB_PORT is already in use and no terminal is available to ask for another." >&2
+            echo "Set ARGUS_WEB_PORT in $CONFIG_DIR/agent.env after fixing the conflict, then run: systemctl restart argus-web" >&2
+            exit 1
+        fi
+        read -r -p "Port $WEB_PORT is already in use. Enter an alternate port: " WEB_PORT < /dev/tty
+    done
+fi
+
 if ! command -v usbguard >/dev/null 2>&1 || ! command -v pipx >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
     apt-get update
     command -v usbguard >/dev/null 2>&1 || apt-get install -y usbguard
@@ -90,5 +118,19 @@ if [ ! -f "$CONFIG_DIR/agent.env" ]; then
     chmod 600 "$CONFIG_DIR/agent.env"
 fi
 
+if [ -n "$IS_FRESH_INSTALL" ]; then
+    echo "ARGUS_WEB_PORT=$WEB_PORT" >> "$CONFIG_DIR/agent.env"
+fi
+
 systemctl restart $UNITS
-echo "Done. argus-agent and argus-web are running. Create the admin account in the browser on first visit."
+
+DASHBOARD_PORT=$(grep -o '^ARGUS_WEB_PORT=.*' "$CONFIG_DIR/agent.env" 2>/dev/null | cut -d= -f2)
+DASHBOARD_PORT=${DASHBOARD_PORT:-$DEFAULT_WEB_PORT}
+DASHBOARD_HOST=$(hostname -I 2>/dev/null | awk '{print $1}')
+DASHBOARD_HOST=${DASHBOARD_HOST:-localhost}
+
+echo ""
+echo "Done. Argus is running."
+echo ""
+echo "  Dashboard:  http://$DASHBOARD_HOST:$DASHBOARD_PORT"
+echo "  Next step:  open that URL and create the admin account."
