@@ -106,6 +106,15 @@ def test_retention_change_records_retention_change_action(logged_in_client, sess
     assert profiles.get_log_retention(session) == LogRetention.NINETY_DAYS
 
 
+def test_logs_page_displays_retention_source_and_target_without_underscores(logged_in_client, session):
+    # Action
+    logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "log_retention": "90_days"})
+    response = logged_in_client.get("/logs", params={"tab": "actions"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert ("1 year" in response.text, "90 days" in response.text) == (True, True)
+
+
 def test_settings_save_without_retention_change_records_nothing(logged_in_client, session):
     # Action
     logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "theme": "light"})
