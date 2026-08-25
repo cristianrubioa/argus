@@ -84,6 +84,52 @@
     <option value="lg" {% if font_size == 'lg' %}selected{% endif %}>{{ t('font_size_lg') }}</option>
   </select>
 
+  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_automation_heading') }}</h1>
+  {% if mqtt_port_error %}
+  <div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2 mb-3 max-w-md">{{ t(mqtt_port_error) }}</div>
+  {% endif %}
+  <label class="flex items-center gap-3 mb-3">
+    <input type="checkbox" id="mqtt-enabled-toggle" name="mqtt_enabled" {% if settings.mqtt_enabled %}checked{% endif %}>
+    <span>{{ t('mqtt_enabled_label') }}</span>
+  </label>
+  <div class="space-y-3 max-w-md">
+    <div>
+      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_host_label') }}</label>
+      <input type="text" id="mqtt-host-input" name="mqtt_host" autocomplete="off" value="{{ settings.mqtt_host or '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_port_label') }}</label>
+      <input type="number" id="mqtt-port-input" name="mqtt_port" autocomplete="off" min="1" max="65535" maxlength="5" value="{{ settings.mqtt_port }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_topic_prefix_label') }}</label>
+      <input type="text" id="mqtt-topic-input" name="mqtt_topic_prefix" autocomplete="off" value="{{ settings.mqtt_topic_prefix }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+    </div>
+    <div class="flex items-center gap-3">
+      <button type="button" id="mqtt-test-button" {% if not settings.mqtt_enabled %}disabled{% endif %}
+        hx-post="/settings/mqtt-test" hx-include="#mqtt-host-input,#mqtt-port-input,#mqtt-topic-input"
+        hx-target="#mqtt-test-result" hx-swap="innerHTML"
+        class="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded px-4 py-2 transition">
+        {{ t('mqtt_test_button') }}
+      </button>
+      <span id="mqtt-test-result"></span>
+    </div>
+    {% if settings.mqtt_enabled %}
+    <p class="text-xs text-gray-500">
+      {% if settings.mqtt_last_publish_at is none %}
+        {{ t('mqtt_status_never') }}
+      {% elif settings.mqtt_last_publish_ok %}
+        {{ t('mqtt_status_ok_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }}
+      {% else %}
+        {{ t('mqtt_status_failed_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }} — {{ settings.mqtt_last_error }}
+      {% endif %}
+    </p>
+    {% endif %}
+  </div>
+
   <div class="mt-8">
     <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">
       {{ t('action_save') }}
@@ -105,23 +151,52 @@
     });
   })();
 </script>
+<script>
+  (function () {
+    const toggle = document.getElementById("mqtt-enabled-toggle");
+    const portInput = document.getElementById("mqtt-port-input");
+    const testResult = document.getElementById("mqtt-test-result");
+    const fields = [
+      document.getElementById("mqtt-host-input"),
+      portInput,
+      document.getElementById("mqtt-topic-input"),
+    ];
+    const testButton = document.getElementById("mqtt-test-button");
+    const MQTT_TEST_RESULT_TTL_MS = 5000;
+    let testResultTimer = null;
+
+    if (toggle) {
+      toggle.addEventListener("change", function () {
+        fields.forEach(function (field) { field.readOnly = !toggle.checked; });
+        testButton.disabled = !toggle.checked;
+        if (!toggle.checked && testResult) {
+          clearTimeout(testResultTimer);
+          testResult.innerHTML = "";
+        }
+      });
+    }
+    if (portInput) {
+      portInput.addEventListener("input", function () {
+        if (portInput.value.length > 5) {
+          portInput.value = portInput.value.slice(0, 5);
+        }
+      });
+    }
+    if (testResult) {
+      document.body.addEventListener("htmx:afterSwap", function (evt) {
+        if (evt.detail.target.id !== "mqtt-test-result") return;
+        clearTimeout(testResultTimer);
+        testResultTimer = setTimeout(function () { testResult.innerHTML = ""; }, MQTT_TEST_RESULT_TTL_MS);
+      });
+    }
+  })();
+</script>
 
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('agent_status_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
   {% include "_agent_status_badge.html" %}
   {% if settings.agent_last_heartbeat_at is not none %}
   <span>{{ t('agent_last_seen_label') }} {{ settings.agent_last_heartbeat_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-  {% endif %}
-</p>
-<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_automation_heading') }}</h1>
-<p class="text-sm text-gray-600 dark:text-gray-400">{{ t('mqtt_config_note') }}</p>
-<p class="text-xs text-gray-500 mt-2">
-  {% if settings.mqtt_last_publish_at is none %}
-    {{ t('mqtt_status_never') }}
-  {% elif settings.mqtt_last_publish_ok %}
-    {{ t('mqtt_status_ok_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }}
-  {% else %}
-    {{ t('mqtt_status_failed_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }} — {{ settings.mqtt_last_error }}
   {% endif %}
 </p>
 

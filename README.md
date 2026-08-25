@@ -56,7 +56,7 @@ Full list in [`agent.env.example`](agent.env.example), copied to `/etc/argus/age
 
 One optional integration — beta means implemented, not yet exercised on a long-running production install:
 
-- **MQTT bridge (beta)** — publishes every device event to a broker. Off unless `ARGUS_MQTT_HOST` is set.
+- **MQTT bridge (beta)** — publishes every device event to a broker. Configured from the Settings page (host, port, topic prefix, and an enable/disable toggle) — disabled by default.
 
 Log retention (device events, applied whitelist actions, admin actions) is set from the Settings page, not an env var — 90 days / 1 year / 2 years / forever, defaulting to 1 year. Pruning is irreversible.
 

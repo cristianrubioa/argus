@@ -92,7 +92,10 @@ def test_log_retention_column_backfills_to_one_year_on_upgrade():
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE settings DROP COLUMN log_retention"))
         conn.execute(
-            text("INSERT INTO settings (id, profile, language, theme, font_size) VALUES (1, :p, 'en', 'dark', 'md')"),
+            text(
+                "INSERT INTO settings (id, profile, language, theme, font_size, mqtt_enabled, mqtt_port, "
+                "mqtt_topic_prefix) VALUES (1, :p, 'en', 'dark', 'md', 0, 1883, 'argus')"
+            ),
             {"p": Profile.MONITOR.value},
         )
     # Action
@@ -101,6 +104,48 @@ def test_log_retention_column_backfills_to_one_year_on_upgrade():
     with engine.connect() as conn:
         row = conn.execute(text("SELECT log_retention FROM settings WHERE id = 1")).one()
     assert row.log_retention == "ONE_YEAR"
+
+
+def _engine_missing_mqtt_columns():
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_enabled"))
+        conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_host"))
+        conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_port"))
+        conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_topic_prefix"))
+        conn.execute(
+            text(
+                "INSERT INTO settings (id, profile, language, theme, font_size, log_retention) "
+                "VALUES (1, :p, 'en', 'dark', 'md', 'ONE_YEAR')"
+            ),
+            {"p": Profile.MONITOR.value},
+        )
+    return engine
+
+
+def test_mqtt_columns_backfill_to_disabled_defaults_on_upgrade():
+    # Setup
+    engine = _engine_missing_mqtt_columns()
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        query = "SELECT mqtt_enabled, mqtt_host, mqtt_port, mqtt_topic_prefix FROM settings WHERE id = 1"
+        row = conn.execute(text(query)).one()
+    assert (row.mqtt_enabled, row.mqtt_host, row.mqtt_port, row.mqtt_topic_prefix) == (0, None, 1883, "argus")
+
+
+def test_mqtt_columns_migration_is_idempotent():
+    # Setup
+    engine = _engine_missing_mqtt_columns()
+    init_db(bind_engine=engine)
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(settings)"))}
+    assert {"mqtt_enabled", "mqtt_host", "mqtt_port", "mqtt_topic_prefix"} <= columns
 
 
 def test_log_retention_migration_is_idempotent():

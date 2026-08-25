@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from argus import profiles
 from argus import version_check
+from argus.agent import mqtt_bridge
 from argus.agent import usbguard_cli
 from argus.db import get_session
 from argus.models import AdminAction
@@ -424,6 +425,7 @@ def _settings_context(
     review_devices=None,
     password_error: str | None = None,
     password_success: bool = False,
+    mqtt_port_error: str | None = None,
 ) -> dict:
     return {
         "admin": admin,
@@ -432,7 +434,16 @@ def _settings_context(
         "password_error": password_error,
         "password_success": password_success,
         "review_devices": review_devices,
+        "mqtt_port_error": mqtt_port_error,
     }
+
+
+def _validate_mqtt_port(raw: str) -> int | None:
+    try:
+        port = int(raw)
+    except ValueError:
+        return None
+    return port if 1 <= port <= 65535 else None
 
 
 @router.get("/settings")
@@ -456,6 +467,10 @@ def update_settings(
     theme: str = Form(...),
     font_size: str = Form(...),
     log_retention: str = Form(...),
+    mqtt_enabled: str | None = Form(default=None),
+    mqtt_host: str = Form(default=""),
+    mqtt_port: str = Form(default=""),
+    mqtt_topic_prefix: str = Form(default=""),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
@@ -472,6 +487,12 @@ def update_settings(
             return render(
                 request, session, "settings.html", _settings_context(admin, session, review_devices=review_devices)
             )
+
+    validated_mqtt_port = _validate_mqtt_port(mqtt_port)
+    if validated_mqtt_port is None:
+        return render(
+            request, session, "settings.html", _settings_context(admin, session, mqtt_port_error="mqtt_port_error")
+        )
 
     profiles.request_profile(session, new_profile)
     if new_profile != old_profile:
@@ -492,7 +513,44 @@ def update_settings(
             profiles.record_admin_action(
                 session, admin, AdminActionType.RETENTION_CHANGE, new_retention.value, source=old_retention.value
             )
+
+    new_mqtt_enabled = mqtt_enabled == "on"
+    old_mqtt = profiles.get_mqtt_settings(session)
+    profiles.set_mqtt_settings(
+        session,
+        enabled=new_mqtt_enabled,
+        host=mqtt_host or None,
+        port=validated_mqtt_port,
+        topic_prefix=mqtt_topic_prefix or "argus",
+    )
+    if new_mqtt_enabled != old_mqtt.enabled:
+        profiles.record_admin_action(
+            session,
+            admin,
+            AdminActionType.MQTT_TOGGLE,
+            "enabled" if new_mqtt_enabled else "disabled",
+            source="enabled" if old_mqtt.enabled else "disabled",
+        )
     return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/settings/mqtt-test")
+def mqtt_test(
+    request: Request,
+    mqtt_host: str = Form(default=""),
+    mqtt_port: str = Form(default=""),
+    mqtt_topic_prefix: str = Form(default=""),
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    """Tests the connection values currently typed in the form, not whatever is saved in Settings —
+    result is ephemeral, never written to Settings.mqtt_last_publish_*."""
+    port = _validate_mqtt_port(mqtt_port)
+    if port is None:
+        result, detail = "invalid_port", None
+    else:
+        result, detail = mqtt_bridge.test_connection(mqtt_host, port, mqtt_topic_prefix or "argus")
+    return render(request, session, "_mqtt_test_result.html", {"mqtt_test_result": result, "mqtt_test_detail": detail})
 
 
 @router.post("/settings/enforce-review")

@@ -17,6 +17,7 @@ _BASE_SETTINGS_FORM = {
     "theme": "dark",
     "font_size": "md",
     "log_retention": "1_year",
+    "mqtt_port": "1883",
 }
 
 

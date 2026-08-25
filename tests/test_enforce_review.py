@@ -53,7 +53,14 @@ def test_switching_to_enforce_with_nothing_unreviewed_applies_immediately(logged
     # Action
     response = logged_in_client.post(
         "/settings",
-        data={"profile": "enforce", "language": "en", "theme": "dark", "font_size": "md", "log_retention": "1_year"},
+        data={
+            "profile": "enforce",
+            "language": "en",
+            "theme": "dark",
+            "font_size": "md",
+            "log_retention": "1_year",
+            "mqtt_port": "1883",
+        },
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK

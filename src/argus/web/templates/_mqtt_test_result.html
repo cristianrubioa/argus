@@ -1,0 +1,13 @@
+{% if mqtt_test_result == 'ok' %}
+<span class="text-sm text-green-700 dark:text-green-400">{{ t('mqtt_test_success') }}</span>
+{% elif mqtt_test_result == 'timeout' %}
+<span class="text-sm text-red-700 dark:text-red-400">{{ t('mqtt_test_timeout') }}</span>
+{% elif mqtt_test_result == 'invalid_port' %}
+<span class="text-sm text-red-700 dark:text-red-400">{{ t('mqtt_test_invalid_port') }}</span>
+{% elif mqtt_test_result == 'invalid_host' %}
+<span class="text-sm text-red-700 dark:text-red-400">{{ t('mqtt_test_invalid_host') }}</span>
+{% elif mqtt_test_result == 'connection_refused' %}
+<span class="text-sm text-red-700 dark:text-red-400">{{ t('mqtt_test_connection_refused') }}</span>
+{% else %}
+<span class="text-sm text-red-700 dark:text-red-400">{{ t('mqtt_test_error_label') }} {{ mqtt_test_detail }}</span>
+{% endif %}

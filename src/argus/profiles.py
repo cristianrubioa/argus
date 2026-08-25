@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -105,6 +106,34 @@ def get_log_retention(session: Session) -> LogRetention:
 def set_log_retention(session: Session, log_retention: LogRetention) -> Settings:
     settings = get_settings(session)
     settings.log_retention = log_retention
+    session.commit()
+    return settings
+
+
+@dataclass(frozen=True)
+class MqttSettings:
+    enabled: bool
+    host: str | None
+    port: int
+    topic_prefix: str
+
+
+def get_mqtt_settings(session: Session) -> MqttSettings:
+    settings = get_settings(session)
+    return MqttSettings(
+        enabled=settings.mqtt_enabled,
+        host=settings.mqtt_host,
+        port=settings.mqtt_port,
+        topic_prefix=settings.mqtt_topic_prefix,
+    )
+
+
+def set_mqtt_settings(session: Session, *, enabled: bool, host: str | None, port: int, topic_prefix: str) -> Settings:
+    settings = get_settings(session)
+    settings.mqtt_enabled = enabled
+    settings.mqtt_host = host
+    settings.mqtt_port = port
+    settings.mqtt_topic_prefix = topic_prefix
     session.commit()
     return settings
 

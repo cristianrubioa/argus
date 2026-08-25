@@ -45,6 +45,7 @@ class AdminActionType(enum.StrEnum):
     DEVICE_RENAME = "device_rename"
     PROFILE_SWITCH = "profile_switch"
     RETENTION_CHANGE = "retention_change"
+    MQTT_TOGGLE = "mqtt_toggle"
 
 
 class Theme(enum.StrEnum):
@@ -187,3 +188,7 @@ class Settings(Base):
     latest_version_available: Mapped[str | None] = mapped_column(String(32), nullable=True)
     version_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     log_retention: Mapped[LogRetention] = mapped_column(Enum(LogRetention), default=LogRetention.ONE_YEAR)
+    mqtt_enabled: Mapped[bool] = mapped_column(default=False)
+    mqtt_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    mqtt_port: Mapped[int] = mapped_column(default=1883)
+    mqtt_topic_prefix: Mapped[str] = mapped_column(String(64), default="argus")

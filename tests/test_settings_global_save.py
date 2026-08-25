@@ -9,7 +9,14 @@ def test_single_submit_commits_all_fields_together(logged_in_client, session):
     # Action
     response = logged_in_client.post(
         "/settings",
-        data={"profile": "enforce", "language": "es", "theme": "light", "font_size": "lg", "log_retention": "90_days"},
+        data={
+            "profile": "enforce",
+            "language": "es",
+            "theme": "light",
+            "font_size": "lg",
+            "log_retention": "90_days",
+            "mqtt_port": "1883",
+        },
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK

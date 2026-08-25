@@ -10,7 +10,6 @@ from datetime import timezone
 import paho.mqtt.publish as mqtt_publish
 from sqlalchemy.orm import Session
 
-from argus import config
 from argus import profiles
 from argus.models import DeviceEvent
 
@@ -21,8 +20,8 @@ _MAX_ERROR_LENGTH = 255
 
 
 def publish_event(event: DeviceEvent, session: Session) -> None:
-    broker = config.mqtt_config()
-    if broker is None:
+    broker = profiles.get_mqtt_settings(session)
+    if not broker.enabled or not broker.host:
         return
 
     device = event.device
@@ -57,6 +56,32 @@ def publish_event(event: DeviceEvent, session: Session) -> None:
     finally:
         # ponytail: on a real timeout the worker thread is left running/leaked (paho has no way to cancel
         # an in-flight connect); acceptable for a rare broker-hang edge case. Revisit if this ever recurs.
+        executor.shutdown(wait=False)
+
+
+def test_connection(host: str, port: int, topic_prefix: str) -> tuple[str, str | None]:
+    """Ad-hoc connectivity check for the Settings "Probar conexión" action — same bounded-publish
+    mechanics as publish_event(), but never touches Settings.mqtt_last_publish_*. Returns
+    ("ok", None), ("timeout", None), ("invalid_host", None), ("connection_refused", None), or
+    ("error", <message>). The first four cover the common cases with a friendly label instead of
+    a raw OS error string (e.g. "[Errno -2] Name or service not known")."""
+    topic = f"{topic_prefix}/{socket.gethostname()}/test"
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(mqtt_publish.single, topic, payload="test", hostname=host, port=port)
+    try:
+        future.result(timeout=_PUBLISH_TIMEOUT_SECONDS)
+    except concurrent.futures.TimeoutError:
+        return "timeout", None
+    except socket.gaierror:
+        return "invalid_host", None
+    except ConnectionRefusedError:
+        return "connection_refused", None
+    except Exception as exc:
+        return "error", str(exc)[:_MAX_ERROR_LENGTH]
+    else:
+        return "ok", None
+    finally:
+        # ponytail: same leaked-thread-on-timeout trade-off as publish_event() above.
         executor.shutdown(wait=False)
 
 

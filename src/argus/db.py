@@ -49,6 +49,10 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE settings ADD COLUMN latest_version_available VARCHAR(32)",
     "ALTER TABLE settings ADD COLUMN version_checked_at DATETIME",
     "ALTER TABLE settings ADD COLUMN log_retention TEXT DEFAULT 'ONE_YEAR'",
+    "ALTER TABLE settings ADD COLUMN mqtt_enabled BOOLEAN DEFAULT 0",
+    "ALTER TABLE settings ADD COLUMN mqtt_host VARCHAR(255)",
+    "ALTER TABLE settings ADD COLUMN mqtt_port INTEGER DEFAULT 1883",
+    "ALTER TABLE settings ADD COLUMN mqtt_topic_prefix TEXT DEFAULT 'argus'",
 )
 
 _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
