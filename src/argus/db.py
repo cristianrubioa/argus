@@ -48,6 +48,7 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE settings ADD COLUMN last_log_prune_at DATETIME",
     "ALTER TABLE settings ADD COLUMN latest_version_available VARCHAR(32)",
     "ALTER TABLE settings ADD COLUMN version_checked_at DATETIME",
+    "ALTER TABLE settings ADD COLUMN log_retention TEXT DEFAULT 'ONE_YEAR'",
 )
 
 _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (

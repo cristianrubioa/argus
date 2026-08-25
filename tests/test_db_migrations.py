@@ -83,3 +83,34 @@ def test_add_device_events_settled_at_reraises_an_unrelated_operational_error():
     # Action & Expected
     with pytest.raises(OperationalError, match="no such table"):
         db._add_device_events_settled_at(engine)
+
+
+def test_log_retention_column_backfills_to_one_year_on_upgrade():
+    # Setup
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE settings DROP COLUMN log_retention"))
+        conn.execute(
+            text("INSERT INTO settings (id, profile, language, theme, font_size) VALUES (1, :p, 'en', 'dark', 'md')"),
+            {"p": Profile.MONITOR.value},
+        )
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT log_retention FROM settings WHERE id = 1")).one()
+    assert row.log_retention == "ONE_YEAR"
+
+
+def test_log_retention_migration_is_idempotent():
+    # Setup
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    init_db(bind_engine=engine)
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(settings)"))}
+    assert "log_retention" in columns

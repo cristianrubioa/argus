@@ -8,7 +8,16 @@ from argus import profiles
 from argus.factories import DeviceFactory
 from argus.models import AdminAction
 from argus.models import AdminActionType
+from argus.models import LogRetention
 from argus.web import i18n
+
+_BASE_SETTINGS_FORM = {
+    "profile": "monitor",
+    "language": "en",
+    "theme": "dark",
+    "font_size": "md",
+    "log_retention": "1_year",
+}
 
 
 def test_authorize_records_whitelist_authorize_action(logged_in_client, session):
@@ -74,7 +83,7 @@ def test_renaming_to_the_same_name_records_nothing(logged_in_client, session):
 
 def test_profile_switch_records_profile_switch_action(logged_in_client, session):
     # Action
-    logged_in_client.post("/settings", data={"profile": "enforce", "language": "en", "theme": "dark", "font_size": "md"})
+    logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "profile": "enforce"})
     # Expected
     action = session.query(AdminAction).filter_by(action_type=AdminActionType.PROFILE_SWITCH).one()
     assert (action.vid_pid, action.source, action.target) == (None, "monitor", "enforce")
@@ -82,9 +91,25 @@ def test_profile_switch_records_profile_switch_action(logged_in_client, session)
 
 def test_settings_save_without_profile_change_records_nothing(logged_in_client, session):
     # Action
-    logged_in_client.post("/settings", data={"profile": "monitor", "language": "en", "theme": "light", "font_size": "md"})
+    logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "theme": "light"})
     # Expected
     assert session.query(AdminAction).filter_by(action_type=AdminActionType.PROFILE_SWITCH).count() == 0
+
+
+def test_retention_change_records_retention_change_action(logged_in_client, session):
+    # Action
+    logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "log_retention": "90_days"})
+    # Expected
+    action = session.query(AdminAction).filter_by(action_type=AdminActionType.RETENTION_CHANGE).one()
+    assert (action.vid_pid, action.source, action.target) == (None, "1_year", "90_days")
+    assert profiles.get_log_retention(session) == LogRetention.NINETY_DAYS
+
+
+def test_settings_save_without_retention_change_records_nothing(logged_in_client, session):
+    # Action
+    logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "theme": "light"})
+    # Expected
+    assert session.query(AdminAction).filter_by(action_type=AdminActionType.RETENTION_CHANGE).count() == 0
 
 
 def test_logs_page_renders_both_tab_panels_since_visibility_is_toggled_client_side(logged_in_client, session):
@@ -222,15 +247,15 @@ def test_admin_actions_pagination_moves_to_the_next_page(logged_in_client, sessi
     assert "Device 0" not in response.text
 
 
-def test_prune_deletes_old_admin_actions_when_retention_configured(session, monkeypatch):
+def test_prune_deletes_old_admin_actions_when_retention_configured(session):
     # Setup
-    monkeypatch.setenv("ARGUS_LOG_RETENTION_DAYS", "30")
+    profiles.set_log_retention(session, LogRetention.NINETY_DAYS)
     session.add(
         AdminAction(
             actor="admin",
             action_type=AdminActionType.WHITELIST_AUTHORIZE,
             target="old",
-            occurred_at=datetime.now(timezone.utc) - timedelta(days=31),
+            occurred_at=datetime.now(timezone.utc) - timedelta(days=91),
         )
     )
     session.commit()
@@ -240,9 +265,9 @@ def test_prune_deletes_old_admin_actions_when_retention_configured(session, monk
     assert session.query(AdminAction).count() == 0
 
 
-def test_prune_keeps_admin_actions_when_retention_unset(session, monkeypatch):
+def test_prune_keeps_admin_actions_when_retention_is_forever(session):
     # Setup
-    monkeypatch.delenv("ARGUS_LOG_RETENTION_DAYS", raising=False)
+    profiles.set_log_retention(session, LogRetention.FOREVER)
     session.add(
         AdminAction(
             actor="admin",

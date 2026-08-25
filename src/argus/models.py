@@ -44,6 +44,7 @@ class AdminActionType(enum.StrEnum):
     WHITELIST_REVOKE = "whitelist_revoke"
     DEVICE_RENAME = "device_rename"
     PROFILE_SWITCH = "profile_switch"
+    RETENTION_CHANGE = "retention_change"
 
 
 class Theme(enum.StrEnum):
@@ -60,6 +61,13 @@ class VersionStatus(enum.StrEnum):
     UNKNOWN = "unknown"
     UPDATE_AVAILABLE = "update_available"
     UP_TO_DATE = "up_to_date"
+
+
+class LogRetention(enum.StrEnum):
+    NINETY_DAYS = "90_days"
+    ONE_YEAR = "1_year"
+    TWO_YEARS = "2_years"
+    FOREVER = "forever"
 
 
 class Device(Base):
@@ -178,3 +186,4 @@ class Settings(Base):
     last_log_prune_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     latest_version_available: Mapped[str | None] = mapped_column(String(32), nullable=True)
     version_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    log_retention: Mapped[LogRetention] = mapped_column(Enum(LogRetention), default=LogRetention.ONE_YEAR)

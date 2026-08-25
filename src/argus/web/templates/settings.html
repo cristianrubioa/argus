@@ -32,7 +32,7 @@
   </button>
 </form>
 
-<form method="post" action="/settings">
+<form method="post" action="/settings" id="settings-form">
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_security_heading') }}</h1>
   <div class="space-y-3 max-w-md">
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
@@ -50,6 +50,16 @@
       </span>
     </label>
   </div>
+
+  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_retention_heading') }}</h1>
+  <select name="log_retention" id="log-retention-select" data-current="{{ settings.log_retention.value }}"
+    data-narrow-warning="{{ t('settings_retention_narrow_warning') }}"
+    class="w-full max-w-md bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+    <option value="90_days" {% if settings.log_retention.value == '90_days' %}selected{% endif %}>{{ t('retention_90_days') }}</option>
+    <option value="1_year" {% if settings.log_retention.value == '1_year' %}selected{% endif %}>{{ t('retention_1_year') }}</option>
+    <option value="2_years" {% if settings.log_retention.value == '2_years' %}selected{% endif %}>{{ t('retention_2_years') }}</option>
+    <option value="forever" {% if settings.log_retention.value == 'forever' %}selected{% endif %}>{{ t('retention_forever') }}</option>
+  </select>
 
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_language_heading') }}</h1>
   <select name="language"
@@ -80,6 +90,21 @@
     </button>
   </div>
 </form>
+<script>
+  (function () {
+    const form = document.getElementById("settings-form");
+    const select = document.getElementById("log-retention-select");
+    if (!form || !select) return;
+    const rank = {"90_days": 0, "1_year": 1, "2_years": 2, "forever": 3};
+    form.addEventListener("submit", function (event) {
+      if (rank[select.value] < rank[select.dataset.current]) {
+        if (!window.confirm(select.dataset.narrowWarning)) {
+          event.preventDefault();
+        }
+      }
+    });
+  })();
+</script>
 
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('agent_status_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">

@@ -5,7 +5,6 @@ from datetime import timezone
 
 from sqlalchemy.orm import Session
 
-from argus import config
 from argus import version_check
 from argus.agent import usbguard_cli
 from argus.models import AdminAction
@@ -14,6 +13,7 @@ from argus.models import AgentStatus
 from argus.models import Decision
 from argus.models import Device
 from argus.models import DeviceEvent
+from argus.models import LogRetention
 from argus.models import PendingUsbguardAction
 from argus.models import Profile
 from argus.models import Settings
@@ -26,6 +26,12 @@ _SETTINGS_ID = 1
 _HEARTBEAT_STALE_SECONDS = 30
 _LOG_PRUNE_CHECK_INTERVAL = timedelta(hours=24)
 _VERSION_CHECK_INTERVAL = timedelta(hours=24)
+
+_RETENTION_DAYS = {
+    LogRetention.NINETY_DAYS: 90,
+    LogRetention.ONE_YEAR: 365,
+    LogRetention.TWO_YEARS: 730,
+}
 
 
 def _utcnow() -> datetime:
@@ -92,6 +98,17 @@ def set_font_size(session: Session, font_size: str) -> Settings:
     return settings
 
 
+def get_log_retention(session: Session) -> LogRetention:
+    return get_settings(session).log_retention
+
+
+def set_log_retention(session: Session, log_retention: LogRetention) -> Settings:
+    settings = get_settings(session)
+    settings.log_retention = log_retention
+    session.commit()
+    return settings
+
+
 def record_agent_heartbeat(session: Session) -> None:
     """Called from argus-agent's reconcile loop, every cycle, regardless of what else the cycle does."""
     settings = get_settings(session)
@@ -124,12 +141,12 @@ def record_admin_action(
 
 
 def prune_old_events(session: Session) -> None:
-    """Called from argus-agent's reconcile loop, every cycle; no-ops unless retention is configured and due."""
-    retention_days = config.log_retention_days()
+    """Called from argus-agent's reconcile loop, every cycle; no-ops unless retention is finite and due."""
+    settings = get_settings(session)
+    retention_days = _RETENTION_DAYS.get(settings.log_retention)
     if retention_days is None:
         return
 
-    settings = get_settings(session)
     if settings.last_log_prune_at is not None:
         if _utcnow() - _as_aware(settings.last_log_prune_at) < _LOG_PRUNE_CHECK_INTERVAL:
             return

@@ -43,7 +43,13 @@ def test_init_db_is_idempotent_on_a_database_that_already_has_language():
     assert "language" in columns
 
 
-_BASE_SETTINGS_FORM = {"profile": "monitor", "language": "en", "theme": "dark", "font_size": "md"}
+_BASE_SETTINGS_FORM = {
+    "profile": "monitor",
+    "language": "en",
+    "theme": "dark",
+    "font_size": "md",
+    "log_retention": "1_year",
+}
 
 
 def test_language_persists_via_settings_route(logged_in_client, session):

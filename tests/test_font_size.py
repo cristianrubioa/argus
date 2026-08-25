@@ -17,7 +17,13 @@ def test_font_size_persists_via_profiles(session):
     assert profiles.get_font_size(session) == "lg"
 
 
-_BASE_SETTINGS_FORM = {"profile": "monitor", "language": "en", "theme": "dark", "font_size": "md"}
+_BASE_SETTINGS_FORM = {
+    "profile": "monitor",
+    "language": "en",
+    "theme": "dark",
+    "font_size": "md",
+    "log_retention": "1_year",
+}
 
 
 def test_font_size_persists_via_settings_route(logged_in_client, session):

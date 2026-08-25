@@ -49,6 +49,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_type_whitelist_revoke": "Revoked device",
         "action_type_device_rename": "Renamed device",
         "action_type_profile_switch": "Switched profile",
+        "action_type_retention_change": "Changed log retention",
         "logs_empty": "No events yet",
         "logs_search_label": "Search",
         "logs_search_placeholder": "Device name, VID:PID, or serial",
@@ -86,6 +87,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mqtt_status_never": "No publish attempted yet",
         "mqtt_status_ok_label": "Last publish (OK):",
         "mqtt_status_failed_label": "Last publish (failed):",
+        "settings_retention_heading": "Data Retention",
+        "retention_90_days": "90 days",
+        "retention_1_year": "1 year",
+        "retention_2_years": "2 years",
+        "retention_forever": "Forever",
+        "settings_retention_narrow_warning": (
+            "This deletes any device event, applied action, or admin action older than the new period on the "
+            "next cleanup cycle (within 24 hours). This can't be undone. Continue?"
+        ),
         "settings_language_heading": "Language",
         "settings_theme_heading": "Theme",
         "theme_dark": "Dark",
@@ -172,6 +182,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_type_whitelist_revoke": "Revocó dispositivo",
         "action_type_device_rename": "Renombró dispositivo",
         "action_type_profile_switch": "Cambió de perfil",
+        "action_type_retention_change": "Cambió la retención de registros",
         "logs_empty": "Todavía no hay eventos",
         "logs_search_label": "Buscar",
         "logs_search_placeholder": "Nombre del dispositivo, VID:PID o serie",
@@ -209,6 +220,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mqtt_status_never": "Todavía no se intentó publicar",
         "mqtt_status_ok_label": "Última publicación (OK):",
         "mqtt_status_failed_label": "Última publicación (falló):",
+        "settings_retention_heading": "Retención de datos",
+        "retention_90_days": "90 días",
+        "retention_1_year": "1 año",
+        "retention_2_years": "2 años",
+        "retention_forever": "Para siempre",
+        "settings_retention_narrow_warning": (
+            "Esto borra todo evento de dispositivo, acción aplicada o acción de admin más antigua que el nuevo "
+            "período en el próximo ciclo de limpieza (dentro de 24 horas). No se puede deshacer. ¿Continuar?"
+        ),
         "settings_language_heading": "Idioma",
         "settings_theme_heading": "Tema",
         "theme_dark": "Oscuro",
@@ -295,6 +315,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_type_whitelist_revoke": "Revogou dispositivo",
         "action_type_device_rename": "Renomeou dispositivo",
         "action_type_profile_switch": "Mudou de perfil",
+        "action_type_retention_change": "Alterou a retenção de registros",
         "logs_empty": "Ainda não há eventos",
         "logs_search_label": "Buscar",
         "logs_search_placeholder": "Nome do dispositivo, VID:PID ou número de série",
@@ -332,6 +353,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mqtt_status_never": "Ainda nenhuma publicação tentada",
         "mqtt_status_ok_label": "Última publicação (OK):",
         "mqtt_status_failed_label": "Última publicação (falhou):",
+        "settings_retention_heading": "Retenção de dados",
+        "retention_90_days": "90 dias",
+        "retention_1_year": "1 ano",
+        "retention_2_years": "2 anos",
+        "retention_forever": "Para sempre",
+        "settings_retention_narrow_warning": (
+            "Isso apaga qualquer evento de dispositivo, ação aplicada ou ação de admin mais antiga que o novo "
+            "período no próximo ciclo de limpeza (em até 24 horas). Não pode ser desfeito. Continuar?"
+        ),
         "settings_language_heading": "Idioma",
         "settings_theme_heading": "Tema",
         "theme_dark": "Escuro",
@@ -418,6 +448,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_type_whitelist_revoke": "Appareil révoqué",
         "action_type_device_rename": "Appareil renommé",
         "action_type_profile_switch": "Profil changé",
+        "action_type_retention_change": "Rétention des journaux modifiée",
         "logs_empty": "Aucun événement pour l'instant",
         "logs_search_label": "Rechercher",
         "logs_search_placeholder": "Nom de l'appareil, VID:PID ou numéro de série",
@@ -455,6 +486,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mqtt_status_never": "Aucune publication tentée pour l'instant",
         "mqtt_status_ok_label": "Dernière publication (OK) :",
         "mqtt_status_failed_label": "Dernière publication (échec) :",
+        "settings_retention_heading": "Rétention des données",
+        "retention_90_days": "90 jours",
+        "retention_1_year": "1 an",
+        "retention_2_years": "2 ans",
+        "retention_forever": "Pour toujours",
+        "settings_retention_narrow_warning": (
+            "Cela supprime tout événement d'appareil, action appliquée ou action admin plus ancienne que la "
+            "nouvelle période lors du prochain cycle de nettoyage (dans les 24 heures). Action irréversible. "
+            "Continuer ?"
+        ),
         "settings_language_heading": "Langue",
         "settings_theme_heading": "Thème",
         "theme_dark": "Sombre",
@@ -541,6 +582,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "action_type_whitelist_revoke": "Gerät widerrufen",
         "action_type_device_rename": "Gerät umbenannt",
         "action_type_profile_switch": "Profil gewechselt",
+        "action_type_retention_change": "Protokollaufbewahrung geändert",
         "logs_empty": "Noch keine Ereignisse",
         "logs_search_label": "Suche",
         "logs_search_placeholder": "Gerätename, VID:PID oder Seriennummer",
@@ -578,6 +620,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mqtt_status_never": "Noch kein Veröffentlichungsversuch",
         "mqtt_status_ok_label": "Letzte Veröffentlichung (OK):",
         "mqtt_status_failed_label": "Letzte Veröffentlichung (fehlgeschlagen):",
+        "settings_retention_heading": "Datenaufbewahrung",
+        "retention_90_days": "90 Tage",
+        "retention_1_year": "1 Jahr",
+        "retention_2_years": "2 Jahre",
+        "retention_forever": "Für immer",
+        "settings_retention_narrow_warning": (
+            "Dadurch werden alle Geräteereignisse, angewendeten Aktionen oder Admin-Aktionen gelöscht, die älter "
+            "als der neue Zeitraum sind — beim nächsten Bereinigungszyklus (innerhalb von 24 Stunden). Dies kann "
+            "nicht rückgängig gemacht werden. Fortfahren?"
+        ),
         "settings_language_heading": "Sprache",
         "settings_theme_heading": "Design",
         "theme_dark": "Dunkel",

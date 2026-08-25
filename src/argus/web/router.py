@@ -20,6 +20,7 @@ from argus.models import AdminActionType
 from argus.models import Device
 from argus.models import DeviceEvent
 from argus.models import FontSize
+from argus.models import LogRetention
 from argus.models import PendingUsbguardAction
 from argus.models import Profile
 from argus.models import Theme
@@ -454,6 +455,7 @@ def update_settings(
     language: str = Form(...),
     theme: str = Form(...),
     font_size: str = Form(...),
+    log_retention: str = Form(...),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
@@ -482,6 +484,14 @@ def update_settings(
         profiles.set_theme(session, theme)
     if font_size in FontSize:
         profiles.set_font_size(session, font_size)
+    if log_retention in LogRetention:
+        old_retention = profiles.get_log_retention(session)
+        new_retention = LogRetention(log_retention)
+        if new_retention != old_retention:
+            profiles.set_log_retention(session, new_retention)
+            profiles.record_admin_action(
+                session, admin, AdminActionType.RETENTION_CHANGE, new_retention.value, source=old_retention.value
+            )
     return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
 
 

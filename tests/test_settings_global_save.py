@@ -1,13 +1,15 @@
 from fastapi import status
 
 from argus import profiles
+from argus.models import LogRetention
 from argus.models import Profile
 
 
 def test_single_submit_commits_all_fields_together(logged_in_client, session):
     # Action
     response = logged_in_client.post(
-        "/settings", data={"profile": "enforce", "language": "es", "theme": "light", "font_size": "lg"}
+        "/settings",
+        data={"profile": "enforce", "language": "es", "theme": "light", "font_size": "lg", "log_retention": "90_days"},
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK
@@ -16,7 +18,8 @@ def test_single_submit_commits_all_fields_together(logged_in_client, session):
         profiles.get_language(session),
         profiles.get_theme(session),
         profiles.get_font_size(session),
-    ) == (Profile.ENFORCE, "es", "light", "lg")
+        profiles.get_log_retention(session),
+    ) == (Profile.ENFORCE, "es", "light", "lg", LogRetention.NINETY_DAYS)
 
 
 def test_settings_config_fields_share_one_form_separate_from_the_password_form(logged_in_client, session):
