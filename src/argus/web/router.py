@@ -41,6 +41,9 @@ from argus.web.auth import require_admin
 from argus.web.i18n import LANGUAGE_NAMES
 from argus.web.i18n import SUPPORTED_LANGUAGES
 from argus.web.i18n import t as translate
+from argus.web.toast import ToastKind
+from argus.web.toast import ToastMessage
+from argus.web.toast import flash
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +68,10 @@ def _version_state(session: Session) -> dict:
     return {"installed": installed, "status": version_status, "latest": settings.latest_version_available}
 
 
-def render(request: Request, session: Session, name: str, context: dict):
+def render(request: Request, session: Session, name: str, context: dict, *, include_toast: bool = False):
+    """include_toast pops the pending flash from the session — only the specific pages that land after
+    a redirect should pass True. Every partial/polled route (e.g. the sidebar's 5s agent-status poll)
+    must leave it False, or a background poll from another tab could consume a toast meant elsewhere."""
     language = profiles.get_language(session)
     full_context = {
         **context,
@@ -77,6 +83,7 @@ def render(request: Request, session: Session, name: str, context: dict):
         "font_size": profiles.get_font_size(session),
         "agent_status": profiles.agent_status(session),
         "version_state": _version_state(session),
+        "toast": request.session.pop("_toast", None) if include_toast else None,
     }
     return templates.TemplateResponse(request, name, full_context)
 
@@ -183,35 +190,52 @@ def devices(request: Request, admin: str = Depends(require_admin), session: Sess
 @router.get("/whitelist")
 def whitelist(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     entries = session.query(WhitelistEntry).order_by(WhitelistEntry.added_at.desc()).all()
-    return render(request, session, "whitelist.html", {"admin": admin, "entries": entries, "active": "whitelist"})
+    return render(
+        request,
+        session,
+        "whitelist.html",
+        {"admin": admin, "entries": entries, "active": "whitelist"},
+        include_toast=True,
+    )
 
 
-def _authorize_device(session: Session, admin: str, device_id: int) -> None:
+def _authorize_device(session: Session, admin: str, device_id: int) -> bool:
+    """Returns whether a whitelist entry was actually created — False if the device is gone or already
+    whitelisted (e.g. a stale page, or a race with another admin session)."""
     device = session.get(Device, device_id)
-    if device is not None and device.whitelist_entry is None:
-        session.add(WhitelistEntry(device_id=device.id, added_by=admin))
-        session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
-        session.commit()
-        profiles.record_admin_action(
-            session,
-            admin,
-            AdminActionType.WHITELIST_AUTHORIZE,
-            device.display_name,
-            vid_pid=device.vid_pid,
-            serial=device.serial,
-        )
+    if device is None or device.whitelist_entry is not None:
+        return False
+    session.add(WhitelistEntry(device_id=device.id, added_by=admin))
+    session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.ALLOW))
+    session.commit()
+    profiles.record_admin_action(
+        session,
+        admin,
+        AdminActionType.WHITELIST_AUTHORIZE,
+        device.display_name,
+        vid_pid=device.vid_pid,
+        serial=device.serial,
+    )
+    return True
 
 
 @router.post("/whitelist/authorize/{device_id}")
-def authorize_device(device_id: int, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
-    _authorize_device(session, admin, device_id)
+def authorize_device(
+    device_id: int, request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)
+):
+    ok = _authorize_device(session, admin, device_id)
+    message = ToastMessage.DEVICE_AUTHORIZED if ok else ToastMessage.DEVICE_AUTHORIZE_FAILED
+    flash(request, ToastKind.SUCCESS if ok else ToastKind.ERROR, message)
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/whitelist/revoke/{device_id}")
-def revoke_device(device_id: int, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+def revoke_device(
+    device_id: int, request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)
+):
     device = session.get(Device, device_id)
-    if device is not None and device.whitelist_entry is not None:
+    ok = device is not None and device.whitelist_entry is not None
+    if ok:
         vid_pid, serial, target = device.vid_pid, device.serial, device.display_name
         session.delete(device.whitelist_entry)
         session.add(PendingUsbguardAction(device_id=device.id, action=UsbguardAction.BLOCK))
@@ -219,18 +243,22 @@ def revoke_device(device_id: int, admin: str = Depends(require_admin), session: 
         profiles.record_admin_action(
             session, admin, AdminActionType.WHITELIST_REVOKE, target, vid_pid=vid_pid, serial=serial
         )
+    message = ToastMessage.DEVICE_REVOKED if ok else ToastMessage.DEVICE_REVOKE_FAILED
+    flash(request, ToastKind.SUCCESS if ok else ToastKind.ERROR, message)
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/whitelist/rename/{device_id}")
 def rename_device(
     device_id: int,
+    request: Request,
     custom_name: str = Form(""),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
     device = session.get(Device, device_id)
-    if device is not None and device.whitelist_entry is not None:
+    ok = device is not None and device.whitelist_entry is not None
+    if ok:
         old_name = device.display_name
         new_name = custom_name.strip() or None
         if new_name != old_name:
@@ -245,6 +273,8 @@ def rename_device(
                 serial=device.serial,
                 source=old_name,
             )
+    message = ToastMessage.DEVICE_RENAMED if ok else ToastMessage.DEVICE_RENAME_FAILED
+    flash(request, ToastKind.SUCCESS if ok else ToastKind.ERROR, message)
     return RedirectResponse(url="/whitelist", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -418,23 +448,12 @@ def logs_partial(
 # --- Settings ---
 
 
-def _settings_context(
-    admin: str,
-    session: Session,
-    *,
-    review_devices=None,
-    password_error: str | None = None,
-    password_success: bool = False,
-    mqtt_port_error: str | None = None,
-) -> dict:
+def _settings_context(admin: str, session: Session, *, review_devices=None) -> dict:
     return {
         "admin": admin,
         "settings": profiles.get_settings(session),
         "active": "settings",
-        "password_error": password_error,
-        "password_success": password_success,
         "review_devices": review_devices,
-        "mqtt_port_error": mqtt_port_error,
     }
 
 
@@ -448,7 +467,7 @@ def _validate_mqtt_port(raw: str) -> int | None:
 
 @router.get("/settings")
 def settings_page(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
-    return render(request, session, "settings.html", _settings_context(admin, session))
+    return render(request, session, "settings.html", _settings_context(admin, session), include_toast=True)
 
 
 def _connected_identities() -> set[tuple[str, str, str | None]]:
@@ -490,9 +509,8 @@ def update_settings(
 
     validated_mqtt_port = _validate_mqtt_port(mqtt_port)
     if validated_mqtt_port is None:
-        return render(
-            request, session, "settings.html", _settings_context(admin, session, mqtt_port_error="mqtt_port_error")
-        )
+        flash(request, ToastKind.ERROR, ToastMessage.MQTT_PORT_INVALID)
+        return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
 
     profiles.request_profile(session, new_profile)
     if new_profile != old_profile:
@@ -531,6 +549,7 @@ def update_settings(
             "enabled" if new_mqtt_enabled else "disabled",
             source="enabled" if old_mqtt.enabled else "disabled",
         )
+    flash(request, ToastKind.SUCCESS, ToastMessage.SETTINGS_SAVED)
     return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -581,18 +600,17 @@ def update_password(
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
-    password_error = None
-    password_success = False
+    """Always redirects (never a direct re-render) — the shared scroll-position-restore script in
+    _shell.html handles not jumping the page around, on every outcome, success or failure alike. Errors
+    flash with inline=True, showing next to the Change password button (same pattern as the MQTT Test
+    connection result) instead of the shared corner toast — nothing is lost by not re-rendering directly,
+    since password fields are never repopulated anyway."""
     if not is_password_valid(new_password, confirm_password):
-        password_error = "password_error_mismatch" if new_password != confirm_password else "password_error_too_short"
+        message = ToastMessage.PASSWORD_MISMATCH if new_password != confirm_password else ToastMessage.PASSWORD_TOO_SHORT
+        flash(request, ToastKind.ERROR, message, inline=True)
     elif not change_password(session, admin, current_password, new_password):
-        password_error = "settings_password_error_current_incorrect"
+        flash(request, ToastKind.ERROR, ToastMessage.PASSWORD_CURRENT_INCORRECT, inline=True)
     else:
-        password_success = True
+        flash(request, ToastKind.SUCCESS, ToastMessage.PASSWORD_CHANGED)
 
-    return render(
-        request,
-        session,
-        "settings.html",
-        _settings_context(admin, session, password_error=password_error, password_success=password_success),
-    )
+    return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)

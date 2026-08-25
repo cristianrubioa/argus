@@ -67,10 +67,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
         "profile_monitor_desc": (
-            "Logs every device but never blocks. Unrecognized devices are flagged only. "
+            "<strong>Logs every device but never blocks.</strong> Unrecognized devices are flagged only. "
             "Switching here restores access to everything currently connected."
         ),
-        "profile_enforce_desc": "Blocks anything not on the whitelist at the kernel level.",
+        "profile_enforce_desc": "<strong>Blocks anything not on the whitelist</strong> at the kernel level.",
         "action_save": "Save",
         "settings_account_heading": "Account",
         "signed_in_as": "Signed in as",
@@ -104,6 +104,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "This deletes any device event, applied action, or admin action older than the new period on the "
             "next cleanup cycle (within 24 hours). This can't be undone. Continue?"
         ),
+        "settings_retention_narrow_continue": "Continue",
+        "settings_retention_narrow_cancel": "Cancel",
         "settings_language_heading": "Language",
         "settings_theme_heading": "Theme",
         "theme_dark": "Dark",
@@ -147,6 +149,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continue",
         "enforce_review_connected": "Connected now",
         "enforce_review_not_connected": "Not connected",
+        "toast_settings_saved": "Settings saved.",
+        "toast_device_authorized": "Device authorized.",
+        "toast_device_authorize_failed": "Couldn't authorize the device.",
+        "toast_device_revoked": "Device revoked.",
+        "toast_device_revoke_failed": "Couldn't revoke the device.",
+        "toast_device_renamed": "Device renamed.",
+        "toast_device_rename_failed": "Couldn't rename the device.",
     },
     "es": {
         "nav_dashboard": "Panel",
@@ -208,10 +217,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
         "profile_monitor_desc": (
-            "Registra cada dispositivo pero nunca bloquea. Solo se marcan los no reconocidos. "
+            "<strong>Registra cada dispositivo pero nunca bloquea.</strong> Solo se marcan los no reconocidos. "
             "Cambiar acá restaura el acceso a todo lo que esté conectado ahora mismo."
         ),
-        "profile_enforce_desc": "Bloquea a nivel del kernel todo lo que no esté en la lista blanca.",
+        "profile_enforce_desc": (
+            "<strong>Bloquea todo lo que no esté en la lista blanca</strong> a nivel del kernel."
+        ),
         "action_save": "Guardar",
         "settings_account_heading": "Cuenta",
         "signed_in_as": "Sesión iniciada como",
@@ -245,6 +256,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Esto borra todo evento de dispositivo, acción aplicada o acción de admin más antigua que el nuevo "
             "período en el próximo ciclo de limpieza (dentro de 24 horas). No se puede deshacer. ¿Continuar?"
         ),
+        "settings_retention_narrow_continue": "Continuar",
+        "settings_retention_narrow_cancel": "Cancelar",
         "settings_language_heading": "Idioma",
         "settings_theme_heading": "Tema",
         "theme_dark": "Oscuro",
@@ -288,6 +301,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continuar",
         "enforce_review_connected": "Conectado ahora",
         "enforce_review_not_connected": "No conectado",
+        "toast_settings_saved": "Ajustes guardados.",
+        "toast_device_authorized": "Dispositivo autorizado.",
+        "toast_device_authorize_failed": "No se pudo autorizar el dispositivo.",
+        "toast_device_revoked": "Dispositivo revocado.",
+        "toast_device_revoke_failed": "No se pudo revocar el dispositivo.",
+        "toast_device_renamed": "Dispositivo renombrado.",
+        "toast_device_rename_failed": "No se pudo renombrar el dispositivo.",
     },
     "pt": {
         "nav_dashboard": "Painel",
@@ -349,10 +369,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
         "profile_monitor_desc": (
-            "Registra todos os dispositivos, mas nunca bloqueia. Só sinaliza os não reconhecidos. "
+            "<strong>Registra todos os dispositivos, mas nunca bloqueia.</strong> Só sinaliza os não reconhecidos. "
             "Mudar para cá restaura o acesso a tudo que estiver conectado agora."
         ),
-        "profile_enforce_desc": "Bloqueia no nível do kernel tudo que não estiver na lista branca.",
+        "profile_enforce_desc": (
+            "<strong>Bloqueia tudo que não estiver na lista branca</strong> no nível do kernel."
+        ),
         "action_save": "Salvar",
         "settings_account_heading": "Conta",
         "signed_in_as": "Conectado como",
@@ -386,6 +408,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Isso apaga qualquer evento de dispositivo, ação aplicada ou ação de admin mais antiga que o novo "
             "período no próximo ciclo de limpeza (em até 24 horas). Não pode ser desfeito. Continuar?"
         ),
+        "settings_retention_narrow_continue": "Continuar",
+        "settings_retention_narrow_cancel": "Cancelar",
         "settings_language_heading": "Idioma",
         "settings_theme_heading": "Tema",
         "theme_dark": "Escuro",
@@ -429,6 +453,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continuar",
         "enforce_review_connected": "Conectado agora",
         "enforce_review_not_connected": "Não conectado",
+        "toast_settings_saved": "Configurações salvas.",
+        "toast_device_authorized": "Dispositivo autorizado.",
+        "toast_device_authorize_failed": "Não foi possível autorizar o dispositivo.",
+        "toast_device_revoked": "Dispositivo revogado.",
+        "toast_device_revoke_failed": "Não foi possível revogar o dispositivo.",
+        "toast_device_renamed": "Dispositivo renomeado.",
+        "toast_device_rename_failed": "Não foi possível renomear o dispositivo.",
     },
     "fr": {
         "nav_dashboard": "Tableau de bord",
@@ -490,10 +521,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
         "profile_monitor_desc": (
-            "Journalise chaque appareil sans jamais bloquer. Signale seulement les non reconnus. "
+            "<strong>Journalise chaque appareil sans jamais bloquer.</strong> Signale seulement les non reconnus. "
             "Passer ici restaure l'accès à tout ce qui est actuellement connecté."
         ),
-        "profile_enforce_desc": "Bloque au niveau du noyau tout ce qui n'est pas sur la liste blanche.",
+        "profile_enforce_desc": (
+            "<strong>Bloque tout ce qui n'est pas sur la liste blanche</strong> au niveau du noyau."
+        ),
         "action_save": "Enregistrer",
         "settings_account_heading": "Compte",
         "signed_in_as": "Connecté en tant que",
@@ -528,6 +561,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "nouvelle période lors du prochain cycle de nettoyage (dans les 24 heures). Action irréversible. "
             "Continuer ?"
         ),
+        "settings_retention_narrow_continue": "Continuer",
+        "settings_retention_narrow_cancel": "Annuler",
         "settings_language_heading": "Langue",
         "settings_theme_heading": "Thème",
         "theme_dark": "Sombre",
@@ -571,6 +606,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continuer",
         "enforce_review_connected": "Connecté actuellement",
         "enforce_review_not_connected": "Non connecté",
+        "toast_settings_saved": "Paramètres enregistrés.",
+        "toast_device_authorized": "Appareil autorisé.",
+        "toast_device_authorize_failed": "Impossible d'autoriser l'appareil.",
+        "toast_device_revoked": "Appareil révoqué.",
+        "toast_device_revoke_failed": "Impossible de révoquer l'appareil.",
+        "toast_device_renamed": "Appareil renommé.",
+        "toast_device_rename_failed": "Impossible de renommer l'appareil.",
     },
     "de": {
         "nav_dashboard": "Übersicht",
@@ -632,10 +674,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "profile_monitor": "Monitor",
         "profile_enforce": "Enforce",
         "profile_monitor_desc": (
-            "Protokolliert jedes Gerät, blockiert aber nie. Nicht erkannte werden nur markiert. "
+            "<strong>Protokolliert jedes Gerät, blockiert aber nie.</strong> Nicht erkannte werden nur markiert. "
             "Der Wechsel hierher stellt den Zugriff auf alles derzeit Verbundene wieder her."
         ),
-        "profile_enforce_desc": "Blockiert auf Kernel-Ebene alles, was nicht auf der Whitelist steht.",
+        "profile_enforce_desc": (
+            "<strong>Blockiert alles, was nicht auf der Whitelist steht,</strong> auf Kernel-Ebene."
+        ),
         "action_save": "Speichern",
         "settings_account_heading": "Konto",
         "signed_in_as": "Angemeldet als",
@@ -670,6 +714,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "als der neue Zeitraum sind — beim nächsten Bereinigungszyklus (innerhalb von 24 Stunden). Dies kann "
             "nicht rückgängig gemacht werden. Fortfahren?"
         ),
+        "settings_retention_narrow_continue": "Fortfahren",
+        "settings_retention_narrow_cancel": "Abbrechen",
         "settings_language_heading": "Sprache",
         "settings_theme_heading": "Design",
         "theme_dark": "Dunkel",
@@ -713,6 +759,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Fortfahren",
         "enforce_review_connected": "Jetzt verbunden",
         "enforce_review_not_connected": "Nicht verbunden",
+        "toast_settings_saved": "Einstellungen gespeichert.",
+        "toast_device_authorized": "Gerät autorisiert.",
+        "toast_device_authorize_failed": "Gerät konnte nicht autorisiert werden.",
+        "toast_device_revoked": "Gerät widerrufen.",
+        "toast_device_revoke_failed": "Gerät konnte nicht widerrufen werden.",
+        "toast_device_renamed": "Gerät umbenannt.",
+        "toast_device_rename_failed": "Gerät konnte nicht umbenannt werden.",
     },
 }
 

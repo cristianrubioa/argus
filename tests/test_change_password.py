@@ -1,6 +1,38 @@
 from fastapi import status
 
 
+def test_password_form_button_starts_disabled(logged_in_client):
+    # Action
+    response = logged_in_client.get("/settings")
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert 'id="password-form-button" disabled' in response.text
+
+
+def test_wrong_current_password_redirects_instead_of_rendering_directly(logged_in_client):
+    # Action
+    response = logged_in_client.post(
+        "/settings/password",
+        data={"current_password": "wrongpass", "new_password": "newpassword1", "confirm_password": "newpassword1"},
+        follow_redirects=False,
+    )
+    # Expected
+    assert response.status_code == status.HTTP_303_SEE_OTHER
+    assert response.headers["location"] == "/settings"
+
+
+def test_successful_password_change_redirects_instead_of_rendering_directly(logged_in_client):
+    # Action
+    response = logged_in_client.post(
+        "/settings/password",
+        data={"current_password": "secret", "new_password": "newpassword1", "confirm_password": "newpassword1"},
+        follow_redirects=False,
+    )
+    # Expected
+    assert response.status_code == status.HTTP_303_SEE_OTHER
+    assert response.headers["location"] == "/settings"
+
+
 def test_successful_password_change(logged_in_client):
     # Action
     response = logged_in_client.post(
@@ -10,6 +42,7 @@ def test_successful_password_change(logged_in_client):
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Password changed." in response.text
+    assert 'id="toast"' in response.text
     old_login = logged_in_client.post("/login", data={"username": "admin", "password": "secret"})
     assert "Invalid username or password" in old_login.text
     new_login = logged_in_client.post("/login", data={"username": "admin", "password": "newpassword1"})
@@ -25,6 +58,7 @@ def test_wrong_current_password_rejected(logged_in_client):
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Current password is incorrect" in response.text
+    assert 'id="toast"' not in response.text
     still_works = logged_in_client.post("/login", data={"username": "admin", "password": "secret"})
     assert still_works.url.path == "/"
 
@@ -38,6 +72,7 @@ def test_mismatched_new_password_rejected(logged_in_client):
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Passwords don&#39;t match" in response.text
+    assert 'id="toast"' not in response.text
     still_works = logged_in_client.post("/login", data={"username": "admin", "password": "secret"})
     assert still_works.url.path == "/"
 
@@ -51,5 +86,6 @@ def test_too_short_new_password_rejected(logged_in_client):
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Password must be at least 8 characters" in response.text
+    assert 'id="toast"' not in response.text
     still_works = logged_in_client.post("/login", data={"username": "admin", "password": "secret"})
     assert still_works.url.path == "/"

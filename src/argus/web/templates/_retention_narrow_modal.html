@@ -1,0 +1,11 @@
+<div id="retention-narrow-modal" class="hidden fixed z-50 bg-black/50" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
+  <div class="w-full h-full flex items-center justify-center p-6">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6">
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ t('settings_retention_narrow_warning') }}</p>
+      <div class="flex justify-end gap-3">
+        <button type="button" id="retention-narrow-cancel" class="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('settings_retention_narrow_cancel') }}</button>
+        <button type="button" id="retention-narrow-continue" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('settings_retention_narrow_continue') }}</button>
+      </div>
+    </div>
+  </div>
+</div>

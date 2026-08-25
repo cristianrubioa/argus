@@ -58,13 +58,36 @@
       </div>
     </aside>
 
-    <main class="flex-1 min-w-0 overflow-y-auto p-6">
+    <main id="main-content" class="flex-1 min-w-0 overflow-y-auto p-6">
       {% block content %}{% endblock %}
     </main>
 
   </div>
 </div>
 
+{% include "_toast.html" %}
+
+<script>
+  (function () {
+    var main = document.getElementById("main-content");
+    if (!main) return;
+    var scrollKey = "argus-scroll:" + location.pathname;
+    var savedScroll = sessionStorage.getItem(scrollKey);
+    if (savedScroll !== null) {
+      main.scrollTop = parseInt(savedScroll, 10);
+      sessionStorage.removeItem(scrollKey);
+    }
+    var ticking = false;
+    main.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        sessionStorage.setItem(scrollKey, String(main.scrollTop));
+        ticking = false;
+      });
+    });
+  })();
+</script>
 <script>
   (function () {
     var toggleBtn = document.getElementById('sidebar-toggle');

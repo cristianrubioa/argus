@@ -21,6 +21,7 @@ def test_setting_a_custom_name_updates_display_name(logged_in_client, session):
     assert response.status_code == status.HTTP_200_OK
     session.refresh(device)
     assert device.display_name == "Backup SSD"
+    assert "Device renamed." in response.text
 
 
 def test_clearing_the_custom_name_reverts_display_name_to_name(logged_in_client, session):
@@ -59,6 +60,7 @@ def test_rename_is_a_no_op_for_a_device_not_yet_whitelisted(logged_in_client, se
     assert response.status_code == status.HTTP_200_OK
     session.refresh(device)
     assert device.custom_name is None
+    assert "Couldn&#39;t rename the device." in response.text
 
 
 def test_dashboard_renders_the_custom_name_once_set(logged_in_client, session):

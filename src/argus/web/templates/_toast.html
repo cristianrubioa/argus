@@ -1,0 +1,31 @@
+{% if toast and not toast.inline %}
+<div id="toast" role="status" aria-live="polite"
+  class="fixed bottom-8 right-14 z-50 max-w-sm rounded border shadow-lg overflow-hidden
+    {% if toast.kind == 'success' %}bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800
+    {% else %}bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800{% endif %}">
+  <p class="text-sm px-3 py-2">{{ t(toast.message_key) }}</p>
+  <div id="toast-bar" class="h-0.5 {% if toast.kind == 'success' %}bg-green-500/50{% else %}bg-red-500/50{% endif %}" style="width: 100%"></div>
+</div>
+<script>
+  (function () {
+    var TOAST_TTL_MS = 5000;
+    var toast = document.getElementById("toast");
+    var bar = document.getElementById("toast-bar");
+    if (!toast || !bar) return;
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setTimeout(function () { toast.remove(); }, TOAST_TTL_MS);
+      return;
+    }
+    bar.addEventListener("transitionend", function () { toast.remove(); });
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        bar.style.transitionProperty = "width";
+        bar.style.transitionDuration = TOAST_TTL_MS + "ms";
+        bar.style.transitionTimingFunction = "linear";
+        bar.style.width = "0%";
+      });
+    });
+  })();
+</script>
+{% endif %}

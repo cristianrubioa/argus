@@ -2,6 +2,7 @@
 {% block title %}Argus — {{ t('nav_settings') }}{% endblock %}
 {% block content %}
 {% include "_enforce_review_modal.html" %}
+{% include "_retention_narrow_modal.html" %}
 
 <form method="post" action="/settings" id="settings-form">
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_security_heading') }}</h1>
@@ -10,21 +11,20 @@
       <input type="radio" name="profile" value="monitor" class="mt-1" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
       <span>
         <span class="block font-medium">{{ t('profile_monitor') }}</span>
-        <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_monitor_desc') }}</span>
+        <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_monitor_desc')|safe }}</span>
       </span>
     </label>
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
       <input type="radio" name="profile" value="enforce" class="mt-1" {% if settings.profile.value == 'enforce' %}checked{% endif %}>
       <span>
         <span class="block font-medium">{{ t('profile_enforce') }}</span>
-        <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_enforce_desc') }}</span>
+        <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_enforce_desc')|safe }}</span>
       </span>
     </label>
   </div>
 
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_retention_heading') }}</h1>
   <select name="log_retention" id="log-retention-select" data-current="{{ settings.log_retention.value }}"
-    data-narrow-warning="{{ t('settings_retention_narrow_warning') }}"
     class="w-full max-w-md bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
     <option value="90_days" {% if settings.log_retention.value == '90_days' %}selected{% endif %}>{{ t('retention_90_days') }}</option>
     <option value="1_year" {% if settings.log_retention.value == '1_year' %}selected{% endif %}>{{ t('retention_1_year') }}</option>
@@ -101,8 +101,9 @@
     <option value="lg" {% if font_size == 'lg' %}selected{% endif %}>{{ t('font_size_lg') }}</option>
   </select>
 
-  <div class="mt-8">
-    <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">
+  <div id="settings-save" class="mt-8">
+    <button type="submit" id="settings-save-button" disabled
+      class="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded px-4 py-2 transition">
       {{ t('action_save') }}
     </button>
   </div>
@@ -110,15 +111,42 @@
 <script>
   (function () {
     const form = document.getElementById("settings-form");
+    const saveButton = document.getElementById("settings-save-button");
+    if (!form || !saveButton) return;
+    const initialState = new URLSearchParams(new FormData(form)).toString();
+    function checkDirty() {
+      const currentState = new URLSearchParams(new FormData(form)).toString();
+      saveButton.disabled = currentState === initialState;
+    }
+    form.addEventListener("input", checkDirty);
+    form.addEventListener("change", checkDirty);
+  })();
+</script>
+<script>
+  (function () {
+    const form = document.getElementById("settings-form");
     const select = document.getElementById("log-retention-select");
-    if (!form || !select) return;
+    const modal = document.getElementById("retention-narrow-modal");
+    const cancelButton = document.getElementById("retention-narrow-cancel");
+    const continueButton = document.getElementById("retention-narrow-continue");
+    if (!form || !select || !modal || !cancelButton || !continueButton) return;
     const rank = {"90_days": 0, "1_year": 1, "2_years": 2, "forever": 3};
+    let confirmed = false;
+
     form.addEventListener("submit", function (event) {
+      if (confirmed) return;
       if (rank[select.value] < rank[select.dataset.current]) {
-        if (!window.confirm(select.dataset.narrowWarning)) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        modal.classList.remove("hidden");
       }
+    });
+    cancelButton.addEventListener("click", function () {
+      modal.classList.add("hidden");
+    });
+    continueButton.addEventListener("click", function () {
+      modal.classList.add("hidden");
+      confirmed = true;
+      form.requestSubmit();
     });
   })();
 </script>
@@ -163,16 +191,11 @@
   })();
 </script>
 
-<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_account_heading') }}</h1>
+<h1 id="account-password" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_account_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('signed_in_as') }} <span class="text-gray-900 dark:text-gray-200">{{ admin }}</span></p>
 
-{% if password_error %}
-<div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2 mt-4 mb-3 max-w-md">{{ t(password_error) }}</div>
-{% endif %}
-{% if password_success %}
-<div class="text-sm text-green-700 bg-green-100 border border-green-300 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800 rounded px-3 py-2 mt-4 mb-3 max-w-md">{{ t('settings_password_changed') }}</div>
-{% endif %}
-<form method="post" action="/settings/password" class="space-y-3 max-w-md mt-4">
+{% set password_error = toast.message_key if toast and toast.inline else None %}
+<form method="post" action="/settings/password" id="password-form" class="space-y-3 max-w-md mt-4">
   <div>
     <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_current_password_label') }}</label>
     <input type="password" name="current_password" required
@@ -188,10 +211,28 @@
     <input type="password" name="confirm_password" required
       class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
   </div>
-  <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">
-    {{ t('action_change_password') }}
-  </button>
+  <div class="flex items-center gap-3">
+    <button type="submit" id="password-form-button" disabled
+      class="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded px-4 py-2 transition">
+      {{ t('action_change_password') }}
+    </button>
+    {% if password_error %}
+    <span class="text-sm text-red-700 dark:text-red-400">{{ t(password_error) }}</span>
+    {% endif %}
+  </div>
 </form>
+<script>
+  (function () {
+    const form = document.getElementById("password-form");
+    const button = document.getElementById("password-form-button");
+    if (!form || !button) return;
+    function checkFilled() {
+      const inputs = form.querySelectorAll("input[type=password]");
+      button.disabled = Array.from(inputs).some(function (input) { return input.value.trim() === ""; });
+    }
+    form.addEventListener("input", checkFilled);
+  })();
+</script>
 
 <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('agent_status_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">

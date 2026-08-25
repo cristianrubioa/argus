@@ -4,6 +4,14 @@ from argus.models import AdminUser
 from argus.web.auth import hash_password
 
 
+def test_register_submit_button_starts_disabled(client):
+    # Action
+    response = client.get("/register")
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert 'id="register-form-button" disabled' in response.text
+
+
 def test_no_admin_redirects_any_request_to_register(client):
     # Action
     response = client.get("/")
