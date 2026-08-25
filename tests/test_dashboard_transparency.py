@@ -77,11 +77,11 @@ def test_whitelist_hint_links_in_selected_language(logged_in_client, session):
     assert i18n.TRANSLATIONS["es"]["whitelist_hint_link"] in response.text
 
 
-def test_settings_shows_account_section_before_security_profile(logged_in_client, session):
+def test_settings_shows_security_profile_before_account_section(logged_in_client, session):
     # Action
     response = logged_in_client.get("/settings")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    account_index = response.text.index(i18n.TRANSLATIONS["en"]["signed_in_as"])
     security_index = response.text.index(i18n.TRANSLATIONS["en"]["settings_security_heading"])
-    assert account_index < security_index
+    account_index = response.text.index(i18n.TRANSLATIONS["en"]["signed_in_as"])
+    assert security_index < account_index
