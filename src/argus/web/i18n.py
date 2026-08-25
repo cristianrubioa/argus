@@ -220,9 +220,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "<strong>Registra cada dispositivo pero nunca bloquea.</strong> Solo se marcan los no reconocidos. "
             "Cambiar acá restaura el acceso a todo lo que esté conectado ahora mismo."
         ),
-        "profile_enforce_desc": (
-            "<strong>Bloquea todo lo que no esté en la lista blanca</strong> a nivel del kernel."
-        ),
+        "profile_enforce_desc": ("<strong>Bloquea todo lo que no esté en la lista blanca</strong> a nivel del kernel."),
         "action_save": "Guardar",
         "settings_account_heading": "Cuenta",
         "signed_in_as": "Sesión iniciada como",
@@ -372,9 +370,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "<strong>Registra todos os dispositivos, mas nunca bloqueia.</strong> Só sinaliza os não reconhecidos. "
             "Mudar para cá restaura o acesso a tudo que estiver conectado agora."
         ),
-        "profile_enforce_desc": (
-            "<strong>Bloqueia tudo que não estiver na lista branca</strong> no nível do kernel."
-        ),
+        "profile_enforce_desc": ("<strong>Bloqueia tudo que não estiver na lista branca</strong> no nível do kernel."),
         "action_save": "Salvar",
         "settings_account_heading": "Conta",
         "signed_in_as": "Conectado como",
@@ -524,9 +520,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "<strong>Journalise chaque appareil sans jamais bloquer.</strong> Signale seulement les non reconnus. "
             "Passer ici restaure l'accès à tout ce qui est actuellement connecté."
         ),
-        "profile_enforce_desc": (
-            "<strong>Bloque tout ce qui n'est pas sur la liste blanche</strong> au niveau du noyau."
-        ),
+        "profile_enforce_desc": ("<strong>Bloque tout ce qui n'est pas sur la liste blanche</strong> au niveau du noyau."),
         "action_save": "Enregistrer",
         "settings_account_heading": "Compte",
         "signed_in_as": "Connecté en tant que",
@@ -677,9 +671,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "<strong>Protokolliert jedes Gerät, blockiert aber nie.</strong> Nicht erkannte werden nur markiert. "
             "Der Wechsel hierher stellt den Zugriff auf alles derzeit Verbundene wieder her."
         ),
-        "profile_enforce_desc": (
-            "<strong>Blockiert alles, was nicht auf der Whitelist steht,</strong> auf Kernel-Ebene."
-        ),
+        "profile_enforce_desc": ("<strong>Blockiert alles, was nicht auf der Whitelist steht,</strong> auf Kernel-Ebene."),
         "action_save": "Speichern",
         "settings_account_heading": "Konto",
         "signed_in_as": "Angemeldet als",
