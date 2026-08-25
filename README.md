@@ -54,11 +54,11 @@ Running from a local clone instead? See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Full list in [`agent.env.example`](agent.env.example), copied to `/etc/argus/agent.env` on install — every value has a documented default.
 
-One optional integration — beta means implemented, not yet exercised on a long-running production install:
+One optional integration:
 
-- **MQTT bridge (beta)** — publishes every device event to a broker. Configured from the Settings page (host, port, topic prefix, and an enable/disable toggle) — disabled by default.
+- **MQTT bridge** — publishes every device event to a broker. Configured from the Settings page (host, port, topic prefix, and an enable/disable toggle) — disabled by default.
 
-Log retention (device events, applied whitelist actions, admin actions) is set from the Settings page, not an env var — 90 days / 1 year / 2 years / forever, defaulting to 1 year. Pruning is irreversible.
+Log retention (device events, applied whitelist actions, admin actions) is set from the Settings page — 90 days / 1 year / 2 years / forever, defaulting to 1 year. Pruning is irreversible.
 
 ```
 make mqtt-broker   # throwaway Mosquitto on localhost:1883
