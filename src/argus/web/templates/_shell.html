@@ -69,6 +69,26 @@
 
 <script>
   (function () {
+    function pad(n) { return String(n).padStart(2, "0"); }
+    function formatLocal(date) {
+      return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate()) + " " +
+        pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+    }
+    function convertTimes(root) {
+      root.querySelectorAll("time[data-local]").forEach(function (el) {
+        var date = new Date(el.getAttribute("datetime"));
+        if (isNaN(date.getTime())) return;
+        el.textContent = formatLocal(date);
+      });
+    }
+    convertTimes(document);
+    document.body.addEventListener("htmx:afterSwap", function (evt) {
+      convertTimes(evt.detail.target);
+    });
+  })();
+</script>
+<script>
+  (function () {
     var main = document.getElementById("main-content");
     if (!main) return;
     var scrollKey = "argus-scroll:" + location.pathname;

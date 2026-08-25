@@ -19,7 +19,7 @@
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ event.device.serial or "—" }}</td>
       <td class="py-2 pr-4">{{ macros.badge(t('decision_' + event.decision.value), macros.decision_colors[event.decision.value]) }}</td>
       <td class="py-2 pr-4">{{ macros.badge(t('profile_' + event.profile.value), macros.profile_colors[event.profile.value]) }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400"><time datetime="{{ event.occurred_at | utc_iso }}" data-local>{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
     </tr>
     {% else %}
     <tr><td colspan="6" class="py-4 text-center text-gray-500">{{ t('logs_empty') }}</td></tr>

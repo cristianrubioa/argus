@@ -21,7 +21,7 @@
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.serial or "—" }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.source.replace('_', ' ') if entry.source else "—" }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.target.replace('_', ' ') }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate"><time datetime="{{ entry.occurred_at | utc_iso }}" data-local>{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
     </tr>
     {% else %}
     <tr><td colspan="7" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>

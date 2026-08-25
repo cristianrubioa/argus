@@ -70,9 +70,9 @@
       {% if settings.mqtt_last_publish_at is none %}
         {{ t('mqtt_status_never') }}
       {% elif settings.mqtt_last_publish_ok %}
-        {{ t('mqtt_status_ok_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }}
+        {{ t('mqtt_status_ok_label') }} <time datetime="{{ settings.mqtt_last_publish_at | utc_iso }}" data-local>{{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time>
       {% else %}
-        {{ t('mqtt_status_failed_label') }} {{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }} — {{ settings.mqtt_last_error }}
+        {{ t('mqtt_status_failed_label') }} <time datetime="{{ settings.mqtt_last_publish_at | utc_iso }}" data-local>{{ settings.mqtt_last_publish_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time> — {{ settings.mqtt_last_error }}
       {% endif %}
     </p>
     {% endif %}
@@ -238,7 +238,7 @@
 <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
   {% include "_agent_status_badge.html" %}
   {% if settings.agent_last_heartbeat_at is not none %}
-  <span>{{ t('agent_last_seen_label') }} {{ settings.agent_last_heartbeat_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+  <span>{{ t('agent_last_seen_label') }} <time datetime="{{ settings.agent_last_heartbeat_at | utc_iso }}" data-local>{{ settings.agent_last_heartbeat_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></span>
   {% endif %}
 </p>
 

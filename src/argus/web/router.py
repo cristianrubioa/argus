@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 
 from fastapi import APIRouter
@@ -50,6 +52,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 register_router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+
+def _utc_iso(dt: datetime) -> str:
+    """SQLite drops tzinfo on round-trip; every timestamp the app writes is UTC, so a naive value here
+    is always UTC — normalize before isoformat() so the browser can't misinterpret it as local."""
+    aware = dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+    return aware.isoformat()
+
+
+templates.env.filters["utc_iso"] = _utc_iso
 
 _RECENT_EVENTS_LIMIT = 20
 _ADMIN_ACTIONS_LIMIT = 20

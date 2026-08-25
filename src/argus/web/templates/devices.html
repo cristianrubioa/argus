@@ -23,7 +23,7 @@
       <td class="py-2 pr-4 truncate">{{ device.display_name }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ device.vid_pid }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ device.serial or "—" }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ device.last_seen_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate"><time datetime="{{ device.last_seen_at | utc_iso }}" data-local>{{ device.last_seen_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
       <td class="py-2 pr-4">
         {% if device.id in whitelisted_ids %}
         {{ macros.badge(t('status_whitelisted'), macros.whitelist_status_colors['whitelisted']) }}

@@ -32,7 +32,7 @@
       </td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.device.vid_pid }}</td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.device.serial or "—" }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.added_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate"><time datetime="{{ entry.added_at | utc_iso }}" data-local>{{ entry.added_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.added_by }}</td>
       <td class="py-2 pr-4">
         <form method="post" action="/whitelist/revoke/{{ entry.device_id }}">
