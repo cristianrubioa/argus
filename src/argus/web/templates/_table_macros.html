@@ -29,7 +29,7 @@
 
 {% macro sort_header(columns, sort_links, sort, dir, target, include_this=false, sync=none) %}
 {% for column, label in columns %}
-<th class="py-2 pr-4">
+<th class="py-2 pr-4 whitespace-nowrap">
   {% if sort_links %}
   <a href="{{ sort_links[column] }}" hx-get="{{ sort_links[column]|replace('/logs?', '/logs/partial?') }}"
     hx-target="{{ target }}" hx-swap="innerHTML"{% if include_this %} hx-include="this"{% endif %}{% if sync %} hx-sync="{{ sync }}"{% endif %} class="hover:text-gray-900 dark:hover:text-gray-200">

@@ -1,11 +1,12 @@
 {% import "_table_macros.html" as macros with context %}
-<table class="w-full text-sm table-fixed">
+<div class="overflow-x-auto">
+<table class="w-full min-w-[880px] text-sm table-fixed">
   <colgroup>
     <col class="w-[6%]"><col class="w-[13%]"><col class="w-[9%]"><col class="w-[9%]"><col class="w-[25%]"><col class="w-[24%]"><col class="w-[14%]">
   </colgroup>
   <thead>
     <tr class="text-left text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-gray-800">
-      <th class="py-2 pr-4">{{ t('table_actor') }}</th>
+      <th class="py-2 pr-4 whitespace-nowrap">{{ t('table_actor') }}</th>
       {{ macros.sort_header(
         (('action_type', t('table_action')), ('vid_pid', 'VID:PID'), ('serial', t('table_serial')), ('source', t('table_source')), ('target', t('table_target')), ('occurred_at', t('table_when'))),
         a_sort_links, a_sort, a_dir, '#admin-actions-table'
@@ -15,17 +16,18 @@
   <tbody>
     {% for entry in admin_actions %}
     <tr class="border-b border-gray-100 dark:border-gray-900">
-      <td class="py-2 pr-4 truncate">{{ entry.actor }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ t('action_type_' + entry.action_type.value) }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.vid_pid or "—" }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.serial or "—" }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.source.replace('_', ' ') if entry.source else "—" }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ entry.target.replace('_', ' ') }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate"><time datetime="{{ entry.occurred_at | utc_iso }}" data-local>{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
+      <td class="py-2 pr-4 truncate" title="{{ entry.actor }}">{{ entry.actor }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ t('action_type_' + entry.action_type.value) }}">{{ t('action_type_' + entry.action_type.value) }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ entry.vid_pid or '' }}">{{ entry.vid_pid or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ entry.serial or '' }}">{{ entry.serial or "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ entry.source.replace('_', ' ') if entry.source else '' }}">{{ entry.source.replace('_', ' ') if entry.source else "—" }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ entry.target.replace('_', ' ') }}">{{ entry.target.replace('_', ' ') }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC"><time datetime="{{ entry.occurred_at | utc_iso }}" data-local>{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
     </tr>
     {% else %}
     <tr><td colspan="7" class="py-4 text-center text-gray-500">{{ t('admin_actions_empty') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {{ macros.pagination_footer(a_page, a_total_pages, a_range_start, a_range_end, a_total_count, a_prev_page_link, a_next_page_link, '#admin-actions-table') }}

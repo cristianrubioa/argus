@@ -89,6 +89,21 @@
 </script>
 <script>
   (function () {
+    var savedScrollLeft = new WeakMap();
+    document.body.addEventListener("htmx:beforeSwap", function (evt) {
+      var scroller = evt.detail.target.querySelector(".overflow-x-auto");
+      if (scroller) savedScrollLeft.set(evt.detail.target, scroller.scrollLeft);
+    });
+    document.body.addEventListener("htmx:afterSwap", function (evt) {
+      var left = savedScrollLeft.get(evt.detail.target);
+      if (!left) return;
+      var scroller = evt.detail.target.querySelector(".overflow-x-auto");
+      if (scroller) scroller.scrollLeft = left;
+    });
+  })();
+</script>
+<script>
+  (function () {
     var main = document.getElementById("main-content");
     if (!main) return;
     var scrollKey = "argus-scroll:" + location.pathname;

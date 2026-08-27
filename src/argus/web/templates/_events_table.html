@@ -1,5 +1,6 @@
 {% import "_table_macros.html" as macros with context %}
-<table class="w-full text-sm table-fixed">
+<div class="overflow-x-auto">
+<table class="w-full min-w-[1220px] text-sm table-fixed">
   <colgroup>
     <col class="w-[23%]"><col class="w-[21%]"><col class="w-[21%]"><col class="w-[11%]"><col class="w-[9%]"><col class="w-[15%]">
   </colgroup>
@@ -14,16 +15,17 @@
   <tbody>
     {% for event in events %}
     <tr class="border-b border-gray-100 dark:border-gray-900">
-      <td class="py-2 pr-4 truncate">{{ event.device.display_name }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ event.device.vid_pid }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate">{{ event.device.serial or "—" }}</td>
-      <td class="py-2 pr-4">{{ macros.badge(t('decision_' + event.decision.value), macros.decision_colors[event.decision.value]) }}</td>
-      <td class="py-2 pr-4">{{ macros.badge(t('profile_' + event.profile.value), macros.profile_colors[event.profile.value]) }}</td>
-      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400"><time datetime="{{ event.occurred_at | utc_iso }}" data-local>{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
+      <td class="py-2 pr-4 truncate" title="{{ event.device.display_name }}">{{ event.device.display_name }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ event.device.vid_pid }}">{{ event.device.vid_pid }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ event.device.serial or '' }}">{{ event.device.serial or "—" }}</td>
+      <td class="py-2 pr-4 whitespace-nowrap">{{ macros.badge(t('decision_' + event.decision.value), macros.decision_colors[event.decision.value]) }}</td>
+      <td class="py-2 pr-4 whitespace-nowrap">{{ macros.badge(t('profile_' + event.profile.value), macros.profile_colors[event.profile.value]) }}</td>
+      <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC"><time datetime="{{ event.occurred_at | utc_iso }}" data-local>{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time></td>
     </tr>
     {% else %}
     <tr><td colspan="6" class="py-4 text-center text-gray-500">{{ t('logs_empty') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {{ macros.pagination_footer(page, total_pages, range_start, range_end, total_count, prev_page_link, next_page_link, '#events-table', true) }}
