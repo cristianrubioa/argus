@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Argus — Install</title>
   <meta name="description" content="Argus is an open-source USB device monitor for Linux homelabs, built on USBGuard — every device that connects gets seen, approved, or blocked automatically." />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233b82f6' fill-rule='evenodd' d='M12 4C5 4 1 12 1 12s4 8 11 8 11-8 11-8-4-8-11-8Zm0 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'/%3E%3C/svg%3E" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" />
@@ -78,7 +78,7 @@
       color: var(--text);
       letter-spacing: -0.01em;
     }
-    .brand i { color: var(--accent); font-size: 1.5rem; }
+    .brand svg { color: var(--accent); font-size: 1.5rem; }
     .theme-toggle {
       background: none;
       border: none;
@@ -263,7 +263,7 @@
 <body>
 
   <header>
-    <span class="brand"><i class="fa-solid fa-eye"></i> Argus</span>
+    <span class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M12 4C5 4 1 12 1 12s4 8 11 8 11-8 11-8-4-8-11-8Z"/><circle cx="12" cy="12" r="4" fill="#fff"/><circle cx="10.5" cy="10.5" r="2.2" fill="currentColor"/></svg> Argus</span>
     <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
       <i id="themeIcon" class="fas fa-moon"></i>
     </button>
@@ -272,7 +272,7 @@
   <main>
 
     <section class="hero">
-      <i class="fa-solid fa-eye hero-icon"></i>
+      <svg class="hero-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M12 4C5 4 1 12 1 12s4 8 11 8 11-8 11-8-4-8-11-8Z"/><circle cx="12" cy="12" r="4" fill="#fff"/><circle cx="10.5" cy="10.5" r="2.2" fill="currentColor"/></svg>
       <p class="tags">Open Source · Homelab</p>
       <p class="tagline">USB device monitoring and <span class="accent">control</span></p>
       <p class="sub">Every device that connects gets seen, approved, or blocked automatically — built on USBGuard.</p>

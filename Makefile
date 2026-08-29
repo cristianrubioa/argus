@@ -77,9 +77,10 @@ css: $(TAILWIND_BIN)
 
 ICON_SRC := src/argus/web/templates/_icon_eye.html
 ICON_OUT := src/argus/web/static/icon.svg
+DOCS_ICON_OUT := docs/icon.svg
 
 icons:
-	python3 -c "import re, pathlib; inner = re.search(r'<svg[^>]*>(.*)</svg>', pathlib.Path('$(ICON_SRC)').read_text(), re.S).group(1).replace('currentColor', '#3b82f6'); pathlib.Path('$(ICON_OUT)').write_text(f'<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"#3b82f6\">{inner}</svg>\n')"
+	python3 -c "import re, pathlib; inner = re.search(r'<svg[^>]*>(.*)</svg>', pathlib.Path('$(ICON_SRC)').read_text(), re.S).group(1).replace('currentColor', '#3b82f6'); svg = f'<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"#3b82f6\">{inner}</svg>\n'; pathlib.Path('$(ICON_OUT)').write_text(svg); pathlib.Path('$(DOCS_ICON_OUT)').write_text(svg)"
 
 fix: css icons
 	ruff check . --fix
