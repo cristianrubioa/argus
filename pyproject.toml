@@ -16,16 +16,26 @@ python-multipart = "^0.0.12"
 itsdangerous = "^2.2"
 sqlalchemy = "^2.0"
 paho-mqtt = "^2.1"
+pystray = {version = "^0.19.5", optional = true}
+Pillow = {version = "^10.0.0", optional = true}
+
+[tool.poetry.extras]
+tray = ["pystray", "Pillow"]
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.9"
 pytest = "^8.3"
 httpx = "^0.28"
 factory-boy = "^3.3.3"
+# pystray is pure-Python and pip-installable (unlike gi/GdkPixbuf, which stay untested here —
+# see tests/test_tray_menu.py) — kept in dev so menu-construction tests run for real wherever a
+# display is available, and skip cleanly in headless CI instead of failing to import.
+pystray = "^0.19.5"
 
 [tool.poetry.scripts]
 argus-agent = "argus.agent.main:main"
 argus-web = "argus.web.main:main"
+argus-tray = "argus.tray.main:main"
 
 [tool.ruff]
 target-version = "py312"
