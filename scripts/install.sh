@@ -60,11 +60,41 @@ if [ ! -f "$CONFIG_DIR/agent.env" ]; then
     done
 fi
 
-if ! command -v usbguard >/dev/null 2>&1 || ! command -v pipx >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
+# Desktop tray icon: only provisioned for the real invoking user (never root) when they have an
+# active desktop session — a headless host is left completely untouched by everything gated on
+# this. Cleared back to empty on any tray-specific failure below (see design.md's "fail soft").
+TRAY_USER=$(_desktop_session_user || true)
+
+NEED_APT_UPDATE=0
+command -v usbguard >/dev/null 2>&1 || NEED_APT_UPDATE=1
+command -v pipx >/dev/null 2>&1 || NEED_APT_UPDATE=1
+command -v curl >/dev/null 2>&1 || NEED_APT_UPDATE=1
+if [ -n "$TRAY_USER" ]; then
+    dpkg -s python3-gi >/dev/null 2>&1 || NEED_APT_UPDATE=1
+    dpkg -s gir1.2-ayatanaappindicator3-0.1 >/dev/null 2>&1 || NEED_APT_UPDATE=1
+    dpkg -s gnome-shell-extension-appindicator >/dev/null 2>&1 || NEED_APT_UPDATE=1
+fi
+
+if [ "$NEED_APT_UPDATE" = 1 ]; then
     apt-get update
     command -v usbguard >/dev/null 2>&1 || apt-get install -y usbguard
     command -v pipx >/dev/null 2>&1 || apt-get install -y pipx
     command -v curl >/dev/null 2>&1 || apt-get install -y curl
+    if [ -n "$TRAY_USER" ]; then
+        if ! apt-get install -y python3-gi gir1.2-ayatanaappindicator3-0.1 gnome-shell-extension-appindicator; then
+            echo "Warning: could not install the tray's desktop packages — continuing without the tray icon." >&2
+            TRAY_USER=""
+        fi
+    fi
+fi
+
+if [ -n "$TRAY_USER" ] && command -v gnome-extensions >/dev/null 2>&1; then
+    TRAY_UID=$(id -u "$TRAY_USER")
+    # Enabling an already-enabled extension is a harmless no-op — no need to check state first.
+    sudo -u "$TRAY_USER" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$TRAY_UID/bus" \
+        XDG_RUNTIME_DIR="/run/user/$TRAY_UID" \
+        gnome-extensions enable ubuntu-appindicators@ubuntu.com >/dev/null 2>&1 || true
 fi
 
 echo "Current ImplicitPolicyTarget: $(usbguard get-parameter ImplicitPolicyTarget)"
@@ -93,14 +123,45 @@ if [ -z "$WHEEL_URL" ]; then
     exit 1
 fi
 
+# Downloaded locally rather than handed straight to pipx: pip only honors a trailing [tray]
+# extras suffix on a local path — on a bare https:// URL it either 404s (the brackets get
+# URL-encoded into the request) or silently drops the extra, depending on the URL's shape.
+# Kept under its real wheel filename (not a random mktemp name) — pipx parses the filename
+# itself to determine the package name and rejects anything that doesn't look like one.
+TMP_WHEEL_DIR=$(mktemp -d)
+TMP_WHEEL="$TMP_WHEEL_DIR/$(basename "$WHEEL_URL")"
+curl -fsSL "$WHEEL_URL" -o "$TMP_WHEEL"
+
 echo "Installing argus-agent and argus-web via pipx..."
+PIPX_INSTALL_TARGET="$TMP_WHEEL"
+PIPX_INSTALL_FLAGS=""
+if [ -n "$TRAY_USER" ]; then
+    PIPX_INSTALL_TARGET="${TMP_WHEEL}[tray]"
+    # A plain pipx venv is isolated from system site-packages — argus-tray couldn't otherwise
+    # see the apt-installed `gi` (PyGObject isn't pip-installable at all, see design.md decision 1).
+    PIPX_INSTALL_FLAGS="--system-site-packages"
+fi
 TMP_PIPX_LOG=$(mktemp)
-if ! PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx install --quiet --force "$WHEEL_URL" >"$TMP_PIPX_LOG" 2>&1; then
-    cat "$TMP_PIPX_LOG" >&2
-    rm -f "$TMP_PIPX_LOG"
-    exit 1
+if ! PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx install --quiet --force $PIPX_INSTALL_FLAGS "$PIPX_INSTALL_TARGET" >"$TMP_PIPX_LOG" 2>&1; then
+    if [ -n "$TRAY_USER" ]; then
+        echo "Warning: installing the tray extra failed, retrying without it:" >&2
+        cat "$TMP_PIPX_LOG" >&2
+        TRAY_USER=""
+        if ! PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx install --quiet --force "$TMP_WHEEL" >"$TMP_PIPX_LOG" 2>&1; then
+            cat "$TMP_PIPX_LOG" >&2
+            rm -f "$TMP_PIPX_LOG"
+            rm -rf "$TMP_WHEEL_DIR"
+            exit 1
+        fi
+    else
+        cat "$TMP_PIPX_LOG" >&2
+        rm -f "$TMP_PIPX_LOG"
+        rm -rf "$TMP_WHEEL_DIR"
+        exit 1
+    fi
 fi
 rm -f "$TMP_PIPX_LOG"
+rm -rf "$TMP_WHEEL_DIR"
 
 for unit in $UNITS; do
     _fetch "systemd/$unit" "/etc/systemd/system/$unit"
@@ -122,10 +183,45 @@ if [ -n "$IS_FRESH_INSTALL" ]; then
     echo "ARGUS_WEB_PORT=$WEB_PORT" >> "$CONFIG_DIR/agent.env"
 fi
 
-systemctl restart $UNITS
-
 DASHBOARD_PORT=$(grep -o '^ARGUS_WEB_PORT=.*' "$CONFIG_DIR/agent.env" 2>/dev/null | cut -d= -f2)
 DASHBOARD_PORT=${DASHBOARD_PORT:-$DEFAULT_WEB_PORT}
+
+# A small world-readable companion to agent.env (which stays 600 and may hold credentials) —
+# lets the unprivileged tray learn the configured port without widening agent.env's own access.
+echo "ARGUS_WEB_PORT=$DASHBOARD_PORT" > "$PORT_FILE"
+chmod 644 "$PORT_FILE"
+
+if [ -n "$TRAY_USER" ]; then
+    TRAY_HOME=$(_desktop_user_home "$TRAY_USER")
+    TRAY_ICON=$("$PIPX_HOME_DIR/venvs/argus/bin/python3" -c \
+        "import importlib.resources; print(importlib.resources.files('argus.web').joinpath('static', 'icon.svg'))" 2>/dev/null)
+    # importlib.resources only builds the path — it doesn't confirm the file is actually there.
+    if [ -n "$TRAY_HOME" ] && [ -n "$TRAY_ICON" ] && [ -f "$TRAY_ICON" ]; then
+        TRAY_DESKTOP_FILE=$(mktemp)
+        cat > "$TRAY_DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Argus
+Comment=Open the Argus dashboard
+Exec=$PIPX_BIN_DIR/argus-tray
+Icon=$TRAY_ICON
+Terminal=false
+Categories=Utility;
+X-GNOME-Autostart-enabled=true
+EOF
+        mkdir -p "$TRAY_HOME/.config/autostart" "$TRAY_HOME/.local/share/applications"
+        chown "$TRAY_USER":"$TRAY_USER" "$TRAY_HOME/.config/autostart" "$TRAY_HOME/.local/share/applications"
+        install -m 644 -o "$TRAY_USER" -g "$TRAY_USER" "$TRAY_DESKTOP_FILE" "$TRAY_HOME/$TRAY_AUTOSTART_REL"
+        install -m 644 -o "$TRAY_USER" -g "$TRAY_USER" "$TRAY_DESKTOP_FILE" "$TRAY_HOME/$TRAY_APPLICATIONS_REL"
+        rm -f "$TRAY_DESKTOP_FILE"
+        TRAY_PROVISIONED=1
+    else
+        echo "Warning: could not resolve the tray's home directory or installed icon — skipping desktop integration." >&2
+    fi
+fi
+
+systemctl restart $UNITS
+
 DASHBOARD_HOST=$(hostname -I 2>/dev/null | awk '{print $1}')
 DASHBOARD_HOST=${DASHBOARD_HOST:-localhost}
 
@@ -134,3 +230,9 @@ echo "Done. Argus is running."
 echo ""
 echo "  Dashboard:  http://$DASHBOARD_HOST:$DASHBOARD_PORT"
 echo "  Next step:  open that URL and create the admin account."
+if [ -n "$TRAY_PROVISIONED" ]; then
+    echo ""
+    echo "  Tray icon:  added to your top bar and Applications menu."
+    echo "              If it doesn't appear, log out and back in once — GNOME Shell"
+    echo "              only picks up a newly enabled extension on next login."
+fi

@@ -43,6 +43,18 @@ command -v pipx >/dev/null 2>&1 && PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIP
 
 id -u "$AGENT_USER" >/dev/null 2>&1 && userdel "$AGENT_USER" || true
 
+rm -f "$PORT_FILE"
+
+# Tray artifacts, if the invoking user ever had them provisioned — checked regardless of
+# whether their desktop session is active right now, unlike the installer's stricter check.
+TRAY_USER=$(_sudo_user || true)
+if [ -n "$TRAY_USER" ]; then
+    TRAY_HOME=$(_desktop_user_home "$TRAY_USER")
+    if [ -n "$TRAY_HOME" ]; then
+        rm -f "$TRAY_HOME/$TRAY_AUTOSTART_REL" "$TRAY_HOME/$TRAY_APPLICATIONS_REL"
+    fi
+fi
+
 echo "Done. argus-agent and argus-web are uninstalled."
 echo "$DATA_DIR and $CONFIG_DIR were left in place — remove them yourself for a full wipe:"
 echo "  rm -rf $DATA_DIR $CONFIG_DIR"
