@@ -38,6 +38,8 @@ Tested against USBGuard 1.1.2.
 
 Installs USBGuard, `argus-agent`, and `argus-web`, and starts both (`systemctl status argus.target`). Visit `http://<device-ip-or-hostname>:8420` from any device on your network — first visit creates the admin account. Starts in Monitor mode by default.
 
+On a desktop with a GNOME session, install also adds a tray icon (top bar + Applications menu) that opens the dashboard — log out and back in once if it doesn't appear.
+
 To update, run the same command again. To uninstall:
 
 ```
