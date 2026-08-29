@@ -4,7 +4,7 @@
 <div class="min-h-screen flex items-center justify-center">
   <form method="post" action="/login" class="w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6 space-y-4">
     <div class="flex items-center gap-3 mb-2">
-      <i class="fa-solid fa-eye text-2xl text-blue-500 dark:text-blue-400"></i>
+      {% include "_icon_eye.html" %}
       <span class="font-semibold tracking-wide" style="font-size: var(--app-name-size)">Argus</span>
     </div>
     {% if error %}

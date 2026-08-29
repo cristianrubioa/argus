@@ -17,8 +17,9 @@ help:
 	@echo ""
 	@echo "  make lint             Check style with ruff"
 	@echo "  make format           Format code with ruff"
-	@echo "  make fix              Auto-fix and format (also rebuilds static/app.css)"
+	@echo "  make fix              Auto-fix and format (also rebuilds static/app.css and static/icon.svg)"
 	@echo "  make css              Rebuild static/app.css from templates (downloads the Tailwind CLI on first run)"
+	@echo "  make icons            Regenerate static/icon.svg from the _icon_eye.html partial"
 	@echo "  make check            Check without modifying (used by CI)"
 	@echo "  make test             Run tests with pytest"
 	@echo "  make clean            Remove __pycache__ and .pyc files"
@@ -74,7 +75,13 @@ $(TAILWIND_BIN):
 css: $(TAILWIND_BIN)
 	$(TAILWIND_BIN) -c tailwind.config.js -i src/argus/web/static/tailwind-input.css -o src/argus/web/static/app.css --minify
 
-fix: css
+ICON_SRC := src/argus/web/templates/_icon_eye.html
+ICON_OUT := src/argus/web/static/icon.svg
+
+icons:
+	python3 -c "import re, pathlib; inner = re.search(r'<svg[^>]*>(.*)</svg>', pathlib.Path('$(ICON_SRC)').read_text(), re.S).group(1).replace('currentColor', '#3b82f6'); pathlib.Path('$(ICON_OUT)').write_text(f'<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"#3b82f6\">{inner}</svg>\n')"
+
+fix: css icons
 	ruff check . --fix
 	ruff format .
 
