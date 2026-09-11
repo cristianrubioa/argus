@@ -4,6 +4,7 @@
 - Format: `:gitmoji: [scope] Message` — message starts uppercase, written in English.
 - Scopes: `back` · `front` · `infra` · `ci` · `doc`
 - No co-author lines — never add `Co-Authored-By` trailers.
+- No session/agent trailers either (e.g. `Claude-Session:`) — commit messages stay generic, no links back to an assistant session. Leaking a session URL into public commit history is a security concern.
 
 ## USBGuard Safety
 - Any code path that writes live/non-permanent USBGuard authorization (`allow-device`/`block-device` without `--permanent`), especially a bulk sweep over `list_devices()`, MUST filter to `hotplug` (external) devices only. Never touch internal/hardwired devices (host controllers, integrated camera, onboard Bluetooth) — blocking a host controller takes every device on that bus down with it, indistinguishable from unplugging it.
