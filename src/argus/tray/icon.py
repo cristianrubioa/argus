@@ -10,7 +10,7 @@ _ICON_SIZE = 64
 
 
 def load_icon() -> Image.Image:
-    svg_path = importlib.resources.files("argus.web").joinpath("static", "icon.svg")
+    svg_path = importlib.resources.files("argus.web").joinpath("static", "tray-icon.svg")
     pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(str(svg_path), _ICON_SIZE, _ICON_SIZE)
     mode = "RGBA" if pixbuf.get_has_alpha() else "RGB"
     image = Image.frombuffer(
