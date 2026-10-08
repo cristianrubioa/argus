@@ -81,7 +81,14 @@ jobs:
       - name: Build wheel
         run: poetry build --format wheel
 
+      - name: Checksum wheel
+        # Checksummed from inside dist/ so the recorded filename has no directory prefix —
+        # `sha256sum -c` matches it against a plain basename on the installer's side.
+        run: cd dist && sha256sum *.whl > argus.whl.sha256
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: dist/*.whl
+          files: |
+            dist/*.whl
+            dist/*.sha256
