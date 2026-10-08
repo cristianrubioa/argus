@@ -13,6 +13,16 @@ EnvironmentFile=-/etc/argus/agent.env
 Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
 ExecStart=/opt/argus/bin/argus-agent
 Restart=on-failure
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/argus
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX
 
 [Install]
 WantedBy=multi-user.target

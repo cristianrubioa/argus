@@ -104,22 +104,47 @@ if ! id -u "$AGENT_USER" >/dev/null 2>&1; then
     useradd --system --no-create-home --shell /usr/sbin/nologin "$AGENT_USER"
 fi
 
+if ! id -u "$WEB_USER" >/dev/null 2>&1; then
+    echo "Creating system user $WEB_USER"
+    useradd --system --no-create-home --shell /usr/sbin/nologin "$WEB_USER"
+fi
+# argus-web only needs to share /var/lib/argus with argus-agent — not its USBGuard IPC grant.
+usermod -aG "$AGENT_USER" "$WEB_USER"
+
+NEED_USBGUARD_RESTART=0
 if [ ! -f "/etc/usbguard/IPCAccessControl.d/$AGENT_USER" ]; then
     echo "Granting $AGENT_USER IPC access (listen always; modify/policy for Enforce profile)..."
     usbguard add-user "$AGENT_USER" -p modify,list -d modify,list,listen -P modify,list
-    # usbguard-daemon doesn't hot-reload IPCAccessControl.d — restart so the grant actually takes effect.
+    NEED_USBGUARD_RESTART=1
+fi
+
+if [ ! -f "/etc/usbguard/IPCAccessControl.d/$WEB_USER" ]; then
+    echo "Granting $WEB_USER read-only IPC access (device listing only)..."
+    usbguard add-user "$WEB_USER" -d list
+    NEED_USBGUARD_RESTART=1
+fi
+
+# usbguard-daemon doesn't hot-reload IPCAccessControl.d — restart so new grants actually take effect.
+if [ "$NEED_USBGUARD_RESTART" = 1 ]; then
     systemctl restart usbguard
 fi
 
 mkdir -p "$DATA_DIR" "$CONFIG_DIR"
 chown -R "$AGENT_USER":"$AGENT_USER" "$DATA_DIR"
+# setgid keeps new files group-owned by argus-agent; g+rw -R covers files already there.
+chmod 2770 "$DATA_DIR"
+chmod -R g+rw "$DATA_DIR"
 
-echo "Resolving latest release wheel from GitHub..."
-WHEEL_URL=$(curl -fsSL "https://api.github.com/repos/$GITHUB_REPO/releases/latest" \
-    | grep -o '"browser_download_url": *"[^"]*\.whl"' \
-    | grep -o 'https://[^"]*')
+echo "Resolving latest release artifacts from GitHub..."
+RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/$GITHUB_REPO/releases/latest")
+WHEEL_URL=$(echo "$RELEASE_JSON" | grep -o '"browser_download_url": *"[^"]*\.whl"' | grep -o 'https://[^"]*')
+CHECKSUM_URL=$(echo "$RELEASE_JSON" | grep -o '"browser_download_url": *"[^"]*\.sha256"' | grep -o 'https://[^"]*')
 if [ -z "$WHEEL_URL" ]; then
     echo "No release wheel found for $GITHUB_REPO — has a vX.Y.Z tag been released yet?" >&2
+    exit 1
+fi
+if [ -z "$CHECKSUM_URL" ]; then
+    echo "No checksum file found for the release wheel — refusing to install an unverified artifact." >&2
     exit 1
 fi
 
@@ -131,6 +156,13 @@ fi
 TMP_WHEEL_DIR=$(mktemp -d)
 TMP_WHEEL="$TMP_WHEEL_DIR/$(basename "$WHEEL_URL")"
 curl -fsSL "$WHEEL_URL" -o "$TMP_WHEEL"
+curl -fsSL "$CHECKSUM_URL" -o "$TMP_WHEEL_DIR/$(basename "$CHECKSUM_URL")"
+
+if ! (cd "$TMP_WHEEL_DIR" && sha256sum -c "$(basename "$CHECKSUM_URL")" >/dev/null 2>&1); then
+    echo "Checksum verification failed for the downloaded wheel — refusing to install a tampered or corrupted artifact." >&2
+    rm -rf "$TMP_WHEEL_DIR"
+    exit 1
+fi
 
 echo "Installing argus-agent and argus-web via pipx..."
 PIPX_INSTALL_TARGET="$TMP_WHEEL"

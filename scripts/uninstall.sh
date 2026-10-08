@@ -35,12 +35,16 @@ for unit in $UNITS; do
 done
 systemctl daemon-reload
 
-if command -v usbguard >/dev/null 2>&1 && usbguard remove-user "$AGENT_USER" 2>/dev/null; then
+NEED_USBGUARD_RESTART=0
+command -v usbguard >/dev/null 2>&1 && usbguard remove-user "$AGENT_USER" 2>/dev/null && NEED_USBGUARD_RESTART=1
+command -v usbguard >/dev/null 2>&1 && usbguard remove-user "$WEB_USER" 2>/dev/null && NEED_USBGUARD_RESTART=1
+if [ "$NEED_USBGUARD_RESTART" = 1 ]; then
     systemctl restart usbguard
 fi
 
 command -v pipx >/dev/null 2>&1 && PIPX_HOME="$PIPX_HOME_DIR" PIPX_BIN_DIR="$PIPX_BIN_DIR" pipx uninstall argus >/dev/null 2>&1 || true
 
+id -u "$WEB_USER" >/dev/null 2>&1 && userdel "$WEB_USER" || true
 id -u "$AGENT_USER" >/dev/null 2>&1 && userdel "$AGENT_USER" || true
 
 rm -f "$PORT_FILE"
