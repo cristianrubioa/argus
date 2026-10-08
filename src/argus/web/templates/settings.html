@@ -5,6 +5,7 @@
 {% include "_retention_narrow_modal.html" %}
 
 <form method="post" action="/settings" id="settings-form">
+  <input type="hidden" id="csrf-token-input" name="csrf_token" value="{{ csrf_token }}">
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_security_heading') }}</h1>
   <div class="space-y-3 max-w-md">
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
@@ -58,7 +59,7 @@
     </div>
     <div class="flex items-center gap-3">
       <button type="button" id="mqtt-test-button" {% if not settings.mqtt_enabled %}disabled{% endif %}
-        hx-post="/settings/mqtt-test" hx-include="#mqtt-host-input,#mqtt-port-input,#mqtt-topic-input"
+        hx-post="/settings/mqtt-test" hx-include="#mqtt-host-input,#mqtt-port-input,#mqtt-topic-input,#csrf-token-input"
         hx-target="#mqtt-test-result" hx-swap="innerHTML"
         class="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded px-4 py-2 transition">
         {{ t('mqtt_test_button') }}
@@ -196,6 +197,7 @@
 
 {% set password_error = toast.message_key if toast and toast.inline else None %}
 <form method="post" action="/settings/password" id="password-form" class="space-y-3 max-w-md mt-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div>
     <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_current_password_label') }}</label>
     <input type="password" name="current_password" required

@@ -22,6 +22,7 @@
     <tr class="border-b border-gray-100 dark:border-gray-900">
       <td class="py-2 pr-4">
         <form method="post" action="/whitelist/rename/{{ entry.device_id }}" class="relative">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="text" name="custom_name" value="{{ entry.device.custom_name or '' }}" placeholder="{{ entry.device.name }}"
             title="{{ t('whitelist_rename_hint') }}" maxlength="60"
             class="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-blue-400 focus:bg-white dark:focus:bg-gray-950 rounded pl-1.5 pr-7 py-1 text-sm w-full focus:outline-none truncate">
@@ -37,6 +38,7 @@
       <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 truncate" title="{{ entry.added_by }}">{{ entry.added_by }}</td>
       <td class="py-2 pr-4 whitespace-nowrap">
         <form method="post" action="/whitelist/revoke/{{ entry.device_id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button type="submit" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">{{ t('action_revoke') }}</button>
         </form>
       </td>

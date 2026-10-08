@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import datetime
 from datetime import timezone
 from pathlib import Path
@@ -40,6 +41,7 @@ from argus.web.auth import is_password_valid
 from argus.web.auth import record_failure
 from argus.web.auth import record_success
 from argus.web.auth import require_admin
+from argus.web.auth import require_csrf
 from argus.web.i18n import LANGUAGE_NAMES
 from argus.web.i18n import SUPPORTED_LANGUAGES
 from argus.web.i18n import t as translate
@@ -95,6 +97,7 @@ def render(request: Request, session: Session, name: str, context: dict, *, incl
         "font_size": profiles.get_font_size(session),
         "agent_status": profiles.agent_status(session),
         "version_state": _version_state(session),
+        "csrf_token": request.session.get("csrf_token"),
         "toast": request.session.pop("_toast", None) if include_toast else None,
     }
     return templates.TemplateResponse(request, name, full_context)
@@ -125,6 +128,7 @@ def register_submit(
         return render(request, session, "register.html", {"error": error})
     create_admin_account(session, username, password)
     request.session["admin"] = username
+    request.session["csrf_token"] = secrets.token_hex(32)
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -145,6 +149,7 @@ def login_submit(
         return render(request, session, "login.html", {"error": "login_error_invalid"})
     record_success(source)
     request.session["admin"] = username
+    request.session["csrf_token"] = secrets.token_hex(32)
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -233,7 +238,11 @@ def _authorize_device(session: Session, admin: str, device_id: int) -> bool:
 
 @router.post("/whitelist/authorize/{device_id}")
 def authorize_device(
-    device_id: int, request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)
+    device_id: int,
+    request: Request,
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
 ):
     ok = _authorize_device(session, admin, device_id)
     message = ToastMessage.DEVICE_AUTHORIZED if ok else ToastMessage.DEVICE_AUTHORIZE_FAILED
@@ -243,7 +252,11 @@ def authorize_device(
 
 @router.post("/whitelist/revoke/{device_id}")
 def revoke_device(
-    device_id: int, request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)
+    device_id: int,
+    request: Request,
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
 ):
     device = session.get(Device, device_id)
     ok = device is not None and device.whitelist_entry is not None
@@ -267,6 +280,7 @@ def rename_device(
     custom_name: str = Form(""),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
 ):
     device = session.get(Device, device_id)
     ok = device is not None and device.whitelist_entry is not None
@@ -504,6 +518,7 @@ def update_settings(
     mqtt_topic_prefix: str = Form(default=""),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
 ):
     """Single confirm gate for the whole Settings form — every field commits together, or not at all.
     Switching to Enforce with unreviewed devices in Monitor's history interrupts that gate: nothing in
@@ -573,6 +588,7 @@ def mqtt_test(
     mqtt_topic_prefix: str = Form(default=""),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
 ):
     """Tests the connection values currently typed in the form, not whatever is saved in Settings —
     result is ephemeral, never written to Settings.mqtt_last_publish_*."""
@@ -590,6 +606,7 @@ def enforce_review(
     device_ids: list[int] = Form(default=[]),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
 ):
     """Resolves the Enforce-transition review modal: authorizes whatever the admin checked (same path
     as /whitelist/authorize), then applies the switch to Enforce. No second confirmation step."""
@@ -611,6 +628,7 @@ def update_password(
     confirm_password: str = Form(...),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
 ):
     """Always redirects (never a direct re-render) — the shared scroll-position-restore script in
     _shell.html handles not jumping the page around, on every outcome, success or failure alike. Errors

@@ -5,6 +5,7 @@
       <h2 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-2">{{ t('enforce_review_heading') }}</h2>
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ t('enforce_review_desc')|safe }}</p>
       <form method="post" action="/settings/enforce-review">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded divide-y divide-gray-100 dark:divide-gray-900">
           {% for device, is_connected in review_devices %}
           <label class="flex items-center gap-3 px-3 py-2 text-sm cursor-pointer">

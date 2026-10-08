@@ -10,6 +10,7 @@ from datetime import timedelta
 from datetime import timezone
 
 from fastapi import Depends
+from fastapi import Form
 from fastapi import HTTPException
 from fastapi import Request
 from fastapi import status
@@ -128,6 +129,14 @@ def require_admin(request: Request) -> str:
     if not username:
         raise _redirect_exception(request, "/login")
     return username
+
+
+def require_csrf(request: Request, csrf_token: str | None = Form(default=None)) -> None:
+    """None for either side (missing field, pre-token session) is treated the same as a mismatch —
+    one rejection shape, so a request can't tell which part failed."""
+    session_token = request.session.get("csrf_token")
+    if not session_token or not csrf_token or not hmac.compare_digest(csrf_token, session_token):
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
 
 
 def require_registered(request: Request, session: Session = Depends(get_session)) -> None:

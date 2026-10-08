@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -60,9 +62,17 @@ def client(session):
     app.dependency_overrides.clear()
 
 
+_CSRF_INPUT_RE = re.compile(r'name="csrf_token" value="([^"]*)"')
+
+
 @pytest.fixture()
 def logged_in_client(client, session):
+    """Every mutating route now requires a csrf_token form field — wrapping .post() here, once,
+    means the dozens of existing `logged_in_client.post(...)` call sites don't each need updating."""
     session.add(AdminUser(username="admin", password_hash=hash_password("secret")))
     session.commit()
     client.post("/login", data={"username": "admin", "password": "secret"})
+    csrf_token = _CSRF_INPUT_RE.search(client.get("/settings").text).group(1)
+    real_post = client.post
+    client.post = lambda url, data=None, **kwargs: real_post(url, data={**(data or {}), "csrf_token": csrf_token}, **kwargs)
     return client

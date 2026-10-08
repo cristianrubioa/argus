@@ -27,7 +27,9 @@ async def _lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Argus", lifespan=_lifespan)
-app.add_middleware(SessionMiddleware, secret_key=config.session_secret(), https_only=config.session_https_only())
+app.add_middleware(
+    SessionMiddleware, secret_key=config.session_secret(), https_only=config.session_https_only(), same_site="lax"
+)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 app.include_router(register_router)
 app.include_router(router, dependencies=[Depends(require_registered)])
