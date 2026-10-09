@@ -8,6 +8,9 @@ Type=simple
 User=argus-web
 EnvironmentFile=-/etc/argus/agent.env
 Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
+# Group access to the shared db isn't reliable on every host (confirmed live) — each
+# service claims ownership on its own startup instead; root can chown regardless of owner.
+ExecStartPre=+/bin/sh -c 'chown argus-web /var/lib/argus/argus.db* 2>/dev/null || true'
 ExecStart=/opt/argus/bin/argus-web
 Restart=on-failure
 NoNewPrivileges=yes

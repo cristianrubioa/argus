@@ -11,6 +11,9 @@ User=argus-agent
 # Must come after EnvironmentFile= so this host path always wins (later directive wins).
 EnvironmentFile=-/etc/argus/agent.env
 Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
+# Group access to the shared db isn't reliable on every host (confirmed live) — each
+# service claims ownership on its own startup instead; root can chown regardless of owner.
+ExecStartPre=+/bin/sh -c 'chown argus-agent /var/lib/argus/argus.db* 2>/dev/null || true'
 ExecStart=/opt/argus/bin/argus-agent
 Restart=on-failure
 NoNewPrivileges=yes
