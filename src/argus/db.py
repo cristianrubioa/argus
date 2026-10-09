@@ -1,3 +1,6 @@
+import stat
+from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy import event
 from sqlalchemy import text
@@ -35,6 +38,20 @@ def init_db(bind_engine=None):
     Base.metadata.create_all(bind=target)
     _add_missing_columns(target)
     _add_device_events_settled_at(target)
+    _ensure_group_writable(target)
+
+
+def _ensure_group_writable(target):
+    """SQLite creates its files at mode 644 regardless of process umask — argus-agent and argus-web
+    are only group members of each other, not owners, so whichever one didn't create the file needs
+    this explicitly re-applied (chmod isn't subject to umask the way file creation is)."""
+    db_file = target.url.database
+    if not db_file:
+        return
+    for suffix in ("", "-wal", "-shm"):
+        path = Path(f"{db_file}{suffix}")
+        if path.exists():
+            path.chmod(path.stat().st_mode | stat.S_IWGRP)
 
 
 _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (

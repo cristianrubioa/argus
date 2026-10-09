@@ -1,3 +1,6 @@
+import os
+import stat
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy import text
@@ -7,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from argus import db
 from argus.db import Base
 from argus.db import init_db
+from argus.db import make_engine
 from argus.models import Decision
 from argus.models import Profile
 
@@ -174,6 +178,17 @@ def test_mqtt_tls_auth_columns_backfill_to_disabled_defaults_on_upgrade():
     with engine.connect() as conn:
         row = conn.execute(text("SELECT mqtt_username, mqtt_password, mqtt_tls_enabled FROM settings WHERE id = 1")).one()
     assert (row.mqtt_username, row.mqtt_password, row.mqtt_tls_enabled) == (None, None, 0)
+
+
+def test_init_db_makes_the_database_file_group_writable(tmp_path):
+    # Setup
+    db_path = tmp_path / "argus.db"
+    engine = make_engine(db_path)
+    os.chmod(db_path.parent, 0o755)
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    assert db_path.stat().st_mode & stat.S_IWGRP
 
 
 def test_mqtt_tls_auth_columns_migration_is_idempotent():
