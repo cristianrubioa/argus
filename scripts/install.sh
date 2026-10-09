@@ -269,17 +269,19 @@ fi
 if [ -n "$TRAY_PROVISIONED" ]; then
     TRAY_UID=$(id -u "$TRAY_USER")
     TRAY_GS_PID=$(pgrep -u "$TRAY_USER" -x gnome-shell | head -1)
+    # systemd-run detaches the tray into its own unit — a plain `&` background job here
+    # gets killed along with this script's own session/cgroup once sudo exits.
     if [ -n "$TRAY_GS_PID" ]; then
         # Forward the real session's environment (XDG_DATA_DIRS, BROWSER, ...) so
         # `webbrowser.open()` resolves the actual default browser, not a generic fallback.
-        sudo -u "$TRAY_USER" env -i $(tr '\0' '\n' < "/proc/$TRAY_GS_PID/environ") \
-            nohup "$PIPX_BIN_DIR/argus-tray" >/dev/null 2>&1 &
+        systemd-run --quiet --collect --uid="$TRAY_UID" -- \
+            env -i $(tr '\0' '\n' < "/proc/$TRAY_GS_PID/environ") "$PIPX_BIN_DIR/argus-tray"
     else
-        sudo -u "$TRAY_USER" \
-            DISPLAY="${DISPLAY:-:0}" \
-            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$TRAY_UID/bus" \
-            XDG_RUNTIME_DIR="/run/user/$TRAY_UID" \
-            nohup "$PIPX_BIN_DIR/argus-tray" >/dev/null 2>&1 &
+        systemd-run --quiet --collect --uid="$TRAY_UID" \
+            --setenv=DISPLAY="${DISPLAY:-:0}" \
+            --setenv=DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$TRAY_UID/bus" \
+            --setenv=XDG_RUNTIME_DIR="/run/user/$TRAY_UID" \
+            -- "$PIPX_BIN_DIR/argus-tray"
     fi
 fi
 
