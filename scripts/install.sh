@@ -254,14 +254,19 @@ fi
 
 systemctl restart $UNITS
 
+# `restart` returns once the process forks, not once it's actually accepting connections —
+# wait up to 5s so the setup-token read-back and the tray's reachability check aren't false negatives.
+DASHBOARD_WAIT=0
+while [ "$DASHBOARD_WAIT" -lt 10 ] && ! curl -fsS -o /dev/null "http://127.0.0.1:$DASHBOARD_PORT/" 2>/dev/null; do
+    sleep 0.5
+    DASHBOARD_WAIT=$((DASHBOARD_WAIT + 1))
+done
+
+if [ -n "$IS_FRESH_INSTALL" ]; then
+    SETUP_TOKEN=$(cat "$DATA_DIR/setup_token" 2>/dev/null)
+fi
+
 if [ -n "$TRAY_PROVISIONED" ]; then
-    # `restart` returns once the process forks, not once it's actually accepting
-    # connections — wait up to 5s so the tray's first reachability check isn't a false negative.
-    TRAY_WAIT=0
-    while [ "$TRAY_WAIT" -lt 10 ] && ! curl -fsS -o /dev/null "http://127.0.0.1:$DASHBOARD_PORT/" 2>/dev/null; do
-        sleep 0.5
-        TRAY_WAIT=$((TRAY_WAIT + 1))
-    done
     TRAY_UID=$(id -u "$TRAY_USER")
     TRAY_GS_PID=$(pgrep -u "$TRAY_USER" -x gnome-shell | head -1)
     if [ -n "$TRAY_GS_PID" ]; then
@@ -286,6 +291,12 @@ echo "Done. Argus is running."
 echo ""
 echo "  Dashboard:  http://$DASHBOARD_HOST:$DASHBOARD_PORT"
 echo "  Next step:  open that URL and create the admin account."
+if [ -n "$SETUP_TOKEN" ]; then
+    echo ""
+    echo "  Setup token: $SETUP_TOKEN"
+    echo "               Required once, to create the admin account. If you lose it:"
+    echo "               sudo cat $DATA_DIR/setup_token"
+fi
 if [ -n "$TRAY_PROVISIONED" ]; then
     echo ""
     echo "  Tray icon:  added to your top bar and Applications menu."
