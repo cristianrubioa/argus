@@ -69,6 +69,7 @@ NEED_APT_UPDATE=0
 command -v usbguard >/dev/null 2>&1 || NEED_APT_UPDATE=1
 command -v pipx >/dev/null 2>&1 || NEED_APT_UPDATE=1
 command -v curl >/dev/null 2>&1 || NEED_APT_UPDATE=1
+[ -f /etc/ssl/certs/ca-certificates.crt ] || NEED_APT_UPDATE=1
 if [ -n "$TRAY_USER" ]; then
     dpkg -s python3-gi >/dev/null 2>&1 || NEED_APT_UPDATE=1
     dpkg -s gir1.2-ayatanaappindicator3-0.1 >/dev/null 2>&1 || NEED_APT_UPDATE=1
@@ -80,6 +81,7 @@ if [ "$NEED_APT_UPDATE" = 1 ]; then
     command -v usbguard >/dev/null 2>&1 || apt-get install -y usbguard
     command -v pipx >/dev/null 2>&1 || apt-get install -y pipx
     command -v curl >/dev/null 2>&1 || apt-get install -y curl
+    [ -f /etc/ssl/certs/ca-certificates.crt ] || apt-get install -y ca-certificates
     if [ -n "$TRAY_USER" ]; then
         if ! apt-get install -y python3-gi gir1.2-ayatanaappindicator3-0.1 gnome-shell-extension-appindicator; then
             echo "Warning: could not install the tray's desktop packages — continuing without the tray icon." >&2
