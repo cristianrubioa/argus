@@ -55,6 +55,12 @@ TRAY_USER=$(_sudo_user || true)
 if [ -n "$TRAY_USER" ]; then
     TRAY_HOME=$(_desktop_user_home "$TRAY_USER")
     if [ -n "$TRAY_HOME" ]; then
+        # Removing the pipx venv doesn't stop an already-running argus-tray — its PID lock
+        # (src/argus/tray/lock.py) is the only way to find and kill it, root can signal any PID.
+        TRAY_PID_FILE="$TRAY_HOME/.cache/argus-tray/argus-tray.pid"
+        TRAY_PID=$(cat "$TRAY_PID_FILE" 2>/dev/null)
+        [ -n "$TRAY_PID" ] && kill "$TRAY_PID" 2>/dev/null
+        rm -f "$TRAY_PID_FILE"
         rm -f "$TRAY_HOME/$TRAY_AUTOSTART_REL" "$TRAY_HOME/$TRAY_APPLICATIONS_REL"
     fi
 fi
