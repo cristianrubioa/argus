@@ -69,6 +69,7 @@ NEED_APT_UPDATE=0
 command -v usbguard >/dev/null 2>&1 || NEED_APT_UPDATE=1
 command -v pipx >/dev/null 2>&1 || NEED_APT_UPDATE=1
 command -v curl >/dev/null 2>&1 || NEED_APT_UPDATE=1
+command -v setfacl >/dev/null 2>&1 || NEED_APT_UPDATE=1
 [ -f /etc/ssl/certs/ca-certificates.crt ] || NEED_APT_UPDATE=1
 if [ -n "$TRAY_USER" ]; then
     dpkg -s python3-gi >/dev/null 2>&1 || NEED_APT_UPDATE=1
@@ -81,6 +82,7 @@ if [ "$NEED_APT_UPDATE" = 1 ]; then
     command -v usbguard >/dev/null 2>&1 || apt-get install -y usbguard
     command -v pipx >/dev/null 2>&1 || apt-get install -y pipx
     command -v curl >/dev/null 2>&1 || apt-get install -y curl
+    command -v setfacl >/dev/null 2>&1 || apt-get install -y acl
     [ -f /etc/ssl/certs/ca-certificates.crt ] || apt-get install -y ca-certificates
     if [ -n "$TRAY_USER" ]; then
         if ! apt-get install -y python3-gi gir1.2-ayatanaappindicator3-0.1 gnome-shell-extension-appindicator; then
@@ -136,6 +138,17 @@ chown -R "$AGENT_USER":"$AGENT_USER" "$DATA_DIR"
 # setgid keeps new files group-owned by argus-agent; g+rw -R covers files already there.
 chmod 2770 "$DATA_DIR"
 chmod -R g+rw "$DATA_DIR"
+
+# Pre-create the db as root so the ExecStartPre chown has something to claim on each
+# service's very first start — otherwise whichever one creates it first just keeps it.
+if [ ! -f "$DATA_DIR/argus.db" ]; then
+    python3.12 -c "
+import sqlite3
+conn = sqlite3.connect('$DATA_DIR/argus.db')
+conn.execute('PRAGMA journal_mode=WAL')
+conn.close()
+"
+fi
 
 echo "Resolving latest release artifacts from GitHub..."
 RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/$GITHUB_REPO/releases/latest")
