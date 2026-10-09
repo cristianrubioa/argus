@@ -40,8 +40,13 @@ def _run(*args: str) -> str:
 
 
 def _partial_rule(vid: str, pid: str, serial: str | None) -> str:
+    """A quote in `serial` would break out of the rule's quoted string and inject extra rule syntax.
+    parser.py's capture regex already excludes it, but this guard makes that an intentional
+    invariant of this function, not an accident of how the serial happened to be parsed."""
     rule = f"id {vid}:{pid}"
     if serial:
+        if '"' in serial:
+            raise UsbguardCliError(f"Device serial contains an unsupported character: {serial!r}")
         rule += f' serial "{serial}"'
     return rule
 

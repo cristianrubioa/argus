@@ -219,6 +219,21 @@ def test_allow_device_live_omits_permanent_flag(monkeypatch):
     assert calls == [("allow-device", "id 046d:c542")]
 
 
+def test_partial_rule_rejects_a_quote_in_serial():
+    # Action & Expected
+    with pytest.raises(usbguard_cli.UsbguardCliError):
+        usbguard_cli._partial_rule("046d", "c542", 'AAE9055C" accept')
+
+
+def test_allow_device_rejects_a_quote_in_serial(monkeypatch):
+    # Setup
+    monkeypatch.setattr(usbguard_cli, "_run", lambda *a: pytest.fail("usbguard should not have been invoked"))
+    device = Device(vid="046d", pid="c542", name="Wireless Receiver", serial='AAE9055C" accept')
+    # Action & Expected
+    with pytest.raises(usbguard_cli.UsbguardCliError):
+        usbguard_cli.allow_device(device)
+
+
 def test_get_implicit_policy_target_strips_and_lowercases(monkeypatch):
     # Setup
     monkeypatch.setattr(usbguard_cli, "_run", lambda *a: "Block\n")
