@@ -51,3 +51,22 @@ def test_setup_token_returns_configured_value(monkeypatch):
     monkeypatch.setenv("ARGUS_SETUP_TOKEN", "a-real-token")
     # Action & Expected
     assert config.setup_token() == "a-real-token"
+
+
+def test_mqtt_encryption_key_generates_and_persists(monkeypatch, tmp_path):
+    # Setup
+    monkeypatch.delenv("ARGUS_MQTT_SECRET", raising=False)
+    monkeypatch.setenv("ARGUS_DB_PATH", str(tmp_path / "argus.db"))
+    # Action
+    first = config.mqtt_encryption_key()
+    second = config.mqtt_encryption_key()
+    # Expected
+    assert first == second
+    assert (tmp_path / "mqtt_secret").read_bytes() == first
+
+
+def test_mqtt_encryption_key_returns_configured_value(monkeypatch):
+    # Setup
+    monkeypatch.setenv("ARGUS_MQTT_SECRET", "a-real-key")
+    # Action & Expected
+    assert config.mqtt_encryption_key() == b"a-real-key"

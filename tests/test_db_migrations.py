@@ -94,7 +94,7 @@ def test_log_retention_column_backfills_to_one_year_on_upgrade():
         conn.execute(
             text(
                 "INSERT INTO settings (id, profile, language, theme, font_size, mqtt_enabled, mqtt_port, "
-                "mqtt_topic_prefix) VALUES (1, :p, 'en', 'dark', 'md', 0, 1883, 'argus')"
+                "mqtt_topic_prefix, mqtt_tls_enabled) VALUES (1, :p, 'en', 'dark', 'md', 0, 1883, 'argus', 0)"
             ),
             {"p": Profile.MONITOR.value},
         )
@@ -116,8 +116,8 @@ def _engine_missing_mqtt_columns():
         conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_topic_prefix"))
         conn.execute(
             text(
-                "INSERT INTO settings (id, profile, language, theme, font_size, log_retention) "
-                "VALUES (1, :p, 'en', 'dark', 'md', 'ONE_YEAR')"
+                "INSERT INTO settings (id, profile, language, theme, font_size, log_retention, mqtt_tls_enabled) "
+                "VALUES (1, :p, 'en', 'dark', 'md', 'ONE_YEAR', 0)"
             ),
             {"p": Profile.MONITOR.value},
         )
@@ -146,6 +146,46 @@ def test_mqtt_columns_migration_is_idempotent():
     with engine.connect() as conn:
         columns = {row[1] for row in conn.execute(text("PRAGMA table_info(settings)"))}
     assert {"mqtt_enabled", "mqtt_host", "mqtt_port", "mqtt_topic_prefix"} <= columns
+
+
+def _engine_missing_mqtt_tls_auth_columns():
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_username"))
+        conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_password"))
+        conn.execute(text("ALTER TABLE settings DROP COLUMN mqtt_tls_enabled"))
+        conn.execute(
+            text(
+                "INSERT INTO settings (id, profile, language, theme, font_size, log_retention, mqtt_enabled, "
+                "mqtt_port, mqtt_topic_prefix) VALUES (1, :p, 'en', 'dark', 'md', 'ONE_YEAR', 0, 1883, 'argus')"
+            ),
+            {"p": Profile.MONITOR.value},
+        )
+    return engine
+
+
+def test_mqtt_tls_auth_columns_backfill_to_disabled_defaults_on_upgrade():
+    # Setup
+    engine = _engine_missing_mqtt_tls_auth_columns()
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT mqtt_username, mqtt_password, mqtt_tls_enabled FROM settings WHERE id = 1")).one()
+    assert (row.mqtt_username, row.mqtt_password, row.mqtt_tls_enabled) == (None, None, 0)
+
+
+def test_mqtt_tls_auth_columns_migration_is_idempotent():
+    # Setup
+    engine = _engine_missing_mqtt_tls_auth_columns()
+    init_db(bind_engine=engine)
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(settings)"))}
+    assert {"mqtt_username", "mqtt_password", "mqtt_tls_enabled"} <= columns
 
 
 def test_log_retention_migration_is_idempotent():

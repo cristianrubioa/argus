@@ -57,9 +57,23 @@
       <input type="text" id="mqtt-topic-input" name="mqtt_topic_prefix" autocomplete="off" value="{{ settings.mqtt_topic_prefix }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
         class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
     </div>
+    <label class="flex items-center gap-3">
+      <input type="checkbox" id="mqtt-tls-input" name="mqtt_tls_enabled" {% if settings.mqtt_tls_enabled %}checked{% endif %} {% if not settings.mqtt_enabled %}disabled{% endif %}>
+      <span>{{ t('mqtt_tls_label') }}</span>
+    </label>
+    <div>
+      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_username_label') }}</label>
+      <input type="text" id="mqtt-username-input" name="mqtt_username" autocomplete="off" value="{{ settings.mqtt_username or '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+    </div>
+    <div>
+      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_password_label') }}</label>
+      <input type="password" id="mqtt-password-input" name="mqtt_password" autocomplete="off" placeholder="{{ t('mqtt_password_saved_placeholder') if settings.mqtt_password else '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+    </div>
     <div class="flex items-center gap-3">
       <button type="button" id="mqtt-test-button" {% if not settings.mqtt_enabled %}disabled{% endif %}
-        hx-post="/settings/mqtt-test" hx-include="#mqtt-host-input,#mqtt-port-input,#mqtt-topic-input,#csrf-token-input"
+        hx-post="/settings/mqtt-test" hx-include="#mqtt-host-input,#mqtt-port-input,#mqtt-topic-input,#mqtt-tls-input,#mqtt-username-input,#mqtt-password-input,#csrf-token-input"
         hx-target="#mqtt-test-result" hx-swap="innerHTML"
         class="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded px-4 py-2 transition">
         {{ t('mqtt_test_button') }}
@@ -160,7 +174,10 @@
       document.getElementById("mqtt-host-input"),
       portInput,
       document.getElementById("mqtt-topic-input"),
+      document.getElementById("mqtt-username-input"),
+      document.getElementById("mqtt-password-input"),
     ];
+    const tlsCheckbox = document.getElementById("mqtt-tls-input");
     const testButton = document.getElementById("mqtt-test-button");
     const MQTT_TEST_RESULT_TTL_MS = 5000;
     let testResultTimer = null;
@@ -168,6 +185,7 @@
     if (toggle) {
       toggle.addEventListener("change", function () {
         fields.forEach(function (field) { field.readOnly = !toggle.checked; });
+        if (tlsCheckbox) tlsCheckbox.disabled = !toggle.checked;
         testButton.disabled = !toggle.checked;
         if (!toggle.checked && testResult) {
           clearTimeout(testResultTimer);

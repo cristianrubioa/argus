@@ -138,6 +138,45 @@ def test_publish_timeout_does_not_block_and_records_failure(session, monkeypatch
     assert "timed out" in settings.mqtt_last_error.lower()
 
 
+def test_publish_passes_tls_kwarg_when_tls_enabled(session, monkeypatch):
+    # Setup
+    event = DeviceEventFactory()
+    profiles.set_mqtt_settings(session, enabled=True, host="localhost", port=8883, topic_prefix="argus", tls_enabled=True)
+    calls = []
+    monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda *a, **k: calls.append(k))
+    # Action
+    mqtt_bridge.publish_event(event, session)
+    # Expected
+    assert calls[0]["tls"] == {"ca_certs": mqtt_bridge._SYSTEM_CA_BUNDLE}
+
+
+def test_publish_passes_auth_kwarg_when_username_configured(session, monkeypatch):
+    # Setup
+    event = DeviceEventFactory()
+    profiles.set_mqtt_settings(
+        session, enabled=True, host="localhost", port=1883, topic_prefix="argus", username="admin", password="secret"
+    )
+    calls = []
+    monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda *a, **k: calls.append(k))
+    # Action
+    mqtt_bridge.publish_event(event, session)
+    # Expected
+    assert calls[0]["auth"] == {"username": "admin", "password": "secret"}
+
+
+def test_publish_omits_tls_and_auth_kwargs_when_not_configured(session, monkeypatch):
+    # Setup
+    event = DeviceEventFactory()
+    profiles.set_mqtt_settings(session, enabled=True, host="localhost", port=1883, topic_prefix="argus")
+    calls = []
+    monkeypatch.setattr(mqtt_bridge.mqtt_publish, "single", lambda *a, **k: calls.append(k))
+    # Action
+    mqtt_bridge.publish_event(event, session)
+    # Expected
+    assert "tls" not in calls[0]
+    assert "auth" not in calls[0]
+
+
 def test_settings_shows_never_attempted_when_enabled_with_no_publish_yet(logged_in_client, session):
     # Setup
     profiles.set_mqtt_settings(session, enabled=True, host="localhost", port=1883, topic_prefix="argus")

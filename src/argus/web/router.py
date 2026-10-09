@@ -520,6 +520,9 @@ def update_settings(
     mqtt_host: str = Form(default=""),
     mqtt_port: str = Form(default=""),
     mqtt_topic_prefix: str = Form(default=""),
+    mqtt_username: str = Form(default=""),
+    mqtt_password: str = Form(default=""),
+    mqtt_tls_enabled: str | None = Form(default=None),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
     _csrf: None = Depends(require_csrf),
@@ -571,6 +574,11 @@ def update_settings(
         host=mqtt_host or None,
         port=validated_mqtt_port,
         topic_prefix=mqtt_topic_prefix or "argus",
+        username=mqtt_username or None,
+        # Password inputs never round-trip their value into the rendered form — a blank
+        # submission means "unchanged", not "clear it", so fall back to what's already saved.
+        password=mqtt_password or old_mqtt.password,
+        tls_enabled=mqtt_tls_enabled == "on",
     )
     if new_mqtt_enabled != old_mqtt.enabled:
         profiles.record_admin_action(
@@ -590,17 +598,25 @@ def mqtt_test(
     mqtt_host: str = Form(default=""),
     mqtt_port: str = Form(default=""),
     mqtt_topic_prefix: str = Form(default=""),
+    mqtt_username: str = Form(default=""),
+    mqtt_password: str = Form(default=""),
+    mqtt_tls_enabled: str | None = Form(default=None),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
     _csrf: None = Depends(require_csrf),
 ):
     """Tests the connection values currently typed in the form, not whatever is saved in Settings —
-    result is ephemeral, never written to Settings.mqtt_last_publish_*."""
+    result is ephemeral, never written to Settings.mqtt_last_publish_*. The password field is the one
+    exception: it never round-trips into the rendered form, so a blank submission falls back to
+    whatever password is already saved, rather than always testing with no credential."""
     port = _validate_mqtt_port(mqtt_port)
     if port is None:
         result, detail = "invalid_port", None
     else:
-        result, detail = mqtt_bridge.test_connection(mqtt_host, port, mqtt_topic_prefix or "argus")
+        password = mqtt_password or profiles.get_mqtt_settings(session).password
+        result, detail = mqtt_bridge.test_connection(
+            mqtt_host, port, mqtt_topic_prefix or "argus", mqtt_username or None, password, mqtt_tls_enabled == "on"
+        )
     return render(request, session, "_mqtt_test_result.html", {"mqtt_test_result": result, "mqtt_test_detail": detail})
 
 

@@ -139,6 +139,40 @@ def test_connection_test_with_refused_connection_reports_a_friendly_message(logg
     assert "Errno" not in response.text
 
 
+def test_mqtt_password_round_trips_and_is_not_stored_as_plaintext(session):
+    # Action
+    profiles.set_mqtt_settings(
+        session,
+        enabled=True,
+        host="localhost",
+        port=1883,
+        topic_prefix="argus",
+        username="admin",
+        password="s3cret",
+        tls_enabled=False,
+    )
+    # Expected
+    assert profiles.get_mqtt_settings(session).password == "s3cret"
+    assert profiles.get_settings(session).mqtt_password != "s3cret"
+
+
+def test_mqtt_no_password_stores_none(session):
+    # Action
+    profiles.set_mqtt_settings(
+        session,
+        enabled=True,
+        host="localhost",
+        port=1883,
+        topic_prefix="argus",
+        username=None,
+        password=None,
+        tls_enabled=False,
+    )
+    # Expected
+    assert profiles.get_mqtt_settings(session).password is None
+    assert profiles.get_settings(session).mqtt_password is None
+
+
 def test_connection_test_with_invalid_port_reports_invalid_port(logged_in_client, session):
     # Action
     response = logged_in_client.post(

@@ -17,6 +17,21 @@ logger = logging.getLogger(__name__)
 
 _PUBLISH_TIMEOUT_SECONDS = 3
 _MAX_ERROR_LENGTH = 255
+_SYSTEM_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
+
+
+def _connection_kwargs(username: str | None, password: str | None, tls_enabled: bool) -> dict:
+    """Builds the optional auth=/tls= kwargs for paho's publish.single() — omitted entirely
+    when not configured, so the default unauthenticated-plaintext connection is unaffected."""
+    kwargs = {}
+    if username:
+        auth = {"username": username}
+        if password:
+            auth["password"] = password
+        kwargs["auth"] = auth
+    if tls_enabled:
+        kwargs["tls"] = {"ca_certs": _SYSTEM_CA_BUNDLE}
+    return kwargs
 
 
 def publish_event(event: DeviceEvent, session: Session) -> None:
@@ -40,7 +55,14 @@ def publish_event(event: DeviceEvent, session: Session) -> None:
     # publish.single() has no timeout parameter — a broker that accepts the TCP connection but never
     # sends CONNACK would otherwise block this call forever. Bound it with a worker thread instead.
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(mqtt_publish.single, topic, payload=payload, hostname=broker.host, port=broker.port)
+    future = executor.submit(
+        mqtt_publish.single,
+        topic,
+        payload=payload,
+        hostname=broker.host,
+        port=broker.port,
+        **_connection_kwargs(broker.username, broker.password, broker.tls_enabled),
+    )
     try:
         future.result(timeout=_PUBLISH_TIMEOUT_SECONDS)
     except concurrent.futures.TimeoutError:
@@ -59,7 +81,14 @@ def publish_event(event: DeviceEvent, session: Session) -> None:
         executor.shutdown(wait=False)
 
 
-def test_connection(host: str, port: int, topic_prefix: str) -> tuple[str, str | None]:
+def test_connection(
+    host: str,
+    port: int,
+    topic_prefix: str,
+    username: str | None = None,
+    password: str | None = None,
+    tls_enabled: bool = False,
+) -> tuple[str, str | None]:
     """Ad-hoc connectivity check for the Settings "Probar conexión" action — same bounded-publish
     mechanics as publish_event(), but never touches Settings.mqtt_last_publish_*. Returns
     ("ok", None), ("timeout", None), ("invalid_host", None), ("connection_refused", None), or
@@ -67,7 +96,14 @@ def test_connection(host: str, port: int, topic_prefix: str) -> tuple[str, str |
     a raw OS error string (e.g. "[Errno -2] Name or service not known")."""
     topic = f"{topic_prefix}/{socket.gethostname()}/test"
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(mqtt_publish.single, topic, payload="test", hostname=host, port=port)
+    future = executor.submit(
+        mqtt_publish.single,
+        topic,
+        payload="test",
+        hostname=host,
+        port=port,
+        **_connection_kwargs(username, password, tls_enabled),
+    )
     try:
         future.result(timeout=_PUBLISH_TIMEOUT_SECONDS)
     except concurrent.futures.TimeoutError:

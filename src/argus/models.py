@@ -192,3 +192,6 @@ class Settings(Base):
     mqtt_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
     mqtt_port: Mapped[int] = mapped_column(default=1883)
     mqtt_topic_prefix: Mapped[str] = mapped_column(String(64), default="argus")
+    mqtt_username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    mqtt_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    mqtt_tls_enabled: Mapped[bool] = mapped_column(default=False)

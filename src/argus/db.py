@@ -53,6 +53,9 @@ _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
     "ALTER TABLE settings ADD COLUMN mqtt_host VARCHAR(255)",
     "ALTER TABLE settings ADD COLUMN mqtt_port INTEGER DEFAULT 1883",
     "ALTER TABLE settings ADD COLUMN mqtt_topic_prefix TEXT DEFAULT 'argus'",
+    "ALTER TABLE settings ADD COLUMN mqtt_username VARCHAR(255)",
+    "ALTER TABLE settings ADD COLUMN mqtt_password VARCHAR(255)",
+    "ALTER TABLE settings ADD COLUMN mqtt_tls_enabled BOOLEAN DEFAULT 0",
 )
 
 _DEVICES_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (

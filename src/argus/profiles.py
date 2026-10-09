@@ -4,8 +4,10 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 
+from cryptography.fernet import Fernet
 from sqlalchemy.orm import Session
 
+from argus import config
 from argus import version_check
 from argus.agent import usbguard_cli
 from argus.models import AdminAction
@@ -116,6 +118,21 @@ class MqttSettings:
     host: str | None
     port: int
     topic_prefix: str
+    username: str | None
+    password: str | None
+    tls_enabled: bool
+
+
+def _decrypt_mqtt_password(encrypted: str | None) -> str | None:
+    if not encrypted:
+        return None
+    return Fernet(config.mqtt_encryption_key()).decrypt(encrypted.encode()).decode()
+
+
+def _encrypt_mqtt_password(password: str | None) -> str | None:
+    if not password:
+        return None
+    return Fernet(config.mqtt_encryption_key()).encrypt(password.encode()).decode()
 
 
 def get_mqtt_settings(session: Session) -> MqttSettings:
@@ -125,15 +142,31 @@ def get_mqtt_settings(session: Session) -> MqttSettings:
         host=settings.mqtt_host,
         port=settings.mqtt_port,
         topic_prefix=settings.mqtt_topic_prefix,
+        username=settings.mqtt_username,
+        password=_decrypt_mqtt_password(settings.mqtt_password),
+        tls_enabled=settings.mqtt_tls_enabled,
     )
 
 
-def set_mqtt_settings(session: Session, *, enabled: bool, host: str | None, port: int, topic_prefix: str) -> Settings:
+def set_mqtt_settings(
+    session: Session,
+    *,
+    enabled: bool,
+    host: str | None,
+    port: int,
+    topic_prefix: str,
+    username: str | None = None,
+    password: str | None = None,
+    tls_enabled: bool = False,
+) -> Settings:
     settings = get_settings(session)
     settings.mqtt_enabled = enabled
     settings.mqtt_host = host
     settings.mqtt_port = port
     settings.mqtt_topic_prefix = topic_prefix
+    settings.mqtt_username = username
+    settings.mqtt_password = _encrypt_mqtt_password(password)
+    settings.mqtt_tls_enabled = tls_enabled
     session.commit()
     return settings
 
