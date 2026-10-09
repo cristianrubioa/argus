@@ -11,10 +11,10 @@ Argus is a LAN-use home-lab/workstation tool: single admin, plain HTTP by defaul
 - **Password storage**: PBKDF2-HMAC-SHA256, 600,000 iterations, random per-user salt.
 - **Setup token**: first-run registration requires a one-time token the installer prints — only whoever ran it can create the admin account.
 - **Rule injection guard**: a device serial containing a quote character is rejected before it's embedded into a USBGuard rule string.
+- **MQTT bridge**: optional TLS (verified against the system CA bundle) and username/password authentication; the password is encrypted at rest with a key stored separately from the database.
 
 ## Known limitations
 
-- **MQTT bridge**: optional, disabled by default — no TLS, no broker authentication, events sent in plaintext.
 - **Plain HTTP by default**: intended for LAN use — put a TLS reverse proxy in front before exposing Argus beyond your local network.
 
 ## Reporting a vulnerability
