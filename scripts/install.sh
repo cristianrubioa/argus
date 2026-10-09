@@ -247,6 +247,14 @@ EOF
         install -m 644 -o "$TRAY_USER" -g "$TRAY_USER" "$TRAY_DESKTOP_FILE" "$TRAY_HOME/$TRAY_APPLICATIONS_REL"
         rm -f "$TRAY_DESKTOP_FILE"
         TRAY_PROVISIONED=1
+        # Autostart entries only run on next login — launch now too, best-effort; the PID
+        # lock in lock.py makes repeat installs/updates safe (already running -> exits quietly).
+        TRAY_UID=$(id -u "$TRAY_USER")
+        sudo -u "$TRAY_USER" \
+            DISPLAY="${DISPLAY:-:0}" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$TRAY_UID/bus" \
+            XDG_RUNTIME_DIR="/run/user/$TRAY_UID" \
+            nohup "$PIPX_BIN_DIR/argus-tray" >/dev/null 2>&1 &
     else
         echo "Warning: could not resolve the tray's home directory or installed icon — skipping desktop integration." >&2
     fi
