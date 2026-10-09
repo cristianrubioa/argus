@@ -42,6 +42,7 @@ from argus.web.auth import record_failure
 from argus.web.auth import record_success
 from argus.web.auth import require_admin
 from argus.web.auth import require_csrf
+from argus.web.auth import verify_setup_token
 from argus.web.i18n import LANGUAGE_NAMES
 from argus.web.i18n import SUPPORTED_LANGUAGES
 from argus.web.i18n import t as translate
@@ -119,10 +120,13 @@ def register_submit(
     username: str = Form(...),
     password: str = Form(...),
     confirm_password: str = Form(...),
+    setup_token: str = Form(...),
     session: Session = Depends(get_session),
 ):
     if admin_exists(session):
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    if not verify_setup_token(setup_token):
+        return render(request, session, "register.html", {"error": "setup_token_error_invalid"})
     if not is_password_valid(password, confirm_password):
         error = "password_error_mismatch" if password != confirm_password else "password_error_too_short"
         return render(request, session, "register.html", {"error": error})

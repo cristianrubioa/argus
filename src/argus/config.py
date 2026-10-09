@@ -24,3 +24,20 @@ def session_secret() -> str:
 
 def session_https_only() -> bool:
     return os.environ.get("ARGUS_SESSION_HTTPS_ONLY", "").lower() in ("1", "true", "yes")
+
+
+def setup_token() -> str:
+    """Required once, to complete first-run registration — closes the window where whoever
+    visits /register first (not necessarily whoever installed Argus) becomes the admin.
+    ARGUS_SETUP_TOKEN overrides; otherwise generated once and persisted next to the database,
+    same pattern as session_secret()."""
+    env_token = os.environ.get("ARGUS_SETUP_TOKEN")
+    if env_token:
+        return env_token
+    token_path = db_path().parent / "setup_token"
+    if token_path.exists():
+        return token_path.read_text().strip()
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(secrets.token_hex(16))
+    token_path.chmod(0o600)
+    return token_path.read_text().strip()

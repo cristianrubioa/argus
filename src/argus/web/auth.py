@@ -16,6 +16,7 @@ from fastapi import Request
 from fastapi import status
 from sqlalchemy.orm import Session
 
+from argus import config
 from argus.db import get_session
 from argus.models import AdminUser
 
@@ -93,6 +94,10 @@ def is_password_valid(password: str, confirmation: str) -> bool:
 
 def admin_exists(session: Session) -> bool:
     return session.query(AdminUser).first() is not None
+
+
+def verify_setup_token(token: str) -> bool:
+    return hmac.compare_digest(token, config.setup_token())
 
 
 def create_admin_account(session: Session, username: str, password: str) -> None:

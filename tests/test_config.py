@@ -32,3 +32,22 @@ def test_session_https_only_true_when_set(monkeypatch):
     monkeypatch.setenv("ARGUS_SESSION_HTTPS_ONLY", "true")
     # Action & Expected
     assert config.session_https_only() is True
+
+
+def test_setup_token_generates_and_persists_when_unset(monkeypatch, tmp_path):
+    # Setup
+    monkeypatch.delenv("ARGUS_SETUP_TOKEN", raising=False)
+    monkeypatch.setenv("ARGUS_DB_PATH", str(tmp_path / "argus.db"))
+    # Action
+    first = config.setup_token()
+    second = config.setup_token()
+    # Expected
+    assert first == second
+    assert (tmp_path / "setup_token").read_text().strip() == first
+
+
+def test_setup_token_returns_configured_value(monkeypatch):
+    # Setup
+    monkeypatch.setenv("ARGUS_SETUP_TOKEN", "a-real-token")
+    # Action & Expected
+    assert config.setup_token() == "a-real-token"

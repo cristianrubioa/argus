@@ -3,6 +3,8 @@ from fastapi import status
 from argus.models import AdminUser
 from argus.web.auth import hash_password
 
+_VALID_SETUP_TOKEN = "test-setup-token-not-for-production"
+
 
 def test_register_submit_button_starts_disabled(client):
     # Action
@@ -37,12 +39,46 @@ def test_htmx_no_admin_request_gets_an_hx_redirect_instead_of_a_303(client):
 def test_successful_registration_creates_account_and_logs_in(client, session):
     # Action
     response = client.post(
-        "/register", data={"username": "admin", "password": "longenough", "confirm_password": "longenough"}
+        "/register",
+        data={
+            "username": "admin",
+            "password": "longenough",
+            "confirm_password": "longenough",
+            "setup_token": _VALID_SETUP_TOKEN,
+        },
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert response.url.path == "/"
     assert session.query(AdminUser).count() == 1
+
+
+def test_registration_rejects_missing_setup_token(client, session):
+    # Action
+    response = client.post(
+        "/register", data={"username": "admin", "password": "longenough", "confirm_password": "longenough"}
+    )
+    # Expected
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert session.query(AdminUser).count() == 0
+
+
+def test_registration_rejects_wrong_setup_token(client, session):
+    # Action
+    response = client.post(
+        "/register",
+        data={
+            "username": "admin",
+            "password": "longenough",
+            "confirm_password": "longenough",
+            "setup_token": "not-the-real-token",
+        },
+    )
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert response.url.path == "/register"
+    assert "Invalid setup token" in response.text
+    assert session.query(AdminUser).count() == 0
 
 
 def test_register_unreachable_once_account_exists_get(client, session):
@@ -62,7 +98,13 @@ def test_register_unreachable_once_account_exists_post(client, session):
     session.commit()
     # Action
     response = client.post(
-        "/register", data={"username": "second", "password": "longenough", "confirm_password": "longenough"}
+        "/register",
+        data={
+            "username": "second",
+            "password": "longenough",
+            "confirm_password": "longenough",
+            "setup_token": _VALID_SETUP_TOKEN,
+        },
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK
@@ -72,7 +114,15 @@ def test_register_unreachable_once_account_exists_post(client, session):
 
 def test_registration_rejects_too_short_password(client, session):
     # Action
-    response = client.post("/register", data={"username": "admin", "password": "short", "confirm_password": "short"})
+    response = client.post(
+        "/register",
+        data={
+            "username": "admin",
+            "password": "short",
+            "confirm_password": "short",
+            "setup_token": _VALID_SETUP_TOKEN,
+        },
+    )
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert response.url.path == "/register"
@@ -83,7 +133,13 @@ def test_registration_rejects_too_short_password(client, session):
 def test_registration_rejects_mismatched_confirmation(client, session):
     # Action
     response = client.post(
-        "/register", data={"username": "admin", "password": "longenough", "confirm_password": "somethingelse"}
+        "/register",
+        data={
+            "username": "admin",
+            "password": "longenough",
+            "confirm_password": "somethingelse",
+            "setup_token": _VALID_SETUP_TOKEN,
+        },
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK

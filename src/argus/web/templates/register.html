@@ -12,6 +12,12 @@
     <div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2">{{ t(error) }}</div>
     {% endif %}
     <div>
+      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('register_setup_token_label') }}</label>
+      <input type="text" name="setup_token" required
+        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+      <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ t('register_setup_token_hint') }}</p>
+    </div>
+    <div>
       <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('login_username') }}</label>
       <input type="text" name="username" required autofocus
         class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
