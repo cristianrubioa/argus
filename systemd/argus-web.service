@@ -10,6 +10,8 @@ EnvironmentFile=-/etc/argus/agent.env
 Environment=ARGUS_DB_PATH=/var/lib/argus/argus.db
 ExecStart=/opt/argus/bin/argus-web
 Restart=on-failure
+# argus-agent is only a group member of the db's owner — new files need group-write by default.
+UMask=0002
 NoNewPrivileges=yes
 ProtectSystem=strict
 ReadWritePaths=/var/lib/argus
