@@ -1,0 +1,35 @@
+# git-cliff config for Argus's own commit convention (":emoji: [scope] Message", enforced by the
+# commit-lint CI job) — not Conventional Commits, so conventional parsing is disabled and grouping
+# is done explicitly by scope via commit_parsers instead.
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+header = ""
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group }}
+{% for commit in commits %}
+- {{ commit.message | split(pat="\n") | first | trim }}
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+split_commits = false
+protect_breaking_commits = false
+filter_commits = false
+tag_pattern = "v[0-9]*"
+topo_order = false
+sort_commits = "oldest"
+
+commit_parsers = [
+  { message = '^:\w+:\s\[back\]', group = "Backend" },
+  { message = '^:\w+:\s\[front\]', group = "Frontend" },
+  { message = '^:\w+:\s\[infra\]', group = "Infrastructure" },
+  { message = '^:\w+:\s\[ci\]', group = "CI" },
+  { message = '^:\w+:\s\[doc\]', group = "Documentation" },
+]
