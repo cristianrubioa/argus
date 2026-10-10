@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 # Shared by list-devices and list-rules — both usbguard subcommands emit the same line shape.
 _RULE_LINE_RE = re.compile(
     r"^(?P<id>\d+):\s+(?P<target>\w+)\s+id\s+(?P<vid>[0-9a-fA-F]{4}):(?P<pid>[0-9a-fA-F]{4})"
-    r'.*?\bserial\s+"(?P<serial>[^"]*)".*?\bwith-connect-type\s+"(?P<connect_type>[^"]*)"'
+    r'.*?\bserial\s+"(?P<serial>[^"]*)".*?\bname\s+"(?P<name>[^"]*)"'
+    r'.*?\bwith-connect-type\s+"(?P<connect_type>[^"]*)"'
 )
 
 # Ubuntu Noble's usbguard 1.1.2+ds-6build2 — the version parser.py and this module were validated against.
@@ -77,6 +78,9 @@ class ListedDevice:
     # The live connection id list-devices reports for this device right now — defaults to 0 for callers
     # that only care about identity/authorization, not correlating a new DeviceEvent to this connection.
     id: int = 0
+    # Defaults to "" for callers (most of this module's tests) that build a ListedDevice by hand and
+    # don't care about the reported name — only real parsing below ever needs it populated.
+    name: str = ""
 
 
 def list_devices() -> list[ListedDevice]:
@@ -95,6 +99,7 @@ def list_devices() -> list[ListedDevice]:
                 target=match.group("target").lower(),
                 hotplug=match.group("connect_type") == "hotplug",
                 id=int(match.group("id")),
+                name=match.group("name"),
             )
         )
     return devices

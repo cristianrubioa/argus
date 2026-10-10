@@ -164,9 +164,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "device_review_internal_heading": "Internal (informational only)",
         "device_review_external_heading": "External",
         "device_review_empty": "None detected",
+        "device_review_unnamed": "Unnamed device",
         "device_review_risk_note": (
             "Checking a device whitelists it now, so it keeps working once you switch to Enforce. "
-            "Leave it unchecked if you're not sure — nothing is blocked yet while Monitor is active."
+            "If you're not sure, leave it unchecked. <strong>Nothing is blocked yet while Monitor is active.</strong>"
         ),
         "device_review_continue": "Continue",
         "toast_settings_saved": "Settings saved.",
@@ -334,9 +335,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "device_review_internal_heading": "Internos (solo informativo)",
         "device_review_external_heading": "Externos",
         "device_review_empty": "No se detectó ninguno",
+        "device_review_unnamed": "Dispositivo sin nombre",
         "device_review_risk_note": (
             "Marcar un dispositivo lo agrega a la whitelist ahora, para que siga funcionando cuando "
-            "pases a Enforce. Si no estás seguro, déjalo sin marcar — nada se bloquea todavía mientras está en Monitor."
+            "pases a Enforce. Si no estás seguro, déjalo sin marcar. "
+            "<strong>Nada se bloquea todavía mientras está en Monitor.</strong>"
         ),
         "device_review_continue": "Continuar",
         "toast_settings_saved": "Ajustes guardados.",
@@ -504,9 +507,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "device_review_internal_heading": "Internos (apenas informativo)",
         "device_review_external_heading": "Externos",
         "device_review_empty": "Nenhum detectado",
+        "device_review_unnamed": "Dispositivo sem nome",
         "device_review_risk_note": (
             "Marcar um dispositivo o adiciona à whitelist agora, para que continue funcionando ao mudar "
-            "para Enforce. Se não tiver certeza, deixe desmarcado — nada é bloqueado enquanto estiver no modo Monitor."
+            "para Enforce. Se não tiver certeza, deixe desmarcado. "
+            "<strong>Nada é bloqueado enquanto estiver no modo Monitor.</strong>"
         ),
         "device_review_continue": "Continuar",
         "toast_settings_saved": "Configurações salvas.",
@@ -675,10 +680,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "device_review_internal_heading": "Internes (informatif uniquement)",
         "device_review_external_heading": "Externes",
         "device_review_empty": "Aucun détecté",
+        "device_review_unnamed": "Appareil sans nom",
         "device_review_risk_note": (
             "Cocher un appareil l'ajoute à la liste blanche dès maintenant, pour qu'il continue de "
-            "fonctionner une fois passé en mode Enforce. En cas de doute, laissez-le décoché — rien "
-            "n'est bloqué pendant que le mode Monitor est actif."
+            "fonctionner une fois passé en mode Enforce. En cas de doute, laissez-le décoché. "
+            "<strong>Rien n'est bloqué pendant que le mode Monitor est actif.</strong>"
         ),
         "device_review_continue": "Continuer",
         "toast_settings_saved": "Paramètres enregistrés.",
@@ -847,9 +853,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "device_review_internal_heading": "Intern (nur informativ)",
         "device_review_external_heading": "Extern",
         "device_review_empty": "Keine erkannt",
+        "device_review_unnamed": "Unbenanntes Gerät",
         "device_review_risk_note": (
             "Ein markiertes Gerät wird sofort auf die Whitelist gesetzt, damit es nach dem Wechsel zu "
-            "Enforce weiter funktioniert. Im Zweifel nicht markieren — solange Monitor aktiv ist, wird nichts blockiert."
+            "Enforce weiter funktioniert. Im Zweifel nicht markieren. "
+            "<strong>Solange Monitor aktiv ist, wird nichts blockiert.</strong>"
         ),
         "device_review_continue": "Weiter",
         "toast_settings_saved": "Einstellungen gespeichert.",

@@ -3,9 +3,10 @@ from fastapi import status
 from argus import profiles
 from argus.agent import usbguard_cli
 from argus.factories import DeviceEventFactory
-from argus.factories import DeviceFactory
 from argus.models import AdminUser
+from argus.models import Device
 from argus.models import WhitelistEntry
+from argus.web import router
 from argus.web.auth import hash_password
 
 _VALID_SETUP_TOKEN = "test-setup-token-not-for-production"
@@ -47,17 +48,15 @@ def test_device_review_container_absent_on_a_later_visit(client, session, monkey
 
 def test_device_review_splits_internal_and_external_devices(logged_in_client, session, monkeypatch):
     # Setup
-    internal = DeviceFactory(connect_type="hardwired")
-    external = DeviceFactory(connect_type="hotplug")
     monkeypatch.setattr(
         usbguard_cli,
         "list_devices",
         lambda: [
             usbguard_cli.ListedDevice(
-                vid=internal.vid, pid=internal.pid, serial=internal.serial, target="allow", hotplug=False
+                vid="1d6b", pid="0002", serial=None, target="allow", hotplug=False, name="xHCI Host Controller"
             ),
             usbguard_cli.ListedDevice(
-                vid=external.vid, pid=external.pid, serial=external.serial, target="block", hotplug=True
+                vid="046d", pid="c542", serial=None, target="block", hotplug=True, name="Wireless Mouse"
             ),
         ],
     )
@@ -65,23 +64,33 @@ def test_device_review_splits_internal_and_external_devices(logged_in_client, se
     response = logged_in_client.get("/register/device-review")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert internal.name in response.text
-    assert external.name in response.text
-    assert f'value="{internal.id}"' not in response.text
-    assert f'value="{external.id}"' in response.text
+    assert "xHCI Host Controller" in response.text
+    assert "Wireless Mouse" in response.text
+    assert 'value="1d6b:0002:"' not in response.text
+    assert 'value="046d:c542:"' in response.text
 
 
 def test_device_review_submit_whitelists_only_checked_devices(logged_in_client, session, monkeypatch):
     # Setup
-    monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
-    checked = DeviceFactory(connect_type="hotplug")
-    unchecked = DeviceFactory(connect_type="hotplug")
+    monkeypatch.setattr(
+        usbguard_cli,
+        "list_devices",
+        lambda: [
+            usbguard_cli.ListedDevice(
+                vid="046d", pid="c542", serial=None, target="allow", hotplug=True, name="Wireless Mouse"
+            ),
+            usbguard_cli.ListedDevice(
+                vid="058f", pid="6387", serial="AAE9055C", target="allow", hotplug=True, name="Mass Storage"
+            ),
+        ],
+    )
     # Action
-    response = logged_in_client.post("/register/device-review", data={"device_ids": [checked.id]})
+    response = logged_in_client.post("/register/device-review", data={"device_ids": ["046d:c542:"]})
     # Expected
     assert response.status_code == status.HTTP_200_OK
+    checked = session.query(Device).filter_by(vid="046d", pid="c542").one()
     assert session.query(WhitelistEntry).filter_by(device_id=checked.id).count() == 1
-    assert session.query(WhitelistEntry).filter_by(device_id=unchecked.id).count() == 0
+    assert session.query(Device).filter_by(vid="058f", pid="6387").count() == 0
 
 
 def test_unchecked_device_remains_eligible_for_enforce_review(logged_in_client, session, monkeypatch):
@@ -105,6 +114,41 @@ def test_device_review_degrades_to_empty_when_usbguard_unavailable(logged_in_cli
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert response.text.count("None detected") == 2
+
+
+def test_device_review_resolves_empty_name_via_usb_ids(logged_in_client, session, monkeypatch, tmp_path):
+    # Setup
+    usb_ids_file = tmp_path / "usb.ids"
+    usb_ids_file.write_text("8087  Intel Corp.\n\t0033  AX211 Bluetooth\n")
+    monkeypatch.setattr(router, "_USB_IDS_PATHS", (str(usb_ids_file),))
+    monkeypatch.setattr(
+        usbguard_cli,
+        "list_devices",
+        lambda: [usbguard_cli.ListedDevice(vid="8087", pid="0033", serial=None, target="allow", hotplug=False, name="")],
+    )
+    # Action
+    response = logged_in_client.get("/register/device-review")
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Intel Corp. AX211 Bluetooth" in response.text
+    assert "Unnamed device" not in response.text
+
+
+def test_device_review_falls_back_to_unnamed_when_usb_ids_has_no_match(logged_in_client, session, monkeypatch, tmp_path):
+    # Setup
+    usb_ids_file = tmp_path / "usb.ids"
+    usb_ids_file.write_text("1234  Some Other Vendor\n\t5678  Some Other Product\n")
+    monkeypatch.setattr(router, "_USB_IDS_PATHS", (str(usb_ids_file),))
+    monkeypatch.setattr(
+        usbguard_cli,
+        "list_devices",
+        lambda: [usbguard_cli.ListedDevice(vid="8087", pid="0033", serial=None, target="allow", hotplug=False, name="")],
+    )
+    # Action
+    response = logged_in_client.get("/register/device-review")
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert "Unnamed device" in response.text
 
 
 def test_device_review_route_requires_login(client, session):

@@ -31,8 +31,12 @@ def test_list_devices_parses_hotplug_and_hardwired_entries(monkeypatch):
     devices = usbguard_cli.list_devices()
     # Expected
     assert devices == [
-        usbguard_cli.ListedDevice(vid="1d6b", pid="0002", serial="0000:00:0d.0", target="allow", hotplug=False, id=8),
-        usbguard_cli.ListedDevice(vid="046d", pid="c542", serial=None, target="block", hotplug=True, id=12),
+        usbguard_cli.ListedDevice(
+            vid="1d6b", pid="0002", serial="0000:00:0d.0", target="allow", hotplug=False, id=8, name="xHCI Host Controller"
+        ),
+        usbguard_cli.ListedDevice(
+            vid="046d", pid="c542", serial=None, target="block", hotplug=True, id=12, name="Wireless Receiver"
+        ),
     ]
 
 

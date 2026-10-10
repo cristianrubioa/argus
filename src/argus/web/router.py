@@ -1,5 +1,9 @@
+import html
 import logging
+import os
+import re
 import secrets
+from dataclasses import replace
 from datetime import datetime
 from datetime import timezone
 from pathlib import Path
@@ -143,47 +147,114 @@ def register_submit(
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
-def _registration_connected_devices(session: Session) -> tuple[list[Device], list[Device]]:
-    """Best-effort split of currently connected devices into internal/external, by cross-referencing
-    live list_devices() state against persisted Device rows (for a human-readable name/id) — degrades
-    to two empty lists on UsbguardCliError, same posture as _connected_identities()."""
+_USB_IDS_PATHS = ("/usr/share/misc/usb.ids", "/usr/share/hwdata/usb.ids", "/var/lib/usbutils/usb.ids")
+_USB_IDS_ENTRY_RE = re.compile(r"([0-9a-fA-F]{4})\s+(.+)")
+
+
+def _usb_ids_names(wanted: set[tuple[str, str]]) -> dict[tuple[str, str], str]:
+    """Best-effort vendor+product name lookup from the system's usb.ids database — the same file
+    `lsusb` uses — for devices USBGuard itself reports with an empty name (common for some
+    internal/embedded controllers whose USB descriptor has no product string). Missing file or no
+    match is not an error: the caller falls back to a generic placeholder either way."""
+    path = next((p for p in _USB_IDS_PATHS if os.path.exists(p)), None)
+    if path is None or not wanted:
+        return {}
+    names: dict[tuple[str, str], str] = {}
+    vendor_id = vendor_name = None
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for raw_line in f:
+                if raw_line.startswith("#") or raw_line.startswith("\t\t") or not raw_line.strip():
+                    continue
+                if raw_line.startswith("\t"):
+                    if vendor_id is None:
+                        continue
+                    match = _USB_IDS_ENTRY_RE.match(raw_line[1:])
+                    if match and (vendor_id, match.group(1).lower()) in wanted:
+                        names[(vendor_id, match.group(1).lower())] = f"{vendor_name} {match.group(2)}".strip()
+                    continue
+                match = _USB_IDS_ENTRY_RE.match(raw_line)
+                if match:
+                    vendor_id, vendor_name = match.group(1).lower(), match.group(2)
+    except OSError:
+        return {}
+    return names
+
+
+def _with_usb_ids_fallback_names(
+    devices: list[usbguard_cli.ListedDevice],
+) -> list[usbguard_cli.ListedDevice]:
+    wanted = {(d.vid, d.pid) for d in devices if not d.name}
+    resolved = _usb_ids_names(wanted)
+    return [replace(d, name=resolved[(d.vid, d.pid)]) if not d.name and (d.vid, d.pid) in resolved else d for d in devices]
+
+
+def _registration_connected_devices() -> tuple[list[usbguard_cli.ListedDevice], list[usbguard_cli.ListedDevice]]:
+    """Best-effort split of currently connected devices into internal/external, read straight from live
+    list_devices() state — not from persisted Device rows, which may not exist yet for hardware that was
+    already connected before this install's first USBGuard event (the common case right after a fresh
+    install/wipe: nothing has "connected" since nothing changed). Degrades to two empty lists on
+    UsbguardCliError, same posture as _connected_identities()."""
     try:
         listed = usbguard_cli.list_devices()
     except usbguard_cli.UsbguardCliError:
         logger.warning("Could not list live USBGuard devices for the registration device-review modal")
         return [], []
-    internal: list[Device] = []
-    external: list[Device] = []
-    for item in listed:
-        device = session.query(Device).filter_by(vid=item.vid, pid=item.pid, serial=item.serial).first()
-        if device is None:
-            continue
-        (external if item.hotplug else internal).append(device)
-    return internal, external
+    return [d for d in listed if not d.hotplug], [d for d in listed if d.hotplug]
+
+
+def _get_or_create_device(session: Session, listed: usbguard_cli.ListedDevice) -> Device:
+    """Same idiom as argus.agent.main._get_or_create_device — only reached here when the admin
+    explicitly whitelists a device that has no DeviceEvent/Device row yet."""
+    device = session.query(Device).filter_by(vid=listed.vid, pid=listed.pid, serial=listed.serial).first()
+    if device is None:
+        device = Device(
+            vid=listed.vid,
+            pid=listed.pid,
+            name=listed.name,
+            serial=listed.serial,
+            connect_type="hotplug" if listed.hotplug else "hardwired",
+        )
+        session.add(device)
+        session.flush()
+    return device
 
 
 @register_router.get("/register/device-review")
 def registration_device_review(
     request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)
 ):
-    internal_devices, external_devices = _registration_connected_devices(session)
+    internal_devices, external_devices = _registration_connected_devices()
     return render(
         request,
         session,
         "_registration_device_review_modal.html",
-        {"internal_devices": internal_devices, "external_devices": external_devices},
+        {
+            "internal_devices": _with_usb_ids_fallback_names(internal_devices),
+            "external_devices": _with_usb_ids_fallback_names(external_devices),
+        },
     )
 
 
 @register_router.post("/register/device-review")
 def registration_device_review_submit(
-    device_ids: list[int] = Form(default=[]),
+    device_ids: list[str] = Form(default=[]),
     admin: str = Depends(require_admin),
     session: Session = Depends(get_session),
     _csrf: None = Depends(require_csrf),
 ):
-    for device_id in device_ids:
-        _authorize_device(session, admin, device_id)
+    _, external_devices = _registration_connected_devices()
+    by_identity = {(d.vid, d.pid, d.serial): d for d in external_devices}
+    for raw in device_ids:
+        parts = raw.split(":", 2)
+        if len(parts) != 3:
+            continue
+        vid, pid, serial = parts
+        candidate = by_identity.get((vid, pid, serial or None))
+        if candidate is None:
+            continue
+        device = _get_or_create_device(session, candidate)
+        _authorize_device(session, admin, device.id)
     return HTMLResponse("")
 
 
@@ -726,6 +797,111 @@ def update_password(
 # --- Release notes ---
 
 
+# The gitmoji.dev shortcodes this project's commit-lint allows, plus the rest of the stable gitmoji
+# spec for forward-compat — an unmapped future shortcode just falls back to showing itself raw.
+_GITMOJI = {
+    "sparkles": "✨",
+    "bug": "🐛",
+    "bookmark": "🔖",
+    "memo": "📝",
+    "lipstick": "💄",
+    "recycle": "♻️",
+    "lock": "🔒",
+    "zap": "⚡",
+    "wrench": "🔧",
+    "white_check_mark": "✅",
+    "truck": "🚚",
+    "rotating_light": "🚨",
+    "rewind": "⏪",
+    "loud_sound": "🔊",
+    "fire": "🔥",
+    "tada": "🎉",
+    "ambulance": "🚑",
+    "rocket": "🚀",
+    "art": "🎨",
+    "construction": "🚧",
+    "green_heart": "💚",
+    "arrow_down": "⬇️",
+    "arrow_up": "⬆️",
+    "pushpin": "📌",
+    "chart_with_upwards_trend": "📈",
+    "heavy_plus_sign": "➕",
+    "heavy_minus_sign": "➖",
+    "whale": "🐳",
+    "children_crossing": "🚸",
+    "building_construction": "🏗️",
+    "iphone": "📱",
+    "egg": "🥚",
+    "boom": "💥",
+    "bento": "🍱",
+    "wheelchair": "♿",
+    "speech_balloon": "💬",
+    "card_file_box": "🗃️",
+    "necktie": "👔",
+    "stethoscope": "🩺",
+    "adhesive_bandage": "🩹",
+    "test_tube": "🧪",
+    "seedling": "🌱",
+    "camera_flash": "📸",
+    "alembic": "⚗️",
+    "mag": "🔍",
+    "label": "🏷️",
+    "triangular_flag_on_post": "🚩",
+    "goal_net": "🥅",
+    "dizzy": "💫",
+    "safety_vest": "🦺",
+}
+
+# A changelog bullet is ":shortcode: [scope] message" (this project's commit convention). The scope
+# is dropped here — git-cliff already grouped the surrounding section by it, so repeating it on
+# every line would be the same information twice.
+_BULLET_RE = re.compile(r"^:(?P<shortcode>\w+):\s*(?:\[\w+\]\s*)?(?P<message>.+)$")
+
+
+def _format_bullet(line: str) -> str:
+    match = _BULLET_RE.match(line)
+    if match is None:
+        return html.escape(line)
+    shortcode = match.group("shortcode")
+    emoji = _GITMOJI.get(shortcode, f":{shortcode}:")
+    return f"{emoji} {html.escape(match.group('message'))}"
+
+
+_CHANGELOG_HEADING_CLASS = (
+    "font-semibold text-gray-800 dark:text-gray-200 mt-7 first:mt-0 pb-1 border-b border-gray-100 dark:border-gray-800"
+)
+
+
+def _render_changelog_excerpt(body: str) -> str:
+    """git-cliff's own template (cliff.toml) only ever emits blank lines, "### Heading" lines, and
+    "- bullet" lines — small enough to turn into real markup by hand rather than add a markdown
+    dependency. Every bit of line content is escaped before being wrapped in a tag we generate."""
+    parts: list[str] = []
+    in_list = False
+    for line in body.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("### "):
+            if in_list:
+                parts.append("</ul>")
+                in_list = False
+            parts.append(f'<h4 class="{_CHANGELOG_HEADING_CLASS}">{html.escape(line[4:])}</h4>')
+        elif line.startswith("- "):
+            if not in_list:
+                parts.append('<ul class="list-disc list-inside space-y-1.5 mt-2">')
+                in_list = True
+            parts.append(f"<li>{_format_bullet(line[2:])}</li>")
+        else:
+            if in_list:
+                parts.append("</ul>")
+                in_list = False
+            parts.append(f"<p>{html.escape(line)}</p>")
+    if in_list:
+        parts.append("</ul>")
+    return "".join(parts)
+
+
 @router.get("/release-notes/modal")
 def release_notes_modal(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     """Lazy-loaded by the shell via htmx only when version_state.release_notes_pending is true — the
@@ -738,7 +914,7 @@ def release_notes_modal(request: Request, admin: str = Depends(require_admin), s
         request,
         session,
         "_release_notes_modal.html",
-        {"installed": installed, "body": notes["body"], "html_url": notes["html_url"]},
+        {"installed": installed, "body_html": _render_changelog_excerpt(notes["body"]), "html_url": notes["html_url"]},
     )
 
 
