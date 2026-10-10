@@ -187,6 +187,7 @@ class Settings(Base):
     last_log_prune_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     latest_version_available: Mapped[str | None] = mapped_column(String(32), nullable=True)
     version_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    release_notes_seen_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
     log_retention: Mapped[LogRetention] = mapped_column(Enum(LogRetention), default=LogRetention.ONE_YEAR)
     mqtt_enabled: Mapped[bool] = mapped_column(default=False)
     mqtt_host: Mapped[str | None] = mapped_column(String(255), nullable=True)

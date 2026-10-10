@@ -5,6 +5,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.pool import StaticPool
 
 from argus import db
+from argus import version_check
 from argus.db import Base
 from argus.db import init_db
 from argus.models import Decision
@@ -199,3 +200,49 @@ def test_log_retention_migration_is_idempotent():
     with engine.connect() as conn:
         columns = {row[1] for row in conn.execute(text("PRAGMA table_info(settings)"))}
     assert "log_retention" in columns
+
+
+def test_release_notes_seen_version_backfills_to_installed_version_on_upgrade():
+    # Setup
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE settings DROP COLUMN release_notes_seen_version"))
+        conn.execute(
+            text(
+                "INSERT INTO settings (id, profile, language, theme, font_size, log_retention, mqtt_enabled, "
+                "mqtt_port, mqtt_topic_prefix, mqtt_tls_enabled) "
+                "VALUES (1, :p, 'en', 'dark', 'md', 'ONE_YEAR', 0, 1883, 'argus', 0)"
+            ),
+            {"p": Profile.MONITOR.value},
+        )
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT release_notes_seen_version FROM settings WHERE id = 1")).one()
+    assert row.release_notes_seen_version == version_check.installed_version()
+
+
+def test_release_notes_seen_version_migration_is_idempotent():
+    # Setup
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    init_db(bind_engine=engine)
+    # Action
+    init_db(bind_engine=engine)
+    # Expected
+    with engine.connect() as conn:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(settings)"))}
+    assert "release_notes_seen_version" in columns
+
+
+def test_add_release_notes_seen_version_reraises_an_unrelated_operational_error():
+    # Setup
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE settings"))
+    # Action & Expected
+    with pytest.raises(OperationalError, match="no such table"):
+        db._add_release_notes_seen_version(engine)

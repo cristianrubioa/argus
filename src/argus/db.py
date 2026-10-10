@@ -6,6 +6,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import sessionmaker
 
 from argus import config
+from argus import version_check
 
 
 class Base(DeclarativeBase):
@@ -35,6 +36,7 @@ def init_db(bind_engine=None):
     Base.metadata.create_all(bind=target)
     _add_missing_columns(target)
     _add_device_events_settled_at(target)
+    _add_release_notes_seen_version(target)
 
 
 _SETTINGS_COLUMNS_ADDED_AFTER_INITIAL_SCHEMA = (
@@ -102,6 +104,22 @@ def _add_device_events_settled_at(target):
         with target.begin() as conn:
             conn.execute(text("ALTER TABLE device_events ADD COLUMN settled_at DATETIME"))
             conn.execute(text("UPDATE device_events SET settled_at = CURRENT_TIMESTAMP"))
+    except OperationalError as exc:
+        if _DUPLICATE_COLUMN_ERROR not in str(exc):
+            raise
+
+
+def _add_release_notes_seen_version(target):
+    """Same one-time backfill pattern as _add_device_events_settled_at: the column needs a value
+    computed at migration time (the version already installed) so existing installs don't
+    immediately see release notes for every past version — new rows get NULL and see notes once."""
+    try:
+        with target.begin() as conn:
+            conn.execute(text("ALTER TABLE settings ADD COLUMN release_notes_seen_version VARCHAR(32)"))
+            conn.execute(
+                text("UPDATE settings SET release_notes_seen_version = :version"),
+                {"version": version_check.installed_version()},
+            )
     except OperationalError as exc:
         if _DUPLICATE_COLUMN_ERROR not in str(exc):
             raise

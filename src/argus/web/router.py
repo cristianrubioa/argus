@@ -10,6 +10,7 @@ from fastapi import Form
 from fastapi import Query
 from fastapi import Request
 from fastapi import status
+from fastapi.responses import HTMLResponse
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -80,7 +81,12 @@ def _version_state(session: Session) -> dict:
         version_status = VersionStatus.UPDATE_AVAILABLE
     else:
         version_status = VersionStatus.UP_TO_DATE
-    return {"installed": installed, "status": version_status, "latest": settings.latest_version_available}
+    return {
+        "installed": installed,
+        "status": version_status,
+        "latest": settings.latest_version_available,
+        "release_notes_pending": settings.release_notes_seen_version != installed,
+    }
 
 
 def render(request: Request, session: Session, name: str, context: dict, *, include_toast: bool = False):
@@ -133,7 +139,52 @@ def register_submit(
     create_admin_account(session, username, password)
     request.session["admin"] = username
     request.session["csrf_token"] = secrets.token_hex(32)
+    request.session["show_device_review"] = True
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _registration_connected_devices(session: Session) -> tuple[list[Device], list[Device]]:
+    """Best-effort split of currently connected devices into internal/external, by cross-referencing
+    live list_devices() state against persisted Device rows (for a human-readable name/id) — degrades
+    to two empty lists on UsbguardCliError, same posture as _connected_identities()."""
+    try:
+        listed = usbguard_cli.list_devices()
+    except usbguard_cli.UsbguardCliError:
+        logger.warning("Could not list live USBGuard devices for the registration device-review modal")
+        return [], []
+    internal: list[Device] = []
+    external: list[Device] = []
+    for item in listed:
+        device = session.query(Device).filter_by(vid=item.vid, pid=item.pid, serial=item.serial).first()
+        if device is None:
+            continue
+        (external if item.hotplug else internal).append(device)
+    return internal, external
+
+
+@register_router.get("/register/device-review")
+def registration_device_review(
+    request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)
+):
+    internal_devices, external_devices = _registration_connected_devices(session)
+    return render(
+        request,
+        session,
+        "_registration_device_review_modal.html",
+        {"internal_devices": internal_devices, "external_devices": external_devices},
+    )
+
+
+@register_router.post("/register/device-review")
+def registration_device_review_submit(
+    device_ids: list[int] = Form(default=[]),
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
+):
+    for device_id in device_ids:
+        _authorize_device(session, admin, device_id)
+    return HTMLResponse("")
 
 
 @router.get("/login")
@@ -177,7 +228,13 @@ def agent_status_partial(request: Request, _admin: str = Depends(require_admin),
 @router.get("/")
 def dashboard(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
     events = _recent_events(session)
-    return render(request, session, "dashboard.html", {"admin": admin, "events": events, "active": "dashboard"})
+    show_device_review = request.session.pop("show_device_review", False)
+    return render(
+        request,
+        session,
+        "dashboard.html",
+        {"admin": admin, "events": events, "active": "dashboard", "show_device_review": show_device_review},
+    )
 
 
 @router.get("/dashboard/partial")
@@ -664,3 +721,35 @@ def update_password(
         flash(request, ToastKind.SUCCESS, ToastMessage.PASSWORD_CHANGED)
 
     return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- Release notes ---
+
+
+@router.get("/release-notes/modal")
+def release_notes_modal(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+    """Lazy-loaded by the shell via htmx only when version_state.release_notes_pending is true — the
+    GitHub fetch never runs on a page load that doesn't need it."""
+    installed = version_check.installed_version()
+    notes = version_check.fetch_release_notes(installed)
+    if notes is None:
+        return HTMLResponse("")
+    return render(
+        request,
+        session,
+        "_release_notes_modal.html",
+        {"installed": installed, "body": notes["body"], "html_url": notes["html_url"]},
+    )
+
+
+@router.post("/release-notes/dismiss")
+def dismiss_release_notes(
+    request: Request,
+    admin: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(require_csrf),
+):
+    settings = profiles.get_settings(session)
+    settings.release_notes_seen_version = version_check.installed_version()
+    session.commit()
+    return HTMLResponse("")

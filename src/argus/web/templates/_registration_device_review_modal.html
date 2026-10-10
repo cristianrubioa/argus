@@ -1,0 +1,44 @@
+<div id="device-review-overlay" class="fixed z-50 bg-black/50" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
+  <div class="w-full h-full flex items-center justify-center p-6">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-full overflow-y-auto p-6">
+      <h2 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-2">{{ t('device_review_heading') }}</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ t('device_review_desc') }}</p>
+      <form method="post" action="/register/device-review" hx-post="/register/device-review" hx-target="#device-review-modal-container" hx-swap="innerHTML">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">{{ t('device_review_internal_heading') }}</h3>
+            <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded divide-y divide-gray-100 dark:divide-gray-900">
+              {% for device in internal_devices %}
+              <div class="flex items-center gap-2 px-3 py-2 text-sm">
+                <span class="flex-1 truncate">{{ device.display_name }}</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">{{ device.vid_pid }}</span>
+              </div>
+              {% else %}
+              <div class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{{ t('device_review_empty') }}</div>
+              {% endfor %}
+            </div>
+          </div>
+          <div>
+            <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">{{ t('device_review_external_heading') }}</h3>
+            <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded divide-y divide-gray-100 dark:divide-gray-900">
+              {% for device in external_devices %}
+              <label class="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                <input type="checkbox" name="device_ids" value="{{ device.id }}">
+                <span class="flex-1 truncate">{{ device.display_name }}</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">{{ device.vid_pid }}</span>
+              </label>
+              {% else %}
+              <div class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{{ t('device_review_empty') }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">{{ t('device_review_risk_note') }}</p>
+        <div class="mt-4 flex justify-end">
+          <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('device_review_continue') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

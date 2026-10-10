@@ -156,6 +156,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continue",
         "enforce_review_connected": "Connected now",
         "enforce_review_not_connected": "Not connected",
+        "release_notes_heading": "What's new",
+        "release_notes_see_more": "See more",
+        "release_notes_dismiss": "Got it",
+        "device_review_heading": "Devices detected",
+        "device_review_desc": "Here's what Argus can already see connected to this machine.",
+        "device_review_internal_heading": "Internal (informational only)",
+        "device_review_external_heading": "External",
+        "device_review_empty": "None detected",
+        "device_review_risk_note": (
+            "Checking a device whitelists it now, so it keeps working once you switch to Enforce. "
+            "Leave it unchecked if you're not sure — nothing is blocked yet while Monitor is active."
+        ),
+        "device_review_continue": "Continue",
         "toast_settings_saved": "Settings saved.",
         "toast_device_authorized": "Device authorized.",
         "toast_device_authorize_failed": "Couldn't authorize the device.",
@@ -313,6 +326,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continuar",
         "enforce_review_connected": "Conectado ahora",
         "enforce_review_not_connected": "No conectado",
+        "release_notes_heading": "Qué hay de nuevo",
+        "release_notes_see_more": "Ver más",
+        "release_notes_dismiss": "Entendido",
+        "device_review_heading": "Dispositivos detectados",
+        "device_review_desc": "Esto es lo que Argus ya puede ver conectado a este equipo.",
+        "device_review_internal_heading": "Internos (solo informativo)",
+        "device_review_external_heading": "Externos",
+        "device_review_empty": "No se detectó ninguno",
+        "device_review_risk_note": (
+            "Marcar un dispositivo lo agrega a la whitelist ahora, para que siga funcionando cuando "
+            "pases a Enforce. Si no estás seguro, déjalo sin marcar — nada se bloquea todavía mientras está en Monitor."
+        ),
+        "device_review_continue": "Continuar",
         "toast_settings_saved": "Ajustes guardados.",
         "toast_device_authorized": "Dispositivo autorizado.",
         "toast_device_authorize_failed": "No se pudo autorizar el dispositivo.",
@@ -470,6 +496,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continuar",
         "enforce_review_connected": "Conectado agora",
         "enforce_review_not_connected": "Não conectado",
+        "release_notes_heading": "Novidades",
+        "release_notes_see_more": "Ver mais",
+        "release_notes_dismiss": "Entendi",
+        "device_review_heading": "Dispositivos detectados",
+        "device_review_desc": "Isto é o que o Argus já consegue ver conectado a esta máquina.",
+        "device_review_internal_heading": "Internos (apenas informativo)",
+        "device_review_external_heading": "Externos",
+        "device_review_empty": "Nenhum detectado",
+        "device_review_risk_note": (
+            "Marcar um dispositivo o adiciona à whitelist agora, para que continue funcionando ao mudar "
+            "para Enforce. Se não tiver certeza, deixe desmarcado — nada é bloqueado enquanto estiver no modo Monitor."
+        ),
+        "device_review_continue": "Continuar",
         "toast_settings_saved": "Configurações salvas.",
         "toast_device_authorized": "Dispositivo autorizado.",
         "toast_device_authorize_failed": "Não foi possível autorizar o dispositivo.",
@@ -628,6 +667,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Continuer",
         "enforce_review_connected": "Connecté actuellement",
         "enforce_review_not_connected": "Non connecté",
+        "release_notes_heading": "Nouveautés",
+        "release_notes_see_more": "Voir plus",
+        "release_notes_dismiss": "Compris",
+        "device_review_heading": "Appareils détectés",
+        "device_review_desc": "Voici ce qu'Argus détecte déjà connecté à cette machine.",
+        "device_review_internal_heading": "Internes (informatif uniquement)",
+        "device_review_external_heading": "Externes",
+        "device_review_empty": "Aucun détecté",
+        "device_review_risk_note": (
+            "Cocher un appareil l'ajoute à la liste blanche dès maintenant, pour qu'il continue de "
+            "fonctionner une fois passé en mode Enforce. En cas de doute, laissez-le décoché — rien "
+            "n'est bloqué pendant que le mode Monitor est actif."
+        ),
+        "device_review_continue": "Continuer",
         "toast_settings_saved": "Paramètres enregistrés.",
         "toast_device_authorized": "Appareil autorisé.",
         "toast_device_authorize_failed": "Impossible d'autoriser l'appareil.",
@@ -786,6 +839,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "enforce_review_continue": "Fortfahren",
         "enforce_review_connected": "Jetzt verbunden",
         "enforce_review_not_connected": "Nicht verbunden",
+        "release_notes_heading": "Neuigkeiten",
+        "release_notes_see_more": "Mehr anzeigen",
+        "release_notes_dismiss": "Verstanden",
+        "device_review_heading": "Erkannte Geräte",
+        "device_review_desc": "Das sieht Argus bereits an diesem Rechner angeschlossen.",
+        "device_review_internal_heading": "Intern (nur informativ)",
+        "device_review_external_heading": "Extern",
+        "device_review_empty": "Keine erkannt",
+        "device_review_risk_note": (
+            "Ein markiertes Gerät wird sofort auf die Whitelist gesetzt, damit es nach dem Wechsel zu "
+            "Enforce weiter funktioniert. Im Zweifel nicht markieren — solange Monitor aktiv ist, wird nichts blockiert."
+        ),
+        "device_review_continue": "Weiter",
         "toast_settings_saved": "Einstellungen gespeichert.",
         "toast_device_authorized": "Gerät autorisiert.",
         "toast_device_authorize_failed": "Gerät konnte nicht autorisiert werden.",

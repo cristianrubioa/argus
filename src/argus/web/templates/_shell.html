@@ -69,6 +69,14 @@
 
 {% include "_toast.html" %}
 
+{% if version_state.release_notes_pending %}
+<div id="release-notes-modal-container" hx-get="/release-notes/modal" hx-trigger="load" hx-swap="innerHTML"></div>
+{% endif %}
+
+{% if show_device_review %}
+<div id="device-review-modal-container" hx-get="/register/device-review" hx-trigger="load" hx-swap="innerHTML"></div>
+{% endif %}
+
 <script>
   (function () {
     function pad(n) { return String(n).padStart(2, "0"); }
