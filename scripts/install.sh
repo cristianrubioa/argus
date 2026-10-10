@@ -240,8 +240,11 @@ chmod 644 "$PORT_FILE"
 
 if [ -n "$TRAY_USER" ]; then
     TRAY_HOME=$(_desktop_user_home "$TRAY_USER")
+    # `|| true`: a failing command substitution in a plain assignment isn't exempt from `set -e`
+    # the way `cmd1 && cmd2` is — without it, a broken venv/import here would abort the whole
+    # script instead of falling through to the "skip desktop integration" warning below.
     TRAY_ICON=$("$PIPX_HOME_DIR/venvs/argus/bin/python3" -c \
-        "import importlib.resources; print(importlib.resources.files('argus.web').joinpath('static', 'icon.svg'))" 2>/dev/null)
+        "import importlib.resources; print(importlib.resources.files('argus.web').joinpath('static', 'icon.svg'))" 2>/dev/null) || true
     # importlib.resources only builds the path — it doesn't confirm the file is actually there.
     if [ -n "$TRAY_HOME" ] && [ -n "$TRAY_ICON" ] && [ -f "$TRAY_ICON" ]; then
         TRAY_DESKTOP_FILE=$(mktemp)
@@ -278,7 +281,9 @@ while [ "$DASHBOARD_WAIT" -lt 10 ] && ! curl -fsS -o /dev/null "http://127.0.0.1
 done
 
 if [ -n "$IS_FRESH_INSTALL" ]; then
-    SETUP_TOKEN=$(cat "$DATA_DIR/setup_token" 2>/dev/null)
+    # `|| true`: see the TRAY_ICON comment above — cat failing here (token not written yet)
+    # would otherwise abort the script after everything already restarted successfully.
+    SETUP_TOKEN=$(cat "$DATA_DIR/setup_token" 2>/dev/null) || true
 fi
 
 if [ -n "$TRAY_PROVISIONED" ]; then
