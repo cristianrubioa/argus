@@ -9,15 +9,15 @@
   <input type="hidden" id="csrf-token-input" name="csrf_token" value="{{ csrf_token }}">
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_security_heading') }}</h1>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl">
-    <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
-      <input type="radio" name="profile" value="monitor" class="mt-1" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
+    <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer has-[:checked]:border-blue-700 dark:has-[:checked]:border-blue-400">
+      <input type="radio" name="profile" value="monitor" class="mt-1 scale-125 accent-blue-700 dark:accent-blue-400" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
       <span>
         <span class="block font-medium">{{ t('profile_monitor') }}</span>
         <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_monitor_desc')|safe }}</span>
       </span>
     </label>
-    <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
-      <input type="radio" name="profile" value="enforce" class="mt-1" {% if settings.profile.value == 'enforce' %}checked{% endif %}>
+    <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer has-[:checked]:border-blue-700 dark:has-[:checked]:border-blue-400">
+      <input type="radio" name="profile" value="enforce" class="mt-1 scale-125 accent-blue-700 dark:accent-blue-400" {% if settings.profile.value == 'enforce' %}checked{% endif %}>
       <span>
         <span class="block font-medium">{{ t('profile_enforce') }}</span>
         <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_enforce_desc')|safe }}</span>
@@ -28,7 +28,7 @@
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-12">{{ t('settings_retention_heading') }}</h1>
   <div id="log-retention-group" data-current-retention="{{ settings.log_retention.value }}" class="grid grid-cols-4 gap-2 max-w-4xl">
     {% for value in ('90_days', '1_year', '2_years', 'forever') %}
-    <label class="flex items-center justify-center text-center px-3 py-2 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent">
+    <label class="flex items-center justify-center text-center px-3 py-2 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:border-blue-700 has-[:checked]:text-blue-700 dark:has-[:checked]:border-blue-400 dark:has-[:checked]:text-blue-300">
       <input type="radio" name="log_retention" value="{{ value }}" class="peer hidden" {% if settings.log_retention.value == value %}checked{% endif %}>
       {{ t('retention_' + value) }}
     </label>
@@ -42,11 +42,11 @@
   <div class="space-y-5 max-w-4xl">
     <div class="flex gap-6 items-center">
       <label class="flex items-center gap-3">
-        <input type="checkbox" id="mqtt-enabled-toggle" name="mqtt_enabled" {% if settings.mqtt_enabled %}checked{% endif %}>
+        <input type="checkbox" id="mqtt-enabled-toggle" name="mqtt_enabled" class="accent-blue-700 dark:accent-blue-400" {% if settings.mqtt_enabled %}checked{% endif %}>
         <span>{{ t('mqtt_enabled_label') }}</span>
       </label>
       <label class="flex items-center gap-3">
-        <input type="checkbox" id="mqtt-tls-input" name="mqtt_tls_enabled" {% if settings.mqtt_tls_enabled %}checked{% endif %} {% if not settings.mqtt_enabled %}disabled{% endif %}>
+        <input type="checkbox" id="mqtt-tls-input" name="mqtt_tls_enabled" class="accent-blue-700 dark:accent-blue-400" {% if settings.mqtt_tls_enabled %}checked{% endif %} {% if not settings.mqtt_enabled %}disabled{% endif %}>
         <span>{{ t('mqtt_tls_label') }}</span>
       </label>
     </div>
@@ -104,24 +104,27 @@
   <div class="flex flex-wrap justify-between gap-y-6 max-w-4xl mt-12">
     <div>
       <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_language_heading') }}</h1>
-      <select name="language"
-        class="w-48 h-10 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 text-sm focus:outline-none focus:border-blue-400">
-        {% for code in supported_languages %}
-        <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ language_names[code] }}</option>
-        {% endfor %}
-      </select>
+      <div class="relative w-48">
+        <select name="language"
+          class="w-full h-10 appearance-none bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded pl-2 pr-8 text-sm focus:outline-none focus:border-blue-400">
+          {% for code in supported_languages %}
+          <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ language_names[code] }}</option>
+          {% endfor %}
+        </select>
+        <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400"></i>
+      </div>
     </div>
 
     <div>
       <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_theme_heading') }}</h1>
       <div class="grid grid-cols-2 gap-2 w-64">
-        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+        <label class="flex items-center justify-center gap-2 text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:border-blue-700 has-[:checked]:text-blue-700 dark:has-[:checked]:border-blue-400 dark:has-[:checked]:text-blue-300 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
           <input type="radio" name="theme" value="dark" class="sr-only" {% if theme == 'dark' %}checked{% endif %}>
-          {{ t('theme_dark') }}
+          <i class="fa-solid fa-moon"></i>{{ t('theme_dark') }}
         </label>
-        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+        <label class="flex items-center justify-center gap-2 text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:border-blue-700 has-[:checked]:text-blue-700 dark:has-[:checked]:border-blue-400 dark:has-[:checked]:text-blue-300 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
           <input type="radio" name="theme" value="light" class="sr-only" {% if theme == 'light' %}checked{% endif %}>
-          {{ t('theme_light') }}
+          <i class="fa-solid fa-sun"></i>{{ t('theme_light') }}
         </label>
       </div>
     </div>
@@ -129,11 +132,11 @@
     <div>
       <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_accessibility_heading') }}</h1>
       <div class="grid grid-cols-2 gap-2 w-64">
-        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:border-blue-700 has-[:checked]:text-blue-700 dark:has-[:checked]:border-blue-400 dark:has-[:checked]:text-blue-300 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
           <input type="radio" name="font_size" value="md" class="sr-only" {% if font_size == 'md' %}checked{% endif %}>
           {{ t('font_size_md') }}
         </label>
-        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:border-blue-700 has-[:checked]:text-blue-700 dark:has-[:checked]:border-blue-400 dark:has-[:checked]:text-blue-300 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
           <input type="radio" name="font_size" value="lg" class="sr-only" {% if font_size == 'lg' %}checked{% endif %}>
           {{ t('font_size_lg') }}
         </label>
@@ -250,13 +253,14 @@
   </div>
   <div>
     <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_new_password_label') }}</label>
-    <input type="password" name="new_password" required
+    <input type="password" id="new-password-input" name="new_password" required
       class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
   </div>
   <div>
     <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_confirm_new_password_label') }}</label>
-    <input type="password" name="confirm_password" required
+    <input type="password" id="confirm-password-input" name="confirm_password" required
       class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+    <span id="password-mismatch-hint" class="hidden text-sm text-red-700 dark:text-red-400">{{ t('password_error_mismatch') }}</span>
   </div>
   <div class="flex items-center gap-3">
     <button type="submit" id="password-form-button" disabled
@@ -272,10 +276,16 @@
   (function () {
     const form = document.getElementById("password-form");
     const button = document.getElementById("password-form-button");
-    if (!form || !button) return;
+    const newPasswordInput = document.getElementById("new-password-input");
+    const confirmPasswordInput = document.getElementById("confirm-password-input");
+    const mismatchHint = document.getElementById("password-mismatch-hint");
+    if (!form || !button || !newPasswordInput || !confirmPasswordInput || !mismatchHint) return;
     function checkFilled() {
       const inputs = form.querySelectorAll("input[type=password]");
-      button.disabled = Array.from(inputs).some(function (input) { return input.value.trim() === ""; });
+      const anyEmpty = Array.from(inputs).some(function (input) { return input.value.trim() === ""; });
+      const mismatch = newPasswordInput.value !== "" && confirmPasswordInput.value !== "" && newPasswordInput.value !== confirmPasswordInput.value;
+      mismatchHint.classList.toggle("hidden", !mismatch);
+      button.disabled = anyEmpty || mismatch;
     }
     form.addEventListener("input", checkFilled);
   })();
@@ -302,10 +312,10 @@
   {% endif %}
 </p>
 {% if version_state.status == 'update_available' %}
-<div class="mt-3 inline-flex items-center gap-3 bg-gray-950 dark:bg-gray-900 border border-gray-800 dark:border-gray-700 rounded px-4 py-2 max-w-full">
-  <code id="update-command" class="font-mono text-xs text-gray-200 overflow-x-auto whitespace-nowrap">curl -fsSL https://install.crubio.fyi/argus | sudo bash</code>
+<div id="update-command-box" class="mt-3 inline-flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded px-4 py-2 max-w-full transition-shadow">
+  <code id="update-command" class="font-mono text-xs text-gray-900 dark:text-gray-200 overflow-x-auto whitespace-nowrap">curl -fsSL https://install.crubio.fyi/argus | sudo bash</code>
   <button type="button" id="copy-update-command" title="{{ t('settings_software_copy') }}"
-    class="shrink-0 text-gray-400 hover:text-gray-200 transition-colors">
+    class="shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
     <i class="fa-solid fa-copy"></i>
   </button>
 </div>
@@ -325,6 +335,23 @@
         }, 1500);
       });
     });
+  })();
+</script>
+<script>
+  (function () {
+    const box = document.getElementById("update-command-box");
+    if (!box) return;
+    let highlightTimer = null;
+    function highlightIfTargeted() {
+      if (window.location.hash !== "#software") return;
+      box.classList.add("ring-2", "ring-blue-500");
+      clearTimeout(highlightTimer);
+      highlightTimer = setTimeout(function () {
+        box.classList.remove("ring-2", "ring-blue-500");
+      }, 3000);
+    }
+    highlightIfTargeted();
+    window.addEventListener("hashchange", highlightIfTargeted);
   })();
 </script>
 {% endif %}
