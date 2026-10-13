@@ -606,12 +606,11 @@ def logs_partial(
 # --- Settings ---
 
 
-def _settings_context(admin: str, session: Session, *, review_devices=None) -> dict:
+def _settings_context(admin: str, session: Session) -> dict:
     return {
         "admin": admin,
         "settings": profiles.get_settings(session),
         "active": "settings",
-        "review_devices": review_devices,
     }
 
 
@@ -636,6 +635,18 @@ def _connected_identities() -> set[tuple[str, str, str | None]]:
         return set()
 
 
+@router.get("/settings/enforce-review-devices")
+def enforce_review_devices(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+    """Fetched by hx-get the moment the admin selects Enforce — read-only, authorizes nothing. Renders
+    empty (no modal) when there's nothing to review, same as today's "nothing to review" case."""
+    pending_review = profiles.unreviewed_devices(session)
+    if not pending_review:
+        return HTMLResponse("")
+    connected = _connected_identities()
+    review_devices = [(d, (d.vid, d.pid, d.serial) in connected) for d in pending_review]
+    return render(request, session, "_enforce_review_modal.html", {"review_devices": review_devices})
+
+
 @router.post("/settings")
 def update_settings(
     request: Request,
@@ -644,6 +655,7 @@ def update_settings(
     theme: str = Form(...),
     font_size: str = Form(...),
     log_retention: str = Form(...),
+    device_ids: list[int] = Form(default=[]),
     mqtt_enabled: str | None = Form(default=None),
     mqtt_host: str = Form(default=""),
     mqtt_port: str = Form(default=""),
@@ -656,24 +668,20 @@ def update_settings(
     _csrf: None = Depends(require_csrf),
 ):
     """Single confirm gate for the whole Settings form — every field commits together, or not at all.
-    Switching to Enforce with unreviewed devices in Monitor's history interrupts that gate: nothing in
-    this submission is saved yet, and the review modal is shown instead (design.md decision #2)."""
+    Switching to Enforce with unreviewed devices is confirmed client-side before this request is ever
+    sent (the admin resolves the review modal the moment they select Enforce); device_ids carries
+    whichever devices they chose to whitelist along, authorized here in the same commit as every
+    other changed field (design.md decision #2)."""
     old_profile = profiles.get_active_profile(session)
     new_profile = Profile(profile)
-    if new_profile == Profile.ENFORCE and old_profile != Profile.ENFORCE:
-        pending_review = profiles.unreviewed_devices(session)
-        if pending_review:
-            connected = _connected_identities()
-            review_devices = [(d, (d.vid, d.pid, d.serial) in connected) for d in pending_review]
-            return render(
-                request, session, "settings.html", _settings_context(admin, session, review_devices=review_devices)
-            )
 
     validated_mqtt_port = _validate_mqtt_port(mqtt_port)
     if validated_mqtt_port is None:
         flash(request, ToastKind.ERROR, ToastMessage.MQTT_PORT_INVALID)
         return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
 
+    for device_id in device_ids:
+        _authorize_device(session, admin, device_id)
     profiles.request_profile(session, new_profile)
     if new_profile != old_profile:
         profiles.record_admin_action(
@@ -746,26 +754,6 @@ def mqtt_test(
             mqtt_host, port, mqtt_topic_prefix or "argus", mqtt_username or None, password, mqtt_tls_enabled == "on"
         )
     return render(request, session, "_mqtt_test_result.html", {"mqtt_test_result": result, "mqtt_test_detail": detail})
-
-
-@router.post("/settings/enforce-review")
-def enforce_review(
-    request: Request,
-    device_ids: list[int] = Form(default=[]),
-    admin: str = Depends(require_admin),
-    session: Session = Depends(get_session),
-    _csrf: None = Depends(require_csrf),
-):
-    """Resolves the Enforce-transition review modal: authorizes whatever the admin checked (same path
-    as /whitelist/authorize), then applies the switch to Enforce. No second confirmation step."""
-    old_profile = profiles.get_active_profile(session)
-    for device_id in device_ids:
-        _authorize_device(session, admin, device_id)
-    profiles.request_profile(session, Profile.ENFORCE)
-    profiles.record_admin_action(
-        session, admin, AdminActionType.PROFILE_SWITCH, Profile.ENFORCE.value, source=old_profile.value
-    )
-    return RedirectResponse(url="/settings", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/settings/password")
@@ -914,7 +902,7 @@ def release_notes_modal(request: Request, admin: str = Depends(require_admin), s
         request,
         session,
         "_release_notes_modal.html",
-        {"installed": installed, "body_html": _render_changelog_excerpt(notes["body"]), "html_url": notes["html_url"]},
+        {"version": installed, "body_html": _render_changelog_excerpt(notes["body"]), "html_url": notes["html_url"]},
     )
 
 
@@ -929,3 +917,27 @@ def dismiss_release_notes(
     settings.release_notes_seen_version = version_check.installed_version()
     session.commit()
     return HTMLResponse("")
+
+
+@router.get("/settings/update-preview")
+def update_preview_modal(request: Request, admin: str = Depends(require_admin), session: Session = Depends(get_session)):
+    """Lets the admin read an available update's release notes before installing it. Unlike
+    /release-notes/modal, this never touches Settings.release_notes_seen_version — nothing was
+    installed, so the post-install notification must still fire once the admin actually updates."""
+    latest = profiles.get_settings(session).latest_version_available
+    notes = version_check.fetch_release_notes(latest) if latest else None
+    if notes is None:
+        return HTMLResponse("")
+    return render(
+        request,
+        session,
+        "_release_notes_modal.html",
+        {
+            "version": latest,
+            "body_html": _render_changelog_excerpt(notes["body"]),
+            "html_url": notes["html_url"],
+            "preview": True,
+            "container_id": "update-preview-modal-container",
+            "update_command": "curl -fsSL https://install.crubio.fyi/argus | sudo bash",
+        },
+    )

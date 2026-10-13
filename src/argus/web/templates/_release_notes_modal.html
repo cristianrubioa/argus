@@ -1,13 +1,64 @@
-<div id="release-notes-overlay" class="fixed z-50 bg-black/50" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
-  <div class="w-full h-full flex items-center justify-center p-6">
+<div id="release-notes-overlay" class="fixed z-50 bg-black/50 backdrop-blur-sm" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
+  <div id="release-notes-backdrop" class="w-full h-full flex items-center justify-center p-6">
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl w-full max-w-xl max-h-full overflow-y-auto p-8">
-      <h2 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-3">{{ t('release_notes_heading') }} (v{{ installed }})</h2>
+      <h2 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-3">{{ t('release_notes_heading') }} (v{{ version }})</h2>
       <div class="text-sm text-gray-600 dark:text-gray-400 mb-6 border border-gray-200 dark:border-gray-800 rounded p-4">{{ body_html|safe }}</div>
+      {% if preview %}
+      {% if update_command %}
+      <div id="preview-update-command-box" class="mb-6 inline-flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded px-4 py-2 max-w-full">
+        <code id="preview-update-command" class="font-mono text-xs text-gray-900 dark:text-gray-200 overflow-x-auto whitespace-nowrap">{{ update_command }}</code>
+        <button type="button" id="preview-copy-update-command" title="{{ t('settings_software_copy') }}"
+          class="shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+          <i class="fa-solid fa-copy"></i>
+        </button>
+      </div>
+      <script>
+        (function () {
+          const button = document.getElementById("preview-copy-update-command");
+          if (!button) return;
+          const command = document.getElementById("preview-update-command").textContent;
+          const icon = button.querySelector("i");
+          button.addEventListener("click", function () {
+            navigator.clipboard.writeText(command).then(function () {
+              icon.classList.remove("fa-copy");
+              icon.classList.add("fa-check");
+              setTimeout(function () {
+                icon.classList.remove("fa-check");
+                icon.classList.add("fa-copy");
+              }, 1500);
+            });
+          });
+        })();
+      </script>
+      {% endif %}
+      <div class="flex items-center justify-between">
+        <a href="{{ html_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-700 dark:text-blue-300 text-sm hover:underline">{{ t('release_notes_see_more') }}</a>
+        <button type="button" id="release-notes-close" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('release_notes_close') }}</button>
+      </div>
+      {% else %}
       <form method="post" action="/release-notes/dismiss" hx-post="/release-notes/dismiss" hx-target="#release-notes-modal-container" hx-swap="innerHTML" class="flex items-center justify-between">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <a href="{{ html_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-700 dark:text-blue-300 text-sm hover:underline">{{ t('release_notes_see_more') }}</a>
-        <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('release_notes_dismiss') }}</button>
+        <button type="submit" id="release-notes-dismiss" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('release_notes_dismiss') }}</button>
       </form>
+      {% endif %}
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    const backdrop = document.getElementById("release-notes-backdrop");
+    if (!backdrop) return;
+    const dismissButton = document.getElementById("release-notes-dismiss");
+    const closeButton = document.getElementById("release-notes-close");
+    const container = document.getElementById("{{ container_id|default('release-notes-modal-container') }}");
+    if (closeButton && container) {
+      closeButton.addEventListener("click", function () { container.innerHTML = ""; });
+    }
+    backdrop.addEventListener("click", function (event) {
+      if (event.target !== backdrop) return;
+      if (dismissButton) dismissButton.click();
+      else if (closeButton) closeButton.click();
+    });
+  })();
+</script>

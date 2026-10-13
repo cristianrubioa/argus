@@ -1,14 +1,15 @@
 {% extends "_shell.html" %}
 {% block title %}Argus — {{ t('nav_settings') }}{% endblock %}
 {% block content %}
-{% include "_enforce_review_modal.html" %}
 {% include "_retention_narrow_modal.html" %}
+<div id="enforce-review-modal-container"></div>
+<div id="update-preview-modal-container"></div>
 
 <div class="flex flex-wrap items-start justify-between gap-8">
 <form method="post" action="/settings" id="settings-form" class="flex flex-col min-h-[calc(100vh-var(--header-h)-3rem)]">
   <input type="hidden" id="csrf-token-input" name="csrf_token" value="{{ csrf_token }}">
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_security_heading') }}</h1>
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl">
+  <div id="security-profile-group" data-current-profile="{{ settings.profile.value }}" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl">
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer has-[:checked]:border-blue-700 dark:has-[:checked]:border-blue-400">
       <input type="radio" name="profile" value="monitor" class="mt-1 scale-125 accent-blue-700 dark:accent-blue-400" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
       <span>
@@ -17,7 +18,8 @@
       </span>
     </label>
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer has-[:checked]:border-blue-700 dark:has-[:checked]:border-blue-400">
-      <input type="radio" name="profile" value="enforce" class="mt-1 scale-125 accent-blue-700 dark:accent-blue-400" {% if settings.profile.value == 'enforce' %}checked{% endif %}>
+      <input type="radio" name="profile" value="enforce" class="mt-1 scale-125 accent-blue-700 dark:accent-blue-400" {% if settings.profile.value == 'enforce' %}checked{% endif %}
+        hx-get="/settings/enforce-review-devices" hx-target="#enforce-review-modal-container" hx-swap="innerHTML" hx-trigger="change">
       <span>
         <span class="block font-medium">{{ t('profile_enforce') }}</span>
         <span class="block text-sm text-gray-600 dark:text-gray-400">{{ t('profile_enforce_desc')|safe }}</span>
@@ -103,15 +105,27 @@
 
   <div class="flex flex-wrap justify-between gap-y-6 max-w-4xl mt-12">
     <div class="w-full md:w-auto">
-      <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_language_heading') }}</h1>
+      <h1 id="language-listbox-label" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_language_heading') }}</h1>
       <div class="relative w-full md:w-48">
-        <select name="language"
-          class="w-full h-10 appearance-none bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded pl-2 pr-8 text-sm focus:outline-none focus:border-blue-400">
+        <select name="language" id="language-select" class="sr-only" tabindex="-1" aria-hidden="true">
           {% for code in supported_languages %}
           <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ language_names[code] }}</option>
           {% endfor %}
         </select>
+        <button type="button" id="language-listbox-button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="language-listbox-label"
+          class="w-full h-10 flex items-center justify-between bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded pl-2 pr-8 text-sm focus:outline-none focus:border-blue-400">
+          <span id="language-listbox-value">{{ language_names[language] }}</span>
+        </button>
         <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400"></i>
+        <ul id="language-listbox-options" role="listbox" aria-labelledby="language-listbox-label" tabindex="-1"
+          class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded shadow-lg max-h-60 overflow-auto focus:outline-none">
+          {% for code in supported_languages %}
+          <li role="option" id="language-option-{{ code }}" data-value="{{ code }}" aria-selected="{{ 'true' if code == language else 'false' }}"
+            class="px-2 py-1.5 text-sm cursor-pointer text-gray-900 dark:text-gray-200 hover:bg-blue-600 hover:text-white aria-selected:bg-blue-100 dark:aria-selected:bg-blue-900/40">
+            {{ language_names[code] }}
+          </li>
+          {% endfor %}
+        </ul>
       </div>
     </div>
 
@@ -167,30 +181,155 @@
 </script>
 <script>
   (function () {
-    const form = document.getElementById("settings-form");
     const group = document.getElementById("log-retention-group");
     const modal = document.getElementById("retention-narrow-modal");
+    const backdrop = document.getElementById("retention-narrow-backdrop");
     const cancelButton = document.getElementById("retention-narrow-cancel");
     const continueButton = document.getElementById("retention-narrow-continue");
-    if (!form || !group || !modal || !cancelButton || !continueButton) return;
+    if (!group || !modal || !backdrop || !cancelButton || !continueButton) return;
     const rank = {"90_days": 0, "1_year": 1, "2_years": 2, "forever": 3};
-    let confirmed = false;
+    let previousValue = group.dataset.currentRetention;
 
-    form.addEventListener("submit", function (event) {
-      if (confirmed) return;
-      const selected = form.querySelector('input[name="log_retention"]:checked').value;
+    function radioFor(value) {
+      return group.querySelector('input[name="log_retention"][value="' + value + '"]');
+    }
+    function revert() {
+      const target = radioFor(previousValue);
+      if (target) target.checked = true;
+      modal.classList.add("hidden");
+    }
+
+    group.addEventListener("change", function (event) {
+      const selected = event.target.value;
       if (rank[selected] < rank[group.dataset.currentRetention]) {
-        event.preventDefault();
         modal.classList.remove("hidden");
+      } else {
+        previousValue = selected;
       }
     });
-    cancelButton.addEventListener("click", function () {
-      modal.classList.add("hidden");
+    cancelButton.addEventListener("click", revert);
+    backdrop.addEventListener("click", function (event) {
+      if (event.target === backdrop) revert();
     });
     continueButton.addEventListener("click", function () {
+      previousValue = group.querySelector('input[name="log_retention"]:checked').value;
       modal.classList.add("hidden");
-      confirmed = true;
-      form.requestSubmit();
+    });
+  })();
+</script>
+<script>
+  (function () {
+    const group = document.getElementById("security-profile-group");
+    const container = document.getElementById("enforce-review-modal-container");
+    const form = document.getElementById("settings-form");
+    if (!group || !container || !form) return;
+    let previousProfile = group.dataset.currentProfile;
+
+    function clearPendingDeviceIds() {
+      form.querySelectorAll('input[type="hidden"][name="device_ids"]').forEach(function (input) { input.remove(); });
+    }
+
+    window.argusRevertProfileSelection = function () {
+      const target = group.querySelector('input[name="profile"][value="' + previousProfile + '"]');
+      if (target) target.checked = true;
+      clearPendingDeviceIds();
+    };
+    window.argusConfirmProfileSelection = function () {
+      previousProfile = "enforce";
+    };
+
+    group.addEventListener("change", function (event) {
+      clearPendingDeviceIds();
+      if (event.target.value !== "enforce") {
+        previousProfile = event.target.value;
+        container.innerHTML = "";
+      }
+    });
+    document.body.addEventListener("htmx:afterSwap", function (evt) {
+      if (evt.detail.target.id !== "enforce-review-modal-container") return;
+      if (!container.firstElementChild) previousProfile = "enforce";
+    });
+  })();
+</script>
+<script>
+  (function () {
+    const select = document.getElementById("language-select");
+    const button = document.getElementById("language-listbox-button");
+    const valueLabel = document.getElementById("language-listbox-value");
+    const list = document.getElementById("language-listbox-options");
+    if (!select || !button || !valueLabel || !list) return;
+    const options = Array.from(list.querySelectorAll('[role="option"]'));
+
+    function currentIndex() {
+      const index = options.findIndex(function (option) { return option.dataset.value === select.value; });
+      return index === -1 ? 0 : index;
+    }
+    function open() {
+      list.classList.remove("hidden");
+      button.setAttribute("aria-expanded", "true");
+      list.focus();
+    }
+    function close() {
+      list.classList.add("hidden");
+      button.setAttribute("aria-expanded", "false");
+    }
+    function select_(option) {
+      select.value = option.dataset.value;
+      valueLabel.textContent = option.textContent.trim();
+      options.forEach(function (o) { o.setAttribute("aria-selected", o === option ? "true" : "false"); });
+      select.dispatchEvent(new Event("change", {bubbles: true}));
+    }
+    function highlight(option) {
+      list.setAttribute("aria-activedescendant", option.id);
+      options.forEach(function (o) { o.classList.toggle("bg-blue-600", o === option); o.classList.toggle("text-white", o === option); });
+    }
+
+    button.addEventListener("click", function () {
+      if (list.classList.contains("hidden")) {
+        open();
+        highlight(options[currentIndex()]);
+      } else {
+        close();
+      }
+    });
+    options.forEach(function (option) {
+      option.addEventListener("click", function () {
+        select_(option);
+        close();
+        button.focus();
+      });
+    });
+    list.addEventListener("keydown", function (event) {
+      const active = options.find(function (o) { return o.id === list.getAttribute("aria-activedescendant"); }) || options[currentIndex()];
+      const index = options.indexOf(active);
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        highlight(options[Math.min(index + 1, options.length - 1)]);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        highlight(options[Math.max(index - 1, 0)]);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        highlight(options[0]);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        highlight(options[options.length - 1]);
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        select_(active);
+        close();
+        button.focus();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        button.focus();
+      } else if (event.key.length === 1) {
+        const match = options.find(function (o) { return o.textContent.trim().toLowerCase().startsWith(event.key.toLowerCase()); });
+        if (match) highlight(match);
+      }
+    });
+    document.addEventListener("click", function (event) {
+      if (!list.classList.contains("hidden") && !button.contains(event.target) && !list.contains(event.target)) close();
     });
   })();
 </script>
@@ -304,7 +443,10 @@
   <span>{{ t('settings_software_version_label') }} <span class="font-medium">v{{ version_state.installed }}</span></span>
   <i class="fa-solid fa-arrow-right text-xs text-gray-400 dark:text-gray-600"></i>
   {% if version_state.status == 'update_available' %}
-    <span class="text-blue-600 dark:text-blue-400 font-medium">{{ t('settings_software_update_available') }} v{{ version_state.latest }}</span>
+    <button type="button" class="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+      hx-get="/settings/update-preview" hx-target="#update-preview-modal-container" hx-swap="innerHTML">
+      {{ t('settings_software_update_available') }} v{{ version_state.latest }}
+    </button>
   {% elif version_state.status == 'up_to_date' %}
     <span>{{ t('settings_software_up_to_date') }}</span>
   {% else %}

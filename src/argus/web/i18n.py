@@ -106,7 +106,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "retention_forever": "Forever",
         "settings_retention_narrow_warning": (
             "This deletes any device event, applied action, or admin action older than the new period on the "
-            "next cleanup cycle (within 24 hours). This can't be undone. Continue?"
+            "next cleanup cycle (within 24 hours). <strong>This can't be undone.</strong> Continue?"
         ),
         "settings_retention_narrow_continue": "Continue",
         "settings_retention_narrow_cancel": "Cancel",
@@ -114,7 +114,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_theme_heading": "Theme",
         "theme_dark": "Dark",
         "theme_light": "Light",
-        "settings_accessibility_heading": "Accessibility",
+        "settings_accessibility_heading": "Font Size",
         "font_size_md": "Default",
         "font_size_lg": "Larger",
         "login_username": "Username",
@@ -146,18 +146,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Update available:",
         "settings_software_unknown": "Version status unknown.",
         "settings_software_copy": "Copy",
-        "enforce_review_heading": "Review unreviewed devices",
         "enforce_review_desc": (
             "These devices were seen while monitoring but were never added to the whitelist. "
             "Whitelist the ones you want to keep working — anything left unchecked will be "
             "<strong>blocked</strong> once <strong>Enforce</strong> is active."
         ),
         "enforce_review_continue": "Continue",
+        "enforce_review_cancel": "Cancel",
         "enforce_review_connected": "Connected now",
         "enforce_review_not_connected": "Not connected",
         "release_notes_heading": "What's new",
         "release_notes_see_more": "See more",
         "release_notes_dismiss": "Got it",
+        "release_notes_close": "Close",
         "device_review_heading": "Devices detected",
         "device_review_desc": "Here's what Argus can already see connected to this machine.",
         "device_review_internal_heading": "Internal (informational only)",
@@ -276,7 +277,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "retention_forever": "Para siempre",
         "settings_retention_narrow_warning": (
             "Esto borra todo evento de dispositivo, acción aplicada o acción de admin más antigua que el nuevo "
-            "período en el próximo ciclo de limpieza (dentro de 24 horas). No se puede deshacer. ¿Continuar?"
+            "período en el próximo ciclo de limpieza (dentro de 24 horas). <strong>No se puede deshacer.</strong> "
+            "¿Continuar?"
         ),
         "settings_retention_narrow_continue": "Continuar",
         "settings_retention_narrow_cancel": "Cancelar",
@@ -284,7 +286,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_theme_heading": "Tema",
         "theme_dark": "Oscuro",
         "theme_light": "Claro",
-        "settings_accessibility_heading": "Accesibilidad",
+        "settings_accessibility_heading": "Tamaño de fuente",
         "font_size_md": "Predeterminado",
         "font_size_lg": "Grande",
         "login_username": "Usuario",
@@ -316,18 +318,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Actualización disponible:",
         "settings_software_unknown": "No se pudo verificar la versión.",
         "settings_software_copy": "Copiar",
-        "enforce_review_heading": "Revisar dispositivos no revisados",
         "enforce_review_desc": (
             "Estos dispositivos se vieron durante el monitoreo pero nunca se agregaron a la lista blanca. "
             "Poné en la lista blanca los que quieras conservar — los que dejes sin marcar se "
             "<strong>bloquearán</strong> al activar <strong>Enforce</strong>."
         ),
         "enforce_review_continue": "Continuar",
+        "enforce_review_cancel": "Cancelar",
         "enforce_review_connected": "Conectado ahora",
         "enforce_review_not_connected": "No conectado",
         "release_notes_heading": "Qué hay de nuevo",
         "release_notes_see_more": "Ver más",
         "release_notes_dismiss": "Entendido",
+        "release_notes_close": "Cerrar",
         "device_review_heading": "Dispositivos detectados",
         "device_review_desc": "Esto es lo que Argus ya puede ver conectado a este equipo.",
         "device_review_internal_heading": "Internos (solo informativo)",
@@ -447,7 +450,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "retention_forever": "Para sempre",
         "settings_retention_narrow_warning": (
             "Isso apaga qualquer evento de dispositivo, ação aplicada ou ação de admin mais antiga que o novo "
-            "período no próximo ciclo de limpeza (em até 24 horas). Não pode ser desfeito. Continuar?"
+            "período no próximo ciclo de limpeza (em até 24 horas). <strong>Não pode ser desfeito.</strong> Continuar?"
         ),
         "settings_retention_narrow_continue": "Continuar",
         "settings_retention_narrow_cancel": "Cancelar",
@@ -455,7 +458,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_theme_heading": "Tema",
         "theme_dark": "Escuro",
         "theme_light": "Claro",
-        "settings_accessibility_heading": "Acessibilidade",
+        "settings_accessibility_heading": "Tamanho da fonte",
         "font_size_md": "Padrão",
         "font_size_lg": "Maior",
         "login_username": "Usuário",
@@ -487,18 +490,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Atualização disponível:",
         "settings_software_unknown": "Não foi possível verificar a versão.",
         "settings_software_copy": "Copiar",
-        "enforce_review_heading": "Revisar dispositivos não revisados",
         "enforce_review_desc": (
             "Esses dispositivos foram vistos durante o monitoramento, mas nunca foram adicionados à lista branca. "
             "Coloque na lista branca os que quiser manter — os desmarcados serão "
             "<strong>bloqueados</strong> quando o <strong>Enforce</strong> estiver ativo."
         ),
         "enforce_review_continue": "Continuar",
+        "enforce_review_cancel": "Cancelar",
         "enforce_review_connected": "Conectado agora",
         "enforce_review_not_connected": "Não conectado",
         "release_notes_heading": "Novidades",
         "release_notes_see_more": "Ver mais",
         "release_notes_dismiss": "Entendi",
+        "release_notes_close": "Fechar",
         "device_review_heading": "Dispositivos detectados",
         "device_review_desc": "Isto é o que o Argus já consegue ver conectado a esta máquina.",
         "device_review_internal_heading": "Internos (apenas informativo)",
@@ -618,8 +622,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "retention_forever": "Pour toujours",
         "settings_retention_narrow_warning": (
             "Cela supprime tout événement d'appareil, action appliquée ou action admin plus ancienne que la "
-            "nouvelle période lors du prochain cycle de nettoyage (dans les 24 heures). Action irréversible. "
-            "Continuer ?"
+            "nouvelle période lors du prochain cycle de nettoyage (dans les 24 heures). "
+            "<strong>Action irréversible.</strong> Continuer ?"
         ),
         "settings_retention_narrow_continue": "Continuer",
         "settings_retention_narrow_cancel": "Annuler",
@@ -627,7 +631,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_theme_heading": "Thème",
         "theme_dark": "Sombre",
         "theme_light": "Clair",
-        "settings_accessibility_heading": "Accessibilité",
+        "settings_accessibility_heading": "Taille de police",
         "font_size_md": "Par défaut",
         "font_size_lg": "Grand",
         "login_username": "Nom d'utilisateur",
@@ -659,18 +663,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Mise à jour disponible :",
         "settings_software_unknown": "Impossible de vérifier la version.",
         "settings_software_copy": "Copier",
-        "enforce_review_heading": "Vérifier les appareils non examinés",
         "enforce_review_desc": (
             "Ces appareils ont été détectés en mode surveillance mais n'ont jamais été ajoutés à la liste blanche. "
             "Ajoutez ceux que vous voulez conserver — ceux qui restent décochés seront "
             "<strong>bloqués</strong> une fois <strong>Enforce</strong> actif."
         ),
         "enforce_review_continue": "Continuer",
+        "enforce_review_cancel": "Annuler",
         "enforce_review_connected": "Connecté actuellement",
         "enforce_review_not_connected": "Non connecté",
         "release_notes_heading": "Nouveautés",
         "release_notes_see_more": "Voir plus",
         "release_notes_dismiss": "Compris",
+        "release_notes_close": "Fermer",
         "device_review_heading": "Appareils détectés",
         "device_review_desc": "Voici ce qu'Argus détecte déjà connecté à cette machine.",
         "device_review_internal_heading": "Internes (informatif uniquement)",
@@ -790,8 +795,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "retention_forever": "Für immer",
         "settings_retention_narrow_warning": (
             "Dadurch werden alle Geräteereignisse, angewendeten Aktionen oder Admin-Aktionen gelöscht, die älter "
-            "als der neue Zeitraum sind — beim nächsten Bereinigungszyklus (innerhalb von 24 Stunden). Dies kann "
-            "nicht rückgängig gemacht werden. Fortfahren?"
+            "als der neue Zeitraum sind — beim nächsten Bereinigungszyklus (innerhalb von 24 Stunden). "
+            "<strong>Dies kann nicht rückgängig gemacht werden.</strong> Fortfahren?"
         ),
         "settings_retention_narrow_continue": "Fortfahren",
         "settings_retention_narrow_cancel": "Abbrechen",
@@ -799,7 +804,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_theme_heading": "Design",
         "theme_dark": "Dunkel",
         "theme_light": "Hell",
-        "settings_accessibility_heading": "Barrierefreiheit",
+        "settings_accessibility_heading": "Schriftgröße",
         "font_size_md": "Standard",
         "font_size_lg": "Größer",
         "login_username": "Benutzername",
@@ -831,18 +836,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings_software_update_available": "Update verfügbar:",
         "settings_software_unknown": "Version konnte nicht geprüft werden.",
         "settings_software_copy": "Kopieren",
-        "enforce_review_heading": "Nicht überprüfte Geräte überprüfen",
         "enforce_review_desc": (
             "Diese Geräte wurden während der Überwachung gesehen, aber nie zur Whitelist hinzugefügt. "
             "Setzen Sie die auf die Whitelist, die Sie behalten möchten — unmarkierte werden bei "
             "<strong>Enforce</strong> <strong>blockiert</strong>."
         ),
         "enforce_review_continue": "Fortfahren",
+        "enforce_review_cancel": "Abbrechen",
         "enforce_review_connected": "Jetzt verbunden",
         "enforce_review_not_connected": "Nicht verbunden",
         "release_notes_heading": "Neuigkeiten",
         "release_notes_see_more": "Mehr anzeigen",
         "release_notes_dismiss": "Verstanden",
+        "release_notes_close": "Schließen",
         "device_review_heading": "Erkannte Geräte",
         "device_review_desc": "Das sieht Argus bereits an diesem Rechner angeschlossen.",
         "device_review_internal_heading": "Intern (nur informativ)",

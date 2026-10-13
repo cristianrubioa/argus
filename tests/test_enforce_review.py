@@ -4,29 +4,31 @@ from argus import profiles
 from argus.agent import usbguard_cli
 from argus.factories import DeviceEventFactory
 from argus.factories import WhitelistEntryFactory
+from argus.models import LogRetention
 from argus.models import Profile
 from argus.models import WhitelistEntry
 
+_BASE_SETTINGS_FORM = {
+    "language": "en",
+    "theme": "dark",
+    "font_size": "md",
+    "log_retention": "1_year",
+    "mqtt_port": "1883",
+}
 
-def test_switching_to_enforce_with_unreviewed_device_shows_review_modal(logged_in_client, session, monkeypatch):
+
+def test_enforce_review_devices_lists_unreviewed_device(logged_in_client, session, monkeypatch):
     # Setup
     monkeypatch.setattr(usbguard_cli, "list_devices", lambda: [])
     DeviceEventFactory()
     # Action
-    response = logged_in_client.post(
-        "/settings",
-        data={"profile": "enforce", "language": "en", "theme": "dark", "font_size": "md", "log_retention": "1_year"},
-    )
+    response = logged_in_client.get("/settings/enforce-review-devices")
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert profiles.get_active_profile(session) == Profile.MONITOR
-    assert "enforce-review" in response.text
-    modal_form = response.text.split('action="/settings/enforce-review"')[1].split("</form>")[0]
-    assert modal_form.count('type="submit"') == 1
     assert "Not connected" in response.text
 
 
-def test_switching_to_enforce_shows_connected_status_for_a_live_device(logged_in_client, session, monkeypatch):
+def test_enforce_review_devices_shows_connected_status_for_a_live_device(logged_in_client, session, monkeypatch):
     # Setup
     event = DeviceEventFactory()
     device = event.device
@@ -38,51 +40,56 @@ def test_switching_to_enforce_shows_connected_status_for_a_live_device(logged_in
         ],
     )
     # Action
-    response = logged_in_client.post(
-        "/settings",
-        data={"profile": "enforce", "language": "en", "theme": "dark", "font_size": "md", "log_retention": "1_year"},
-    )
+    response = logged_in_client.get("/settings/enforce-review-devices")
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert "Connected now" in response.text
 
 
-def test_switching_to_enforce_with_nothing_unreviewed_applies_immediately(logged_in_client, session):
+def test_enforce_review_devices_empty_when_nothing_unreviewed(logged_in_client, session):
     # Setup
     WhitelistEntryFactory()
+    # Action
+    response = logged_in_client.get("/settings/enforce-review-devices")
+    # Expected
+    assert (response.status_code, response.text) == (status.HTTP_200_OK, "")
+
+
+def test_switching_to_enforce_applies_immediately_regardless_of_unreviewed_devices(logged_in_client, session):
+    # Setup
+    DeviceEventFactory()
+    # Action
+    response = logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "profile": "enforce"})
+    # Expected
+    assert response.status_code == status.HTTP_200_OK
+    assert profiles.get_active_profile(session) == Profile.ENFORCE
+
+
+def test_settings_save_whitelists_selected_devices_and_switches_profile_together(logged_in_client, session):
+    # Setup
+    event = DeviceEventFactory()
     # Action
     response = logged_in_client.post(
         "/settings",
         data={
+            **_BASE_SETTINGS_FORM,
             "profile": "enforce",
-            "language": "en",
-            "theme": "dark",
-            "font_size": "md",
-            "log_retention": "1_year",
-            "mqtt_port": "1883",
+            "log_retention": "2_years",
+            "device_ids": [event.device_id],
         },
     )
     # Expected
     assert response.status_code == status.HTTP_200_OK
-    assert profiles.get_active_profile(session) == Profile.ENFORCE
-
-
-def test_enforce_review_whitelists_checked_devices_and_switches_profile(logged_in_client, session):
-    # Setup
-    event = DeviceEventFactory()
-    # Action
-    response = logged_in_client.post("/settings/enforce-review", data={"device_ids": [event.device_id]})
-    # Expected
-    assert response.status_code == status.HTTP_200_OK
     assert session.query(WhitelistEntry).filter_by(device_id=event.device_id).count() == 1
     assert profiles.get_active_profile(session) == Profile.ENFORCE
+    assert profiles.get_log_retention(session) == LogRetention.TWO_YEARS
 
 
-def test_enforce_review_with_nothing_checked_still_switches_profile(logged_in_client, session):
+def test_settings_save_with_no_devices_checked_still_switches_profile(logged_in_client, session):
     # Setup
     DeviceEventFactory()
     # Action
-    response = logged_in_client.post("/settings/enforce-review", data={})
+    response = logged_in_client.post("/settings", data={**_BASE_SETTINGS_FORM, "profile": "enforce"})
     # Expected
     assert response.status_code == status.HTTP_200_OK
     assert session.query(WhitelistEntry).count() == 0

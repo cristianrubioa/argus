@@ -1,29 +1,56 @@
 {% if review_devices %}
-<div id="enforce-review-overlay" class="fixed z-50 bg-black/50" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
-  <div class="w-full h-full flex items-center justify-center p-6">
+<div id="enforce-review-overlay" class="fixed z-50 bg-black/50 backdrop-blur-sm" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
+  <div id="enforce-review-backdrop" class="w-full h-full flex items-center justify-center p-6">
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-full overflow-y-auto p-6">
-      <h2 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-2">{{ t('enforce_review_heading') }}</h2>
+      <h2 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-2">{{ t('settings_security_heading') }}</h2>
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ t('enforce_review_desc')|safe }}</p>
-      <form method="post" action="/settings/enforce-review">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded divide-y divide-gray-100 dark:divide-gray-900">
-          {% for device, is_connected in review_devices %}
-          <label class="flex items-center gap-3 px-3 py-2 text-sm cursor-pointer">
-            <input type="checkbox" name="device_ids" value="{{ device.id }}">
-            <span class="flex-1 truncate">{{ device.display_name }}</span>
-            <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">{{ device.vid_pid }}</span>
-            <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">{{ device.serial or "—" }}</span>
-            <span class="text-xs shrink-0 {% if is_connected %}text-green-600 dark:text-green-400{% else %}text-gray-400 dark:text-gray-600{% endif %}">
-              {% if is_connected %}{{ t('enforce_review_connected') }}{% else %}{{ t('enforce_review_not_connected') }}{% endif %}
-            </span>
-          </label>
-          {% endfor %}
-        </div>
-        <div class="mt-4 flex justify-end">
-          <button type="submit" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('enforce_review_continue') }}</button>
-        </div>
-      </form>
+      <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded divide-y divide-gray-100 dark:divide-gray-900">
+        {% for device, is_connected in review_devices %}
+        <label class="flex items-center gap-3 px-3 py-2 text-sm cursor-pointer">
+          <input type="checkbox" name="device_ids" value="{{ device.id }}">
+          <span class="flex-1 truncate">{{ device.display_name }}</span>
+          <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">{{ device.vid_pid }}</span>
+          <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">{{ device.serial or "—" }}</span>
+          <span class="text-xs shrink-0 {% if is_connected %}text-green-600 dark:text-green-400{% else %}text-gray-400 dark:text-gray-600{% endif %}">
+            {% if is_connected %}{{ t('enforce_review_connected') }}{% else %}{{ t('enforce_review_not_connected') }}{% endif %}
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="mt-4 flex justify-end gap-3">
+        <button type="button" id="enforce-review-cancel" class="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('enforce_review_cancel') }}</button>
+        <button type="button" id="enforce-review-continue" class="bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded px-4 py-2 transition">{{ t('enforce_review_continue') }}</button>
+      </div>
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    const overlay = document.getElementById("enforce-review-overlay");
+    const backdrop = document.getElementById("enforce-review-backdrop");
+    const container = document.getElementById("enforce-review-modal-container");
+    const cancelButton = document.getElementById("enforce-review-cancel");
+    const continueButton = document.getElementById("enforce-review-continue");
+    if (!overlay || !backdrop || !container || !cancelButton || !continueButton) return;
+
+    function revert() {
+      container.innerHTML = "";
+      if (window.argusRevertProfileSelection) window.argusRevertProfileSelection();
+    }
+    cancelButton.addEventListener("click", revert);
+    backdrop.addEventListener("click", function (event) { if (event.target === backdrop) revert(); });
+    continueButton.addEventListener("click", function () {
+      const form = document.getElementById("settings-form");
+      overlay.querySelectorAll('input[name="device_ids"]:checked').forEach(function (box) {
+        const hidden = document.createElement("input");
+        hidden.type = "hidden";
+        hidden.name = "device_ids";
+        hidden.value = box.value;
+        form.appendChild(hidden);
+      });
+      container.innerHTML = "";
+      if (window.argusConfirmProfileSelection) window.argusConfirmProfileSelection();
+    });
+  })();
+</script>
 {% endif %}

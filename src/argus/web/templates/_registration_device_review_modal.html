@@ -1,9 +1,9 @@
-<div id="device-review-overlay" class="fixed z-50 bg-black/50" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
-  <div class="w-full h-full flex items-center justify-center p-6">
+<div id="device-review-overlay" class="fixed z-50 bg-black/50 backdrop-blur-sm" style="top: var(--header-h); left: var(--panel-w); right: 0; bottom: 0">
+  <div id="device-review-backdrop" class="w-full h-full flex items-center justify-center p-6">
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-full overflow-y-auto p-8">
       <h2 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-3">{{ t('device_review_heading') }}</h2>
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">{{ t('device_review_desc') }}</p>
-      <form method="post" action="/register/device-review" hx-post="/register/device-review" hx-target="#device-review-modal-container" hx-swap="innerHTML">
+      <form method="post" id="device-review-form" action="/register/device-review" hx-post="/register/device-review" hx-target="#device-review-modal-container" hx-swap="innerHTML">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="grid grid-cols-2 gap-6">
           <div>
@@ -44,3 +44,15 @@
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    const backdrop = document.getElementById("device-review-backdrop");
+    const form = document.getElementById("device-review-form");
+    if (!backdrop || !form) return;
+    backdrop.addEventListener("click", function (event) {
+      if (event.target !== backdrop) return;
+      form.querySelectorAll('input[name="device_ids"]').forEach(function (box) { box.checked = false; });
+      form.requestSubmit();
+    });
+  })();
+</script>

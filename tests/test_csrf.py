@@ -62,7 +62,6 @@ _MUTATING_ROUTES = (
     ("/whitelist/rename/999999", {}),
     ("/settings", {"profile": "monitor", "language": "en", "theme": "dark", "font_size": "md", "log_retention": "1_year"}),
     ("/settings/mqtt-test", {}),
-    ("/settings/enforce-review", {}),
     (
         "/settings/password",
         {"current_password": "secret", "new_password": "newpassword1", "confirm_password": "newpassword1"},
