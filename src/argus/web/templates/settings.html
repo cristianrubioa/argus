@@ -7,7 +7,7 @@
 <form method="post" action="/settings" id="settings-form">
   <input type="hidden" id="csrf-token-input" name="csrf_token" value="{{ csrf_token }}">
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_security_heading') }}</h1>
-  <div class="space-y-3 max-w-md">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl">
     <label class="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-800 rounded cursor-pointer">
       <input type="radio" name="profile" value="monitor" class="mt-1" {% if settings.profile.value == 'monitor' %}checked{% endif %}>
       <span>
@@ -25,51 +25,58 @@
   </div>
 
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_retention_heading') }}</h1>
-  <select name="log_retention" id="log-retention-select" data-current="{{ settings.log_retention.value }}"
-    class="w-full max-w-md bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
-    <option value="90_days" {% if settings.log_retention.value == '90_days' %}selected{% endif %}>{{ t('retention_90_days') }}</option>
-    <option value="1_year" {% if settings.log_retention.value == '1_year' %}selected{% endif %}>{{ t('retention_1_year') }}</option>
-    <option value="2_years" {% if settings.log_retention.value == '2_years' %}selected{% endif %}>{{ t('retention_2_years') }}</option>
-    <option value="forever" {% if settings.log_retention.value == 'forever' %}selected{% endif %}>{{ t('retention_forever') }}</option>
-  </select>
+  <div id="log-retention-group" data-current-retention="{{ settings.log_retention.value }}" class="grid grid-cols-4 gap-2 max-w-4xl">
+    {% for value in ('90_days', '1_year', '2_years', 'forever') %}
+    <label class="flex items-center justify-center text-center px-3 py-2 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent">
+      <input type="radio" name="log_retention" value="{{ value }}" class="peer hidden" {% if settings.log_retention.value == value %}checked{% endif %}>
+      {{ t('retention_' + value) }}
+    </label>
+    {% endfor %}
+  </div>
 
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_automation_heading') }}</h1>
   {% if mqtt_port_error %}
-  <div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2 mb-3 max-w-md">{{ t(mqtt_port_error) }}</div>
+  <div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2 mb-3 max-w-4xl">{{ t(mqtt_port_error) }}</div>
   {% endif %}
-  <label class="flex items-center gap-3 mb-3">
-    <input type="checkbox" id="mqtt-enabled-toggle" name="mqtt_enabled" {% if settings.mqtt_enabled %}checked{% endif %}>
-    <span>{{ t('mqtt_enabled_label') }}</span>
-  </label>
-  <div class="space-y-3 max-w-md">
-    <div>
-      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_host_label') }}</label>
-      <input type="text" id="mqtt-host-input" name="mqtt_host" autocomplete="off" value="{{ settings.mqtt_host or '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
-        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+  <div class="space-y-5 max-w-4xl">
+    <div class="flex gap-6 items-center">
+      <label class="flex items-center gap-3">
+        <input type="checkbox" id="mqtt-enabled-toggle" name="mqtt_enabled" {% if settings.mqtt_enabled %}checked{% endif %}>
+        <span>{{ t('mqtt_enabled_label') }}</span>
+      </label>
+      <label class="flex items-center gap-3">
+        <input type="checkbox" id="mqtt-tls-input" name="mqtt_tls_enabled" {% if settings.mqtt_tls_enabled %}checked{% endif %} {% if not settings.mqtt_enabled %}disabled{% endif %}>
+        <span>{{ t('mqtt_tls_label') }}</span>
+      </label>
     </div>
-    <div>
-      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_port_label') }}</label>
-      <input type="number" id="mqtt-port-input" name="mqtt_port" autocomplete="off" min="1" max="65535" maxlength="5" value="{{ settings.mqtt_port }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
-        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+    <div class="grid grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_host_label') }}</label>
+        <input type="text" id="mqtt-host-input" name="mqtt_host" autocomplete="off" value="{{ settings.mqtt_host or '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+          class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_port_label') }}</label>
+        <input type="number" id="mqtt-port-input" name="mqtt_port" autocomplete="off" min="1" max="65535" maxlength="5" value="{{ settings.mqtt_port }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+          class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_topic_prefix_label') }}</label>
+        <input type="text" id="mqtt-topic-input" name="mqtt_topic_prefix" autocomplete="off" value="{{ settings.mqtt_topic_prefix }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+          class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+      </div>
     </div>
-    <div>
-      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_topic_prefix_label') }}</label>
-      <input type="text" id="mqtt-topic-input" name="mqtt_topic_prefix" autocomplete="off" value="{{ settings.mqtt_topic_prefix }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
-        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
-    </div>
-    <label class="flex items-center gap-3">
-      <input type="checkbox" id="mqtt-tls-input" name="mqtt_tls_enabled" {% if settings.mqtt_tls_enabled %}checked{% endif %} {% if not settings.mqtt_enabled %}disabled{% endif %}>
-      <span>{{ t('mqtt_tls_label') }}</span>
-    </label>
-    <div>
-      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_username_label') }}</label>
-      <input type="text" id="mqtt-username-input" name="mqtt_username" autocomplete="off" value="{{ settings.mqtt_username or '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
-        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
-    </div>
-    <div>
-      <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_password_label') }}</label>
-      <input type="password" id="mqtt-password-input" name="mqtt_password" autocomplete="off" placeholder="{{ t('mqtt_password_saved_placeholder') if settings.mqtt_password else '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
-        class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_username_label') }}</label>
+        <input type="text" id="mqtt-username-input" name="mqtt_username" autocomplete="off" value="{{ settings.mqtt_username or '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+          class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('mqtt_password_label') }}</label>
+        <input type="password" id="mqtt-password-input" name="mqtt_password" autocomplete="off" placeholder="{{ t('mqtt_password_saved_placeholder') if settings.mqtt_password else '' }}" {% if not settings.mqtt_enabled %}readonly{% endif %}
+          class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 read-only:opacity-50 read-only:bg-gray-100 dark:read-only:bg-gray-900">
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <button type="button" id="mqtt-test-button" {% if not settings.mqtt_enabled %}disabled{% endif %}
@@ -140,17 +147,18 @@
 <script>
   (function () {
     const form = document.getElementById("settings-form");
-    const select = document.getElementById("log-retention-select");
+    const group = document.getElementById("log-retention-group");
     const modal = document.getElementById("retention-narrow-modal");
     const cancelButton = document.getElementById("retention-narrow-cancel");
     const continueButton = document.getElementById("retention-narrow-continue");
-    if (!form || !select || !modal || !cancelButton || !continueButton) return;
+    if (!form || !group || !modal || !cancelButton || !continueButton) return;
     const rank = {"90_days": 0, "1_year": 1, "2_years": 2, "forever": 3};
     let confirmed = false;
 
     form.addEventListener("submit", function (event) {
       if (confirmed) return;
-      if (rank[select.value] < rank[select.dataset.current]) {
+      const selected = form.querySelector('input[name="log_retention"]:checked').value;
+      if (rank[selected] < rank[group.dataset.currentRetention]) {
         event.preventDefault();
         modal.classList.remove("hidden");
       }
