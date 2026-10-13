@@ -100,30 +100,47 @@
     {% endif %}
   </div>
 
-  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_language_heading') }}</h1>
-  <select name="language"
-    class="w-full max-w-md bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
-    {% for code in supported_languages %}
-    <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ language_names[code] }}</option>
-    {% endfor %}
-  </select>
+  <div class="flex flex-wrap justify-between gap-y-6 max-w-4xl mt-8">
+    <div>
+      <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_language_heading') }}</h1>
+      <select name="language"
+        class="w-48 h-10 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 text-sm focus:outline-none focus:border-blue-400">
+        {% for code in supported_languages %}
+        <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ language_names[code] }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_theme_heading') }}</h1>
-  <select name="theme"
-    class="w-full max-w-md bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
-    <option value="dark" {% if theme == 'dark' %}selected{% endif %}>{{ t('theme_dark') }}</option>
-    <option value="light" {% if theme == 'light' %}selected{% endif %}>{{ t('theme_light') }}</option>
-  </select>
+    <div>
+      <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_theme_heading') }}</h1>
+      <div class="grid grid-cols-2 gap-2 w-64">
+        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+          <input type="radio" name="theme" value="dark" class="sr-only" {% if theme == 'dark' %}checked{% endif %}>
+          {{ t('theme_dark') }}
+        </label>
+        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+          <input type="radio" name="theme" value="light" class="sr-only" {% if theme == 'light' %}checked{% endif %}>
+          {{ t('theme_light') }}
+        </label>
+      </div>
+    </div>
 
-  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_accessibility_heading') }}</h1>
-  <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_font_size_label') }}</label>
-  <select name="font_size"
-    class="w-full max-w-md bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400">
-    <option value="md" {% if font_size == 'md' %}selected{% endif %}>{{ t('font_size_md') }}</option>
-    <option value="lg" {% if font_size == 'lg' %}selected{% endif %}>{{ t('font_size_lg') }}</option>
-  </select>
+    <div>
+      <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_accessibility_heading') }}</h1>
+      <div class="grid grid-cols-2 gap-2 w-64">
+        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+          <input type="radio" name="font_size" value="md" class="sr-only" {% if font_size == 'md' %}checked{% endif %}>
+          {{ t('font_size_md') }}
+        </label>
+        <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
+          <input type="radio" name="font_size" value="lg" class="sr-only" {% if font_size == 'lg' %}checked{% endif %}>
+          {{ t('font_size_lg') }}
+        </label>
+      </div>
+    </div>
+  </div>
 
-  <div id="settings-save" class="mt-8">
+  <div id="settings-save" class="mt-16 max-w-4xl flex justify-end">
     <button type="submit" id="settings-save-button" disabled
       class="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded px-4 py-2 transition">
       {{ t('action_save') }}
