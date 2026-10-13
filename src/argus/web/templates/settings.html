@@ -4,7 +4,8 @@
 {% include "_enforce_review_modal.html" %}
 {% include "_retention_narrow_modal.html" %}
 
-<form method="post" action="/settings" id="settings-form">
+<div class="flex flex-wrap items-start justify-between gap-8">
+<form method="post" action="/settings" id="settings-form" class="flex flex-col min-h-[calc(100vh-var(--header-h)-3rem)]">
   <input type="hidden" id="csrf-token-input" name="csrf_token" value="{{ csrf_token }}">
   <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_security_heading') }}</h1>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl">
@@ -24,7 +25,7 @@
     </label>
   </div>
 
-  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_retention_heading') }}</h1>
+  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-12">{{ t('settings_retention_heading') }}</h1>
   <div id="log-retention-group" data-current-retention="{{ settings.log_retention.value }}" class="grid grid-cols-4 gap-2 max-w-4xl">
     {% for value in ('90_days', '1_year', '2_years', 'forever') %}
     <label class="flex items-center justify-center text-center px-3 py-2 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:bg-blue-700 has-[:checked]:text-white has-[:checked]:border-transparent">
@@ -34,7 +35,7 @@
     {% endfor %}
   </div>
 
-  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_automation_heading') }}</h1>
+  <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-12">{{ t('settings_automation_heading') }}</h1>
   {% if mqtt_port_error %}
   <div class="text-sm text-red-700 bg-red-100 border border-red-300 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800 rounded px-3 py-2 mb-3 max-w-4xl">{{ t(mqtt_port_error) }}</div>
   {% endif %}
@@ -100,7 +101,7 @@
     {% endif %}
   </div>
 
-  <div class="flex flex-wrap justify-between gap-y-6 max-w-4xl mt-8">
+  <div class="flex flex-wrap justify-between gap-y-6 max-w-4xl mt-12">
     <div>
       <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_language_heading') }}</h1>
       <select name="language"
@@ -140,9 +141,9 @@
     </div>
   </div>
 
-  <div id="settings-save" class="mt-16 max-w-4xl flex justify-end">
+  <div id="settings-save" class="mt-auto max-w-4xl sticky bottom-0 py-4 flex justify-end bg-gray-50 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
     <button type="submit" id="settings-save-button" disabled
-      class="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded px-4 py-2 transition">
+      class="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded h-10 px-10 transition">
       {{ t('action_save') }}
     </button>
   </div>
@@ -235,7 +236,8 @@
   })();
 </script>
 
-<h1 id="account-password" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_account_heading') }}</h1>
+<div class="border-l border-gray-300 dark:border-gray-700 pl-8">
+<h1 id="account-password" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_account_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('signed_in_as') }} <span class="text-gray-900 dark:text-gray-200">{{ admin }}</span></p>
 
 {% set password_error = toast.message_key if toast and toast.inline else None %}
@@ -279,7 +281,7 @@
   })();
 </script>
 
-<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('agent_status_heading') }}</h1>
+<h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-12">{{ t('agent_status_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
   {% include "_agent_status_badge.html" %}
   {% if settings.agent_last_heartbeat_at is not none %}
@@ -287,7 +289,7 @@
   {% endif %}
 </p>
 
-<h1 id="software" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-8">{{ t('settings_software_heading') }}</h1>
+<h1 id="software" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4 mt-12">{{ t('settings_software_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
   <span>{{ t('settings_software_version_label') }} <span class="font-medium">v{{ version_state.installed }}</span></span>
   <i class="fa-solid fa-arrow-right text-xs text-gray-400 dark:text-gray-600"></i>
@@ -326,4 +328,6 @@
   })();
 </script>
 {% endif %}
+</div>
+</div>
 {% endblock %}
