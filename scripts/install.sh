@@ -244,7 +244,7 @@ if [ -n "$TRAY_USER" ]; then
     # the way `cmd1 && cmd2` is — without it, a broken venv/import here would abort the whole
     # script instead of falling through to the "skip desktop integration" warning below.
     TRAY_ICON=$("$PIPX_HOME_DIR/venvs/argus/bin/python3" -c \
-        "import importlib.resources; print(importlib.resources.files('argus.web').joinpath('static', 'icon.svg'))" 2>/dev/null) || true
+        "import importlib.resources; print(importlib.resources.files('argus.web').joinpath('static', 'icons', 'icon.svg'))" 2>/dev/null) || true
     # importlib.resources only builds the path — it doesn't confirm the file is actually there.
     if [ -n "$TRAY_HOME" ] && [ -n "$TRAY_ICON" ] && [ -f "$TRAY_ICON" ]; then
         TRAY_DESKTOP_FILE=$(mktemp)
