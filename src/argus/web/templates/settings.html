@@ -45,8 +45,8 @@
         <input type="checkbox" id="mqtt-enabled-toggle" name="mqtt_enabled" class="accent-blue-700 dark:accent-blue-400" {% if settings.mqtt_enabled %}checked{% endif %}>
         <span>{{ t('mqtt_enabled_label') }}</span>
       </label>
-      <label class="flex items-center gap-3">
-        <input type="checkbox" id="mqtt-tls-input" name="mqtt_tls_enabled" class="accent-blue-700 dark:accent-blue-400" {% if settings.mqtt_tls_enabled %}checked{% endif %} {% if not settings.mqtt_enabled %}disabled{% endif %}>
+      <label class="flex items-center gap-3 has-[:disabled]:bg-gray-100 dark:has-[:disabled]:bg-gray-900 has-[:disabled]:-mx-2 has-[:disabled]:px-2 has-[:disabled]:py-1 has-[:disabled]:rounded">
+        <input type="checkbox" id="mqtt-tls-input" name="mqtt_tls_enabled" class="accent-blue-700 dark:accent-blue-400 disabled:opacity-50" {% if settings.mqtt_tls_enabled %}checked{% endif %} {% if not settings.mqtt_enabled %}disabled{% endif %}>
         <span>{{ t('mqtt_tls_label') }}</span>
       </label>
     </div>
@@ -102,9 +102,9 @@
   </div>
 
   <div class="flex flex-wrap justify-between gap-y-6 max-w-4xl mt-12">
-    <div>
+    <div class="w-full md:w-auto">
       <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_language_heading') }}</h1>
-      <div class="relative w-48">
+      <div class="relative w-full md:w-48">
         <select name="language"
           class="w-full h-10 appearance-none bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded pl-2 pr-8 text-sm focus:outline-none focus:border-blue-400">
           {% for code in supported_languages %}
@@ -115,9 +115,9 @@
       </div>
     </div>
 
-    <div>
+    <div class="w-full md:w-auto">
       <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_theme_heading') }}</h1>
-      <div class="grid grid-cols-2 gap-2 w-64">
+      <div class="grid grid-cols-2 gap-2 w-full md:w-64">
         <label class="flex items-center justify-center gap-2 text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:border-blue-700 has-[:checked]:text-blue-700 dark:has-[:checked]:border-blue-400 dark:has-[:checked]:text-blue-300 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
           <input type="radio" name="theme" value="dark" class="sr-only" {% if theme == 'dark' %}checked{% endif %}>
           <i class="fa-solid fa-moon"></i>{{ t('theme_dark') }}
@@ -129,9 +129,9 @@
       </div>
     </div>
 
-    <div>
+    <div class="w-full md:w-auto">
       <h1 class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_accessibility_heading') }}</h1>
-      <div class="grid grid-cols-2 gap-2 w-64">
+      <div class="grid grid-cols-2 gap-2 w-full md:w-64">
         <label class="flex items-center justify-center text-center h-10 px-3 rounded text-sm cursor-pointer border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 has-[:checked]:border-blue-700 has-[:checked]:text-blue-700 dark:has-[:checked]:border-blue-400 dark:has-[:checked]:text-blue-300 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-400 has-[:focus-visible]:ring-offset-2">
           <input type="radio" name="font_size" value="md" class="sr-only" {% if font_size == 'md' %}checked{% endif %}>
           {{ t('font_size_md') }}
@@ -144,7 +144,7 @@
     </div>
   </div>
 
-  <div id="settings-save" class="mt-auto max-w-4xl sticky bottom-0 py-4 flex justify-end bg-gray-50 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
+  <div id="settings-save" class="fixed bottom-4 right-4 z-40 md:mt-auto md:max-w-4xl md:sticky md:bottom-0 md:right-auto md:py-4 md:flex md:justify-end md:bg-gray-50 md:dark:bg-gray-950 md:border-t md:border-gray-200 md:dark:border-gray-800">
     <button type="submit" id="settings-save-button" disabled
       class="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded h-10 px-10 transition">
       {{ t('action_save') }}
@@ -239,12 +239,12 @@
   })();
 </script>
 
-<div class="border-l border-gray-300 dark:border-gray-700 pl-8">
+<div class="min-w-0 border-t md:border-t-0 md:border-l border-gray-300 dark:border-gray-700 pt-8 md:pt-0 md:pl-8 mt-8 md:mt-0">
 <h1 id="account-password" class="crubio-section-label text-blue-700 dark:text-blue-300 mb-4">{{ t('settings_account_heading') }}</h1>
 <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('signed_in_as') }} <span class="text-gray-900 dark:text-gray-200">{{ admin }}</span></p>
 
 {% set password_error = toast.message_key if toast and toast.inline else None %}
-<form method="post" action="/settings/password" id="password-form" class="space-y-3 max-w-md mt-4">
+<form method="post" action="/settings/password" id="password-form" class="space-y-5 max-w-md mt-4">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div>
     <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings_current_password_label') }}</label>
